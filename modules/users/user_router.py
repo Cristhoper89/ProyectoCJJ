@@ -19,10 +19,17 @@ async def read_users(
     return await service.get_all_users()
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def add_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
-    """Mantenido público intencionalmente para permitir el autoregistro inicial de aprendices."""
+async def add_user(user_in: UserCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    if current_user["role_name"] != "Administrador":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.") 
     service = UserService(db)
     return await service.create_user(user_in)
+
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)): 
+    """Permite a cualquier usuario registrarse sin necesidad de autenticación previa con el id 5(cliente)."""
+    service = UserService(db)
+    return await service.register_user(user_in)
 
 @router.put("/{user_id}", response_model=UserResponse, status_code=status.HTTP_200_OK)
 async def update_existing_user(

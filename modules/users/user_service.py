@@ -46,7 +46,42 @@ class UserService:
             await self.db.rollback()
             logger.error(f"Error al guardar usuario: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al crear el usuario.")
-        
+
+    async def register_user(self, user_data: UserCreate) -> dict:
+            logger.info(f"SQL Nativo: Registrando usuario {user_data.username}")
+            
+            dup = await self.db.execute(
+                text("SELECT id FROM users WHERE username = :username OR email = :email;"),
+                {"username": user_data.username, "email": user_data.email}
+            )
+            if dup.first():
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El usuario o correo ya existen.")
+
+            if user_data.role_id != 5:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No puedes registrarte con un rol distinto al predeterminado.")
+
+            role_check = await self.db.execute(text("SELECT id FROM roles WHERE id = :role_id;"), {"role_id": user_data.role_id})
+            if not role_check.first():
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El role_id proveído no existe.")
+    
+            # Uso de la función bcrypt nativa
+            hashed_pwd = hash_password(user_data.password)
+            
+            query = text("INSERT INTO users (username, email, hashed_password, is_active, role_id) VALUES (:username, :email, :hashed_password, TRUE, :role_id) RETURNING id, username, email, is_active, role_id;")
+            try:
+                result = await self.db.execute(query, {
+                    "username": user_data.username,
+                    "email": user_data.email,
+                    "hashed_password": hashed_pwd,
+                    "role_id": user_data.role_id
+                })
+                await self.db.commit()
+                return dict(result.mappings().first())
+            except Exception as e:
+                await self.db.rollback()
+                logger.error(f"Error al guardar usuario: {str(e)}")
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al crear el usuario.")
+    
     async def update_user(self, target_user_id: int, user_update: UserUpdate, current_user: dict) -> dict:
         logger.info(f"Usuario '{current_user['username']}' intenta modificar el usuario ID: {target_user_id}")
 
