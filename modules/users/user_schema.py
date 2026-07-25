@@ -21,3 +21,8 @@ class UserUpdate(BaseModel):
     password: Optional[str] = Field(None, min_length=6, max_length=100)
     role_id: Optional[int] = Field(None, gt=0)
     is_active: Optional[bool] = None
+
+class UserLogin(UserBase):
+    codigo_r: str = Field(..., min_length=6, max_length=6)
+    password: str = Field(..., min_length=6, max_length=100)
+    codigo_exp: Optional[str] = None

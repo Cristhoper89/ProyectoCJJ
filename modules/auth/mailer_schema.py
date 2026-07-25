@@ -1,0 +1,12 @@
+
+# Esquemas Pydantic para validar los JSONs
+from pydantic import BaseModel, EmailStr
+
+class ForgotPasswordRequest(BaseModel):
+    correo: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    correo: EmailStr
+    codigo: str
+    nuevaContrasena: str
+
