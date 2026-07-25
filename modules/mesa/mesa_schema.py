@@ -1,0 +1,46 @@
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional
+from datetime import datetime
+
+class MesaBase(BaseModel):
+    estado: Optional[bool] = Field(None, description="Estado de la mesa (disponible/ocupada)")
+    hora_inicio : Optional[datetime] = Field(None, description="Hora de inicio de la ocupación de la mesa")
+    total : Optional[float] = Field(None, description="Total de propinas acumuladas en la mesa")
+    id_mesero: Optional[int] = Field(None, description="ID del mesero asignado a la mesa")
+    id_cliente: Optional[int] = Field(None, description="ID del cliente asignado a la mesa")
+    propina: Optional[float] = Field(None, description="Propinas acumuladas en la mesa")
+    domicilio: Optional[float] = Field(None, description="Indica precio del domicilio")
+class MesaCreate(MesaBase):
+    pass
+
+class MesaResponse(MesaBase):
+    id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+class MesaUpdate(BaseModel):
+    estado: Optional[bool] = Field(None, description="Estado de la mesa (disponible/ocupada)")
+    hora_inicio : Optional[datetime] = Field(None, description="Hora de inicio de la ocupación de la mesa")
+    total : Optional[float] = Field(None, description="Total de propinas acumuladas en la mesa")
+    propina: Optional[float] = Field(None, description="Propinas acumuladas en la mesa")
+    domicilio: Optional[float] = Field(None, description="Indica precio del domicilio")
+    id_mesero: Optional[int] = Field(None, description="ID del mesero asignado a la mesa")
+    id_cliente: Optional[int] = Field(None, description="ID del cliente asignado a la mesa")
+
+class MesaChangeState(BaseModel):
+    id: int
+    estado: bool = Field(False, description="Nuevo estado de la mesa (disponible/ocupada)")
+
+    model_config = ConfigDict(from_attributes=True)
+
+class aplicarMesero(BaseModel):
+    id: int
+    id_mesero: int = Field(..., description="ID del mesero asignado a la mesa")
+
+    model_config = ConfigDict(from_attributes=True)
+
+class aplicarCliente(BaseModel):
+    id: int
+    id_cliente: int = Field(..., description="ID del cliente asignado a la mesa")
+
+    model_config = ConfigDict(from_attributes=True)
