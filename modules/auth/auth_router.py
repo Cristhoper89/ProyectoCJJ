@@ -6,9 +6,17 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 # from modules.auth.mailer_schema import ForgotPasswordRequest, ResetPasswordRequest
 #es el de abajo pero lo modifique
-from modules.auth.mailer_schema import (ForgotPasswordRequest,ResetPasswordRequest,UnlockAccountRequest,)
+from modules.auth.mailer_schema import (
+    ForgotPasswordRequest,
+    SendUnlockCodeRequest,
+    ResetPasswordRequest,
+    UnlockAccountRequest,
+)
 from core.database import get_db
-from core.mailer import enviar_correo_recuperacion
+from core.mailer import (
+    enviar_correo_recuperacion,
+    enviar_correo_desbloqueo,
+)
 from core.security import (
     hash_password,
 )  # Usamos la función de hash bcrypt de tu core/security.py
@@ -50,10 +58,8 @@ async def forgot_password(
     #Johan 
     query_update = text("""
         UPDATE users
-        SET codigo_r = :codigo_recuperacion,
-            codigo_exp = :expiracion_recuperacion,
-            codigo_desbloqueo = :codigo_desbloqueo,
-            codigo_expira = :expiracion_desbloqueo
+        SET codigo_r = :codigo,
+            codigo_exp = :expiracion
         WHERE email = :email;
     """)
     #hasta aqui
@@ -73,10 +79,8 @@ async def forgot_password(
         await db.execute(
             query_update,
             {
-                "codigo_recuperacion": codigo,
-                "expiracion_recuperacion": expiracion,
-                "codigo_desbloqueo": codigo,
-                "expiracion_desbloqueo": expiracion,
+                "codigo": codigo,
+                "expiracion": expiracion,
                 "email": req.correo,
             },
         )
@@ -98,7 +102,7 @@ async def forgot_password(
     #     )
 
     # D. Enviar correo electrónico
-    enviado = enviar_correo_recuperacion(req.correo, codigo)
+    enviado = enviar_correo_desbloqueo(req.correo, codigo)
     if not enviado:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -150,6 +154,72 @@ async def reset_password(req: ResetPasswordRequest, db: AsyncSession = Depends(g
         )
 
     return {"mensaje": "¡Contraseña actualizada con éxito! Ya puedes iniciar sesión."}
+
+
+    #johan
+@router.post("/send-unlock-code", status_code=status.HTTP_200_OK)
+async def send_unlock_code(
+        req: SendUnlockCodeRequest,
+        db: AsyncSession = Depends(get_db),
+    ):
+        # Buscar el usuario
+        result = await db.execute(
+            text("""
+                SELECT id, bloqueado_hasta
+                FROM users
+                WHERE email = :email
+            """),
+            {"email": req.correo},
+        )
+
+        user = result.mappings().first()
+
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="No existe una cuenta asociada a este correo."
+        )
+
+        if user["bloqueado_hasta"] is None:
+            raise HTTPException(
+                status_code=400,
+                detail="La cuenta no se encuentra bloqueada."
+            )
+
+        # Generar código
+        codigo = f"{secrets.randbelow(900000) + 100000}"
+        expiracion = datetime.now() + timedelta(minutes=15)
+
+        # Guardar código de desbloqueo
+        await db.execute(
+            text("""
+                UPDATE users
+                SET codigo_desbloqueo = :codigo,
+                    codigo_expira = :expiracion
+                WHERE email = :email
+            """),
+            {
+                "codigo": codigo,
+                "expiracion": expiracion,
+                "email": req.correo,
+            },
+        )
+
+        await db.commit()
+
+        # Enviar correo
+        enviado = enviar_correo_recuperacion(req.correo, codigo)
+
+        if not enviado:
+            raise HTTPException(
+                status_code=500,
+                detail="No fue posible enviar el correo.",
+            )
+
+        return {
+            "mensaje": "Código de desbloqueo enviado al correo."
+        }
+    #hasta aqui
 
     # Johan
 @router.post("/unlock-account", status_code=status.HTTP_200_OK)
