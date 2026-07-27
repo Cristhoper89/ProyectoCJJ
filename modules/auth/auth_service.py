@@ -22,7 +22,7 @@ class AuthService:
         # Johan
         # Verificar si la cuenta está bloqueada
         if user and user["bloqueado_hasta"]:
-            if datetime.now(ZoneInfo("America/Bogota")) < user["bloqueado_hasta"]:
+            if datetime.now() < user["bloqueado_hasta"]:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"Cuenta bloqueada hasta {user['bloqueado_hasta']}. Puedes solicitar un código de desbloqueo.",
@@ -127,11 +127,4 @@ class AuthService:
                 "role_id": user["role_id"]
             }
         )
-        #hasta aca
-        # return create_access_token(
-        #     data={
-        #         "sub": user["username"],
-        #         "user_id": user["id"],
-        #         "role_id": user["role_id"],
-        #     }
-        # )
+

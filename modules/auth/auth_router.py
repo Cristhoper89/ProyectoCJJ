@@ -162,7 +162,7 @@ async def send_unlock_code(
 
         # Generar código
         codigo = f"{secrets.randbelow(900000) + 100000}"
-        expiracion = datetime.now(ZoneInfo("America/Bogota")) + timedelta(minutes=15)
+        expiracion = datetime.now() + timedelta(minutes=15)
 
         # Guardar código de desbloqueo
         await db.execute(
@@ -215,7 +215,7 @@ async def unlock_account(
             {
                 "email": req.correo,
                 "codigo": req.codigo,
-                "ahora": datetime.now(ZoneInfo("America/Bogota")),
+                "ahora": datetime.now(),
             },
         )
 
