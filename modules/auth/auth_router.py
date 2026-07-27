@@ -37,9 +37,7 @@ async def sign_in(
 
 # 1. SOLICITAR CÓDIGO DE RECUPERACIÓN (SQL NATIVO)
 @router.post("/forgot-password", status_code=status.HTTP_200_OK)
-async def forgot_password(
-    req: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)
-):
+async def forgot_password(req: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
     # A. Buscar si existe el correo con SQL Nativo (ajusta 'email' o 'users' según tu script DDL de la BD)
     query_search = text("SELECT id FROM users WHERE email = :email;")
     result = await db.execute(query_search, {"email": req.correo})
@@ -47,66 +45,40 @@ async def forgot_password(
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No existe una cuenta asociada a este correo.",
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="No existe una cuenta asociada a este correo."
         )
 
     # B. Generar código seguro de 6 dígitos aleatorio
     codigo = f"{secrets.randbelow(900000) + 100000}"
-    expiracion = datetime.now(ZoneInfo("America/Bogota")) + timedelta(minutes=15)
+    expiracion = datetime.now() + timedelta(minutes=15)
+
     # C. Guardar código y expiración con SQL Nativo
-    #Johan 
     query_update = text("""
-        UPDATE users
-        SET codigo_r = :codigo,
-            codigo_exp = :expiracion
+        UPDATE users 
+        SET codigo_r = :codigo, codigo_exp = :expiracion 
         WHERE email = :email;
     """)
-    #hasta aqui
-    # query_update = text("""
-    #     UPDATE users 
-    #     SET codigo_r = :codigo, codigo_exp = :expiracion 
-    #     WHERE email = :email;
-    # """)
-    
-    # try:
-    #     await db.execute(
-    #         query_update,
-    #         {"codigo": codigo, "expiracion": expiracion, "email": req.correo},
-    #     )
-    #johan
     try:
-        await db.execute(
-            query_update,
-            {
-                "codigo": codigo,
-                "expiracion": expiracion,
-                "email": req.correo,
-            },
-        )
-        await db.commit()
-    #hasta aqui
+        await db.execute(query_update, {
+            "codigo": codigo, 
+            "expiracion": expiracion, 
+            "email": req.correo
+        })
         await db.commit()
     except Exception as e:
         await db.rollback()
-        print("ERROR SQL:", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail="Error al guardar el código de recuperación en la base de datos."
         )
-    # except Exception as e:
-    #     await db.rollback()
-    #     raise HTTPException(
-    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #         detail="Error al guardar el código de recuperación en la base de datos.",
-    #     )
 
     # D. Enviar correo electrónico
-    enviado = enviar_correo_desbloqueo(req.correo, codigo)
+    enviado = enviar_correo_recuperacion(req.correo, codigo)
     if not enviado:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="No se pudo enviar el correo de verificación.",
+            detail="No se pudo enviar el correo de verificación."
         )
 
     return {"mensaje": "Código enviado a tu correo electrónico."}
@@ -120,16 +92,17 @@ async def reset_password(req: ResetPasswordRequest, db: AsyncSession = Depends(g
         SELECT id FROM users 
         WHERE email = :email AND codigo_r = :codigo AND codigo_exp > :ahora;
     """)
-    result = await db.execute(
-        query_select,
-        {"email": req.correo, "codigo": req.codigo, "ahora": datetime.now(ZoneInfo("America/Bogota"))},
-    )
+    result = await db.execute(query_select, {
+        "email": req.correo,
+        "codigo": req.codigo,
+        "ahora": datetime.now()
+    })
     user = result.mappings().first()
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Código inválido o ha expirado.",
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Código inválido o ha expirado."
         )
 
     # B. Hashear la nueva contraseña usando hash_password() de tu security.py
@@ -142,15 +115,16 @@ async def reset_password(req: ResetPasswordRequest, db: AsyncSession = Depends(g
         WHERE email = :email;
     """)
     try:
-        await db.execute(
-            query_reset, {"hashed_password": hashed_pwd, "email": req.correo}
-        )
+        await db.execute(query_reset, {
+            "hashed_password": hashed_pwd,
+            "email": req.correo
+        })
         await db.commit()
     except Exception as e:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al actualizar la contraseña.",
+            detail="Error al actualizar la contraseña."
         )
 
     return {"mensaje": "¡Contraseña actualizada con éxito! Ya puedes iniciar sesión."}
