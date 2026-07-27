@@ -182,7 +182,7 @@ async def send_unlock_code(
         await db.commit()
 
         # Enviar correo
-        enviado = enviar_correo_recuperacion(req.correo, codigo)
+        enviado = enviar_correo_desbloqueo(req.correo, codigo)
 
         if not enviado:
             raise HTTPException(
