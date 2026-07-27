@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from zoneinfo import ZoneInfo
 # from modules.auth.mailer_schema import ForgotPasswordRequest, ResetPasswordRequest
 #es el de abajo pero lo modifique
 from modules.auth.mailer_schema import (
@@ -52,8 +53,7 @@ async def forgot_password(
 
     # B. Generar código seguro de 6 dígitos aleatorio
     codigo = f"{secrets.randbelow(900000) + 100000}"
-    expiracion = datetime.now() + timedelta(minutes=15)
-
+    expiracion = datetime.now(ZoneInfo("America/Bogota")) + timedelta(minutes=15)
     # C. Guardar código y expiración con SQL Nativo
     #Johan 
     query_update = text("""
@@ -122,7 +122,7 @@ async def reset_password(req: ResetPasswordRequest, db: AsyncSession = Depends(g
     """)
     result = await db.execute(
         query_select,
-        {"email": req.correo, "codigo": req.codigo, "ahora": datetime.now()},
+        {"email": req.correo, "codigo": req.codigo, "ahora": datetime.now(ZoneInfo("America/Bogota"))},
     )
     user = result.mappings().first()
 
@@ -188,7 +188,7 @@ async def send_unlock_code(
 
         # Generar código
         codigo = f"{secrets.randbelow(900000) + 100000}"
-        expiracion = datetime.now() + timedelta(minutes=15)
+        expiracion = datetime.now(ZoneInfo("America/Bogota")) + timedelta(minutes=15)
 
         # Guardar código de desbloqueo
         await db.execute(
@@ -241,7 +241,7 @@ async def unlock_account(
             {
                 "email": req.correo,
                 "codigo": req.codigo,
-                "ahora": datetime.now(),
+                "ahora": datetime.now(ZoneInfo("America/Bogota")),
             },
         )
 

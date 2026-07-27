@@ -67,7 +67,7 @@ class AuthService:
                     text("""
                         UPDATE users
                         SET intentos_fallidos = 5,
-                            bloqueado_hasta = NOW() + INTERVAL '24 hours'
+                            bloqueado_hasta = NOW() AT TIME ZONE 'America/Bogota' + INTERVAL '24 hours'
                         WHERE id = :id
                     """),
                     {"id": user["id"]}
