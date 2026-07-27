@@ -1,3 +1,14 @@
 .env
 .env.local
 .env.*.localgit rm --cached .env
+
+# Archivos compilados de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Opcional
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
