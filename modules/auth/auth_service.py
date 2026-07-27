@@ -52,8 +52,12 @@ class AuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Credenciales inválidas.",
                 headers={"WWW-Authenticate": "Bearer"}
-            )
-
+            )    
+        await self.db.execute(
+            text("UPDATE users SET last_login = NOW() WHERE id = :id;"), #actualiza la fecha y hora actual cada un usuario haga un login
+            {"id": user["id"]}
+        )
+        await self.db.commit()
         if not verify_password(password_in, user["hashed_password"]):
 
             intentos = user["intentos_fallidos"] + 1
