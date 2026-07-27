@@ -10,3 +10,7 @@ class ResetPasswordRequest(BaseModel):
     codigo: str
     nuevaContrasena: str
 
+class UnlockAccountRequest(BaseModel):
+    correo: EmailStr
+    codigo: str
+
