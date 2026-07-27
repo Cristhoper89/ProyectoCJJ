@@ -54,7 +54,7 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"}
             )    
         await self.db.execute(
-            text("UPDATE users SET last_login = NOW() WHERE id = :id;"), #actualiza la fecha y hora actual cada un usuario haga un login
+            text("UPDATE users SET last_login = NOW() AT TIME ZONE 'America/Bogota' WHERE id = :id;"), #actualiza la fecha y hora actual cada un usuario haga un login
             {"id": user["id"]}
         )
         await self.db.commit()
