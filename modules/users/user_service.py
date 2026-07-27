@@ -32,7 +32,7 @@ class UserService:
         # Uso de la función bcrypt nativa
         hashed_pwd = hash_password(user_data.password)
         
-        query = text("INSERT INTO users (username, email, hashed_password, is_active, role_id, created_at) VALUES (:username, :email, :hashed_password, TRUE, :role_id, Now()) RETURNING id, username, email, is_active, role_id, created_at;")
+        query = text("INSERT INTO users (username, email, hashed_password, is_active, role_id, created_at) VALUES (:username, :email, :hashed_password, TRUE, :role_id, Now() AT TIME ZONE 'America/Bogota') RETURNING id, username, email, is_active, role_id, created_at;")
         try:
             result = await self.db.execute(query, {
                 "username": user_data.username,
