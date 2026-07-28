@@ -125,7 +125,7 @@ class UserService:
 
         # Registrar el usuario en la base de datos
         query = text(
-            "INSERT INTO users (username, email, hashed_password, is_active, role_id) VALUES (:username, :email, :hashed_password, TRUE, :role_id) RETURNING id, username, email, is_active, role_id;"
+            "INSERT INTO users (username, email, hashed_password, is_active, role_id, created_at) VALUES (:username, :email, :hashed_password, TRUE, :role_id, Now() AT TIME ZONE 'America/Bogota') RETURNING id, username, email, is_active, role_id, created_at;"
         )
 
         try:
