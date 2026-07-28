@@ -2,17 +2,18 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# Configuración de Gmail
+# Configuración de la cuenta de Gmail
 GMAIL_USER = "obitocamargo89@gmail.com"
-GMAIL_PASS = "gdks zzsn wsko jlyc" 
+GMAIL_PASS = "gdks zzsn wsko jlyc"
 
+
+# Enviar correo de recuperación de contraseña
 def enviar_correo_recuperacion(correo_destino: str, codigo: str):
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Código de Recuperación de Contraseña - LaCabaña"
     msg["From"] = f"LaCabaña <{GMAIL_USER}>"
     msg["To"] = correo_destino
 
-    # Plantilla HTML estilo LaCabaña
     html_content = f"""
     <div style="background-color: #141414; color: #ffffff; padding: 20px; font-family: Arial, sans-serif; text-align: center; border: 1px solid #C9A84C; border-radius: 8px;">
         <h2 style="color: #C9A84C;">LaCabaña</h2>
@@ -25,18 +26,23 @@ def enviar_correo_recuperacion(correo_destino: str, codigo: str):
     </div>
     """
 
+    # Adjuntar el contenido HTML al correo
     msg.attach(MIMEText(html_content, "html"))
 
     try:
-        # Conexión con el servidor SMTP de Gmail
+        # Enviar el correo mediante SMTP de Gmail
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(GMAIL_USER, GMAIL_PASS)
             server.sendmail(GMAIL_USER, correo_destino, msg.as_string())
         return True
+
+    # Manejar errores durante el envío
     except Exception as e:
         print(f"Error al enviar correo: {e}")
         return False
 
+
+# Enviar correo de desbloqueo de cuenta
 def enviar_correo_desbloqueo(correo_destino: str, codigo: str):
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Código de Desbloqueo de Cuenta - LaCabaña"
@@ -55,13 +61,16 @@ def enviar_correo_desbloqueo(correo_destino: str, codigo: str):
     </div>
     """
 
+    # Adjuntar el contenido HTML al correo
     msg.attach(MIMEText(html_content, "html"))
 
     try:
+        # Enviar el correo mediante SMTP de Gmail
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(GMAIL_USER, GMAIL_PASS)
             server.sendmail(GMAIL_USER, correo_destino, msg.as_string())
         return True
+
     except Exception as e:
         print(f"Error al enviar correo: {e}")
         return False
