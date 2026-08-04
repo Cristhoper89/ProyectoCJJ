@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from uuid import UUID
 from typing import Optional
 from datetime import datetime
 
@@ -16,7 +17,7 @@ class UserCreate(UserBase):
 
 # Definir los datos que se devolverán del usuario
 class UserResponse(UserBase):
-    id: int
+    id: UUID
     is_active: bool
     role_id: int
     created_at: datetime  # No se necesita Optional porque siempre tendrá el valor de NOW()

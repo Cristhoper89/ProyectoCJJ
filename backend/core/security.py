@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
+from uuid import UUID
 
 # Cifrar la contraseña
 def hash_password(password: str) -> str:
@@ -50,10 +51,12 @@ async def get_current_user(
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
-        user_id: int = payload.get("user_id")
+        user_id: str = payload.get("user_id")
 
         if username is None or user_id is None:
             raise credentials_exception
+
+        user_id = UUID(user_id)
 
     # Capturar errores del token
     except jwt.PyJWTError:

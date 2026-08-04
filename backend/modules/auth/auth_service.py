@@ -132,7 +132,7 @@ class AuthService:
         return create_access_token(
             data={
                 "sub": user["username"],
-                "user_id": user["id"],
+                "user_id": str(user["id"]),
                 "role_id": user["role_id"]
             }
         )
