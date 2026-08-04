@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from modules.categorias.categorias_router import router as categorias_router
 from modules.roles.role_router import router as role_router
@@ -36,3 +38,19 @@ app.include_router(productos_router)  # Incluye el router de productos
 app.include_router(cajas_router)  # Incluye el router de cajas
 app.include_router(mesa_router)  # Incluye el router de mesas
 app.include_router(mesa_consumo_router)  # Incluye el router de consumo de mesas
+
+# ==============================
+# FRONTEND
+# ==============================
+
+app.mount(
+    "/static",
+    StaticFiles(directory="../frontend/static"),
+    name="static"
+)
+
+
+@app.get("/")
+async def login():
+
+    return FileResponse("../frontend/templates/login.html")

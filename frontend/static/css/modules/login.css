@@ -1,0 +1,397 @@
+/* =====================================================
+   LOGIN
+===================================================== */
+
+.login{
+
+    width:100%;
+    min-height:100vh;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    padding:40px;
+
+    background:
+        radial-gradient(circle at top,#3A2F25 0%,#1D1A17 65%),
+        linear-gradient(180deg,#1D1A17,#181512);
+
+}
+
+/* =====================================================
+   CARD
+===================================================== */
+
+.login-card{
+
+    width:100%;
+    max-width:450px;
+
+    padding:45px;
+
+    background:#32281F;
+
+    border:1px solid #45382E;
+
+    border-radius:16px;
+
+    box-shadow:
+        0px 10px 35px rgba(0,0,0,.45),
+        0px 0px 20px rgba(216,168,91,.08);
+
+    animation:fadeLogin .45s ease;
+
+}
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.login-header{
+
+    text-align:center;
+
+    margin-bottom:35px;
+
+}
+
+.logo{
+
+    width:90px;
+
+    margin-bottom:18px;
+
+    transition:.25s;
+
+}
+
+.logo:hover{
+
+    transform:scale(1.05);
+
+}
+
+.login-header h1{
+
+    font-size:34px;
+
+    font-weight:700;
+
+    color:var(--color-text);
+
+    margin-bottom:10px;
+
+}
+
+.login-header p{
+
+    color:var(--color-text-secondary);
+
+    font-size:15px;
+
+    line-height:24px;
+
+}
+
+/* =====================================================
+   FORM
+===================================================== */
+
+#loginForm{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:22px;
+
+}
+
+.form-group{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+}
+
+.form-group label{
+
+    color:var(--color-text);
+
+    font-size:14px;
+
+    font-weight:600;
+
+}
+
+/* =====================================================
+   INPUT
+===================================================== */
+
+.input-box{
+
+    display:flex;
+
+    align-items:center;
+
+    height:56px;
+
+    padding:0 18px;
+
+    border-radius:12px;
+
+    background:#2D2620;
+
+    border:1px solid #4A3D31;
+
+    transition:.25s;
+
+}
+
+.input-box:hover{
+
+    border-color:#6B5A48;
+
+}
+
+.input-box:focus-within{
+
+    border-color:#D8A85B;
+
+    box-shadow:0 0 0 3px rgba(216,168,91,.15);
+
+}
+
+.input-box i{
+
+    width:18px;
+
+    height:18px;
+
+    color:#9C9287;
+
+}
+
+.input-box input{
+
+    flex:1;
+
+    height:100%;
+
+    padding-left:14px;
+
+    background:none;
+
+    border:none;
+
+    color:white;
+
+    font-size:15px;
+
+}
+
+.input-box input::placeholder{
+
+    color:#9C9287;
+
+}
+
+/* =====================================================
+   OJO
+===================================================== */
+
+.show-password{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:none;
+
+    border:none;
+
+    cursor:pointer;
+
+}
+
+.show-password i{
+
+    color:#9C9287;
+
+}
+
+/* =====================================================
+   BOTON
+===================================================== */
+
+.login-button{
+
+    height:56px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:#D8A85B;
+
+    color:#1D1A17;
+
+    font-size:15px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.login-button:hover{
+
+    background:#C28E3F;
+
+    transform:translateY(-2px);
+
+    box-shadow:0 10px 20px rgba(216,168,91,.25);
+
+}
+
+.login-button:active{
+
+    transform:scale(.98);
+
+}
+
+/* =====================================================
+   MENSAJES
+===================================================== */
+
+.login-message{
+
+    min-height:25px;
+
+    margin-top:18px;
+
+    text-align:center;
+
+    font-size:14px;
+
+}
+
+/* =====================================================
+   LINKS
+===================================================== */
+
+.login-options{
+
+    margin-top:30px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.login-options a{
+
+    color:#D8A85B;
+
+    font-size:14px;
+
+    transition:.25s;
+
+}
+
+.login-options a:hover{
+
+    color:white;
+
+}
+
+/* =====================================================
+   ANIMACION
+===================================================== */
+
+@keyframes fadeLogin{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(25px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+
+/* =====================================================
+   ESTADOS DE MENSAJES
+===================================================== */
+
+.login-message{
+
+    min-height:48px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    border-radius:10px;
+
+    font-size:14px;
+
+    font-weight:600;
+
+    margin-top:18px;
+
+    transition:all .25s ease;
+
+}
+
+.login-message.success{
+
+    background:rgba(46,204,113,.15);
+
+    border:1px solid rgba(46,204,113,.35);
+
+    color:#2ECC71;
+
+}
+
+.login-message.error{
+
+    background:rgba(231,76,60,.15);
+
+    border:1px solid rgba(231,76,60,.35);
+
+    color:#E74C3C;
+
+}
+
+.login-message.warning{
+
+    background:rgba(241,196,15,.15);
+
+    border:1px solid rgba(241,196,15,.35);
+
+    color:#F1C40F;
+
+}

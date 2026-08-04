@@ -1,0 +1,87 @@
+/* ===========================
+   IMPORTAR FUENTE
+=========================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+
+/* ===========================
+   RESET GENERAL
+=========================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+
+/* ===========================
+   HTML Y BODY
+=========================== */
+
+html,
+body{
+
+    width:100%;
+    height:100%;
+
+    font-family:'Manrope', sans-serif;
+
+    background:var(--color-background);
+
+    color:var(--color-text);
+
+}
+
+
+/* ===========================
+   BODY
+=========================== */
+
+body{
+
+    overflow:hidden;
+
+}
+
+
+/* ===========================
+   ENLACES
+=========================== */
+
+a{
+
+    color:inherit;
+
+    text-decoration:none;
+
+}
+
+
+/* ===========================
+   BOTONES
+=========================== */
+
+button{
+
+    font-family:inherit;
+
+    border:none;
+
+    cursor:pointer;
+
+}
+
+
+/* ===========================
+   INPUTS
+=========================== */
+
+input{
+
+    font-family:inherit;
+
+    outline:none;
+
+}

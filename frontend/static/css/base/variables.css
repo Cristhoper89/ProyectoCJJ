@@ -1,0 +1,46 @@
+:root {
+
+    /* ===========================
+       COLORES PRINCIPALES
+    =========================== */
+
+    --color-background: #1D1A17;
+    --color-sidebar: #2A221C;
+    --color-card: #32281F;
+
+    --color-primary: #D8A85B;
+    --color-primary-hover: #C28E3F;
+
+    --color-text: #F5F5F5;
+    --color-text-secondary: #B8B1A8;
+
+    --color-border: #45382E;
+
+    --color-input: #2D2620;
+    --color-input-border: #4A3D31;
+    --color-placeholder: #9C9287;
+
+    --color-success: #2ECC71;
+    --color-danger: #E74C3C;
+
+    /* ===========================
+       BORDES
+    =========================== */
+
+    --radius-card: 16px;
+    --radius-button: 8px;
+    --radius-input: 8px;
+
+    /* ===========================
+       SOMBRAS
+    =========================== */
+
+    --shadow-card: 0px 6px 18px rgba(0,0,0,.25);
+
+    /* ===========================
+       TRANSICIONES
+    =========================== */
+
+    --transition: .25s ease-in-out;
+
+}

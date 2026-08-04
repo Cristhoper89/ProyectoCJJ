@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Iniciar Sesión</title>
+
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/login.css">
+
+    <!-- Iconos Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+</head>
+
+<body>
+
+    <main class="login">
+
+        <section class="login-card">
+
+            <header class="login-header">
+
+                <img src="../static/img/logo.png"
+                     alt="Logo Restaurante"
+                     class="logo">
+
+                <h1>Bienvenido</h1>
+
+                <p>
+
+                    Ingrese sus credenciales para acceder al sistema.
+
+                </p>
+
+            </header>
+
+            <form id="loginForm">
+
+                <div class="form-group">
+
+                    <label for="username">
+
+                        Usuario
+
+                    </label>
+
+                    <div class="input-box">
+
+                        <i data-lucide="user"></i>
+
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            placeholder="Ingrese su usuario"
+                        >
+
+                    </div>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="password">
+
+                        Contraseña
+
+                    </label>
+
+                    <div class="input-box">
+
+                        <i data-lucide="lock"></i>
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Ingrese su contraseña"
+                        >
+
+                        <button
+                            type="button"
+                            class="show-password">
+
+                            <i data-lucide="eye"></i>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <button
+                    type="submit"
+                    class="login-button">
+
+                    Iniciar sesión
+
+                </button>
+
+            </form>
+
+            <div
+                id="loginMessage"
+                class="login-message">
+
+            </div>
+
+            <div class="login-options">
+
+                <a href="#">
+
+                    ¿Olvidó su contraseña?
+
+                </a>
+
+                <span></span>
+
+                <a href="#">
+
+                    Desbloquear cuenta
+
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+
+        lucide.createIcons();
+
+    </script>
+
+    <script src="../static/js/login.js"></script>
+
+</body>
+
+</html>
