@@ -54,3 +54,14 @@ app.mount(
 async def login():
 
     return FileResponse("../frontend/templates/login.html")
+
+@app.get("/desbloquear")
+async def desbloquear():
+
+    return FileResponse("../frontend/templates/desbloquear_cuenta.html")
+
+
+@app.get("/recuperar")
+async def recuperar():
+
+    return FileResponse("../frontend/templates/olvido_contrasena.html")

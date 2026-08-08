@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Desbloquear Cuenta</title>
+
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/desbloquear_cuenta.css">
+
+    <!-- Iconos Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+</head>
+
+<body>
+
+    <main class="login">
+
+        <section class="login-card">
+
+            <header class="login-header">
+
+                <img src="../static/img/logo.png"
+                     alt="Logo Restaurante"
+                     class="logo">
+
+                <h1>Desbloquear Cuenta</h1>
+
+                <p>
+
+                    Ingrese su correo electrónico para recibir
+                    un código de desbloqueo.
+
+                </p>
+
+            </header>
+
+            <form id="unlockForm">
+
+                <!-- ==========================================
+                     PASO 1: SOLICITAR CÓDIGO
+                ========================================== -->
+
+                <div id="stepEmail">
+
+                    <div class="form-group">
+
+                        <label for="email">
+
+                            Correo electrónico
+
+                        </label>
+
+                        <div class="input-box">
+
+                            <i data-lucide="mail"></i>
+
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="Ingrese su correo electrónico"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="login-button">
+
+                        Enviar código
+
+                    </button>
+
+                </div>
+
+                <!-- ==========================================
+                     PASO 2: CÓDIGO DE DESBLOQUEO
+                ========================================== -->
+
+                <div id="stepCode" hidden>
+
+                    <div class="form-group">
+
+                        <label for="codigo">
+
+                            Código de desbloqueo
+
+                        </label>
+
+                        <div class="input-box">
+
+                            <i data-lucide="key"></i>
+
+                            <input
+                                type="text"
+                                id="codigo"
+                                name="codigo"
+                                placeholder="Ingrese el código"
+                                maxlength="6"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="login-button">
+
+                        Desbloquear cuenta
+
+                    </button>
+
+                </div>
+
+            </form>
+
+            <div
+                id="formMessage"
+                class="login-message">
+
+            </div>
+
+            <div class="login-options center">
+
+                <a href="/">
+
+                    Volver al inicio de sesión
+
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+
+        lucide.createIcons();
+
+    </script>
+
+    <script src="../static/js/desbloquear_cuenta.js"></script>
+
+</body>
+
+</html>

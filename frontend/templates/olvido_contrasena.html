@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Recuperar Contraseña</title>
+
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/olvido_contrasena.css">
+
+    <!-- Iconos Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+</head>
+
+<body>
+
+    <main class="login">
+
+        <section class="login-card">
+
+            <header class="login-header">
+
+                <img src="../static/img/logo.png"
+                     alt="Logo Restaurante"
+                     class="logo">
+
+                <h1>Recuperar Contraseña</h1>
+
+                <p>
+
+                    Ingrese su correo electrónico para recibir
+                    un código de verificación.
+
+                </p>
+
+            </header>
+
+            <form id="recoveryForm">
+
+                <!-- ==========================================
+                     PASO 1: SOLICITAR CÓDIGO
+                ========================================== -->
+
+                <div id="stepEmail">
+
+                    <div class="form-group">
+
+                        <label for="email">
+
+                            Correo electrónico
+
+                        </label>
+
+                        <div class="input-box">
+
+                            <i data-lucide="mail"></i>
+
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="Ingrese su correo electrónico"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="login-button">
+
+                        Enviar código
+
+                    </button>
+
+                </div>
+
+                <!-- ==========================================
+                     PASO 2: CÓDIGO Y NUEVA CONTRASEÑA
+                ========================================== -->
+
+                <div id="stepReset" hidden>
+
+                    <div class="form-group">
+
+                        <label for="codigo">
+
+                            Código de verificación
+
+                        </label>
+
+                        <div class="input-box">
+
+                            <i data-lucide="key"></i>
+
+                            <input
+                                type="text"
+                                id="codigo"
+                                name="codigo"
+                                placeholder="Ingrese el código"
+                                maxlength="6"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="nuevaContrasena">
+
+                            Nueva contraseña
+
+                        </label>
+
+                        <div class="input-box">
+
+                            <i data-lucide="lock"></i>
+
+                            <input
+                                type="password"
+                                id="nuevaContrasena"
+                                name="nuevaContrasena"
+                                placeholder="Ingrese su nueva contraseña"
+                            >
+
+                            <button
+                                type="button"
+                                class="show-password">
+
+                                <i data-lucide="eye"></i>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="confirmarContrasena">
+
+                            Confirmar contraseña
+
+                        </label>
+
+                        <div class="input-box">
+
+                            <i data-lucide="lock"></i>
+
+                            <input
+                                type="password"
+                                id="confirmarContrasena"
+                                name="confirmarContrasena"
+                                placeholder="Confirme su nueva contraseña"
+                            >
+
+                            <button
+                                type="button"
+                                class="show-password">
+
+                                <i data-lucide="eye"></i>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="login-button">
+
+                        Restablecer contraseña
+
+                    </button>
+
+                </div>
+
+            </form>
+
+            <div
+                id="formMessage"
+                class="login-message">
+
+            </div>
+
+            <div class="login-options center">
+
+                <a href="/">
+
+                    Volver al inicio de sesión
+
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+
+        lucide.createIcons();
+
+    </script>
+
+    <script src="../static/js/olvido_contrasena.js"></script>
+
+</body>
+
+</html>
