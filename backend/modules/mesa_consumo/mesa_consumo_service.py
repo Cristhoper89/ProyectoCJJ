@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from sqlalchemy import text
+from sqlalchemy import false, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.logger import logger
 from modules.mesa_consumo.mesa_consumo_schema import MesaCreate, MesaUpdate
@@ -16,24 +16,45 @@ class MesaCService:
 
     async def create_mesaC(self, mesaC_data: MesaCreate) -> dict:
         logger.info(f"SQL Nativo: Insertando consumo de mesa {mesaC_data.id_mesa}")
+        dup = await self.db.execute(text("SELECT id, preparacion,precio FROM productos WHERE id = :id;"), {"id": mesaC_data.id_producto})
+        producto = dup.first()
+        if not producto:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El producto especificado no existe.")
 
-        query = text("INSERT INTO mesa_consumo (id_producto, id_mov, id_mesa, cantidad, precio_unitario, subtotal) VALUES (:id_producto, :id_mov, :id_mesa, :cantidad, :precio_unitario, :subtotal) RETURNING id, id_producto, id_mov, id_mesa, cantidad, precio_unitario, subtotal;")
-        try:
-            result = await self.db.execute(query, {
-                "id_producto": mesaC_data.id_producto,
-                "id_mov": mesaC_data.id_mov,
-                "id_mesa": mesaC_data.id_mesa,
-                "cantidad": mesaC_data.cantidad,
-                "precio_unitario": mesaC_data.precio_unitario,
-                "subtotal": mesaC_data.subtotal
-            })
-            await self.db.commit()
-            return dict(result.mappings().first())
-        except Exception as e:
-            await self.db.rollback()
-            logger.error(f"Error al insertar mesa: {str(e)}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor.")
-        
+        if producto.preparacion == False:
+            query = text("INSERT INTO mesa_consumo (id_producto, id_mesa, cantidad, precio_unitario, subtotal) VALUES (:id_producto, :id_mesa, :cantidad, :precio_unitario, :subtotal) RETURNING id, id_producto, id_mesa, cantidad, precio_unitario, subtotal;")
+            try:
+                result = await self.db.execute(query, {
+                    "id_producto": mesaC_data.id_producto,
+                    "id_mesa": mesaC_data.id_mesa,
+                    "cantidad": mesaC_data.cantidad,
+                    "precio_unitario": producto.precio,
+                    "subtotal": producto.precio * mesaC_data.cantidad
+                })
+                await self.db.commit()
+                return dict(result.mappings().first())
+            except Exception as e:
+                await self.db.rollback()
+                logger.error(f"Error al insertar mesa: {str(e)}")
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor.")
+        else:
+            query = text("INSERT INTO mesa_consumo (id_producto, id_mesa, cantidad, precio_unitario, subtotal, preparado) VALUES (:id_producto, :id_mesa, :cantidad, :precio_unitario, :subtotal, :preparado) RETURNING id, id_producto, id_mesa, cantidad, precio_unitario, subtotal, preparado;")
+            try:
+                result = await self.db.execute(query, {
+                    "id_producto": mesaC_data.id_producto,
+                    "id_mesa": mesaC_data.id_mesa,
+                    "cantidad": mesaC_data.cantidad,
+                    "precio_unitario": producto.precio,
+                    "subtotal": producto.precio * mesaC_data.cantidad,
+                    "preparado": False
+                })
+                await self.db.commit()
+                return dict(result.mappings().first())
+            except Exception as e:
+                await self.db.rollback()
+                logger.error(f"Error al insertar mesa: {str(e)}")
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor.")  
+          
     async def update_mesaC(self, target_mesa_id: int, mesa_update: MesaUpdate, current_user: dict) -> dict:
         logger.info(f"Usuario '{current_user['username']}' intenta modificar la mesa ID: {target_mesa_id}")
 
@@ -86,6 +107,30 @@ class MesaCService:
         
         try:
             result = await self.db.execute(text(query_str), params)
+            await self.db.commit()
+            return dict(result.mappings().first())
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Error crítico en actualización SQL: {str(e)}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
+
+    async def cambiar_estado_preparado(self, target_mesa_id: int, preparado: bool) -> dict:
+        logger.info(f"Actualizando estado 'preparado' de la mesa ID: {target_mesa_id} a {preparado}")
+
+        # Verificar que la mesa exista
+        check = await self.db.execute(text("SELECT id FROM mesa_consumo WHERE id = :id;"), {"id": target_mesa_id})
+        if not check.first():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La mesa a modificar no existe.")
+
+        query = text("""
+            UPDATE mesa_consumo
+            SET preparado = :preparado
+            WHERE id = :id
+            RETURNING id, id_producto, id_mov, id_mesa, cantidad, precio_unitario, subtotal, preparado;
+        """)
+        
+        try:
+            result = await self.db.execute(query, {"id": target_mesa_id, "preparado": preparado})
             await self.db.commit()
             return dict(result.mappings().first())
         except Exception as e:

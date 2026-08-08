@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
@@ -66,7 +68,7 @@ async def change_mesa_state(
 @router.patch("/{mesa_id}/asignar_mesero", response_model=MesaResponse, status_code=status.HTTP_200_OK)
 async def assign_mesero_to_mesa(
     mesa_id: int, 
-    id_mesero: int,
+    id_mesero: UUID,
     db: AsyncSession = Depends(get_db), 
     current_user: dict = Depends(get_current_user)
 ):
@@ -82,7 +84,7 @@ async def assign_mesero_to_mesa(
 @router.patch("/{mesa_id}/asignar_cliente", response_model=MesaResponse, status_code=status.HTTP_200_OK)
 async def assign_cliente_to_mesa(
     mesa_id: int, 
-    id_cliente: int,
+    id_cliente: UUID,
     db: AsyncSession = Depends(get_db), 
     current_user: dict = Depends(get_current_user)
 ):

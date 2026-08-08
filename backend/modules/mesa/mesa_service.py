@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from sqlalchemy import text
+from sqlalchemy import UUID, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.logger import logger
 from modules.mesa.mesa_schema import MesaCreate, MesaUpdate
@@ -17,16 +17,10 @@ class MesaService:
     async def create_mesa(self, mesa_data: MesaCreate) -> dict:
         logger.info(f"SQL Nativo: Insertando mesa {mesa_data.estado}")
 
-        query = text("INSERT INTO mesa (estado, hora_inicio, total, id_mesero, id_cliente) VALUES (:estado, :hora_inicio, :total, :id_mesero, :id_cliente) RETURNING id, estado, hora_inicio, total, id_mesero, id_cliente;")
+        query = text("INSERT INTO mesa (estado) VALUES (:estado) RETURNING id, estado;")
         try:
             result = await self.db.execute(query, {
-                "estado": mesa_data.estado,
-                "hora_inicio": mesa_data.hora_inicio,
-                "total": mesa_data.total,
-                "propina": mesa_data.propina,
-                "domicilio": mesa_data.domicilio,
-                "id_mesero": mesa_data.id_mesero,
-                "id_cliente": mesa_data.id_cliente
+                "estado": mesa_data.estado
             })
             await self.db.commit()
             return dict(result.mappings().first())
@@ -63,10 +57,36 @@ class MesaService:
             params["total"] = mesa_update.total
 
         if mesa_update.id_mesero is not None:
+            dup = await self.db.execute(
+                        text("SELECT id, role_id FROM users WHERE id = :id;"),
+                        {"id": mesa_update.id_mesero}
+                    )
+
+            mesero = dup.first()
+                       
+            if not mesero:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El mesero especificado no existe.")
+            
+            if mesero.role_id != 3:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El ID proporcionado no corresponde a un mesero.")
+
             update_fields.append("id_mesero = :id_mesero")
             params["id_mesero"] = mesa_update.id_mesero
 
         if mesa_update.id_cliente is not None:
+            dup = await self.db.execute(
+                        text("SELECT id, role_id FROM users WHERE id = :id;"),
+                        {"id": mesa_update.id_cliente}
+                    )
+
+            cliente = dup.first()
+
+            if not cliente:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El cliente especificado no existe.")
+
+            if cliente.role_id != 5:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El ID proporcionado no corresponde a un cliente.")
+            
             update_fields.append("id_cliente = :id_cliente")
             params["id_cliente"] = mesa_update.id_cliente
 
@@ -78,6 +98,22 @@ class MesaService:
             update_fields.append("domicilio = :domicilio")
             params["domicilio"] = mesa_update.domicilio
 
+        if mesa_update.tipo is not None:
+            update_fields.append("tipo = :tipo")
+            params["tipo"] = mesa_update.tipo
+
+        if mesa_update.pago_efectivo is not None:
+            update_fields.append("pago_efectivo = :pago_efectivo")
+            params["pago_efectivo"] = mesa_update.pago_efectivo
+
+        if mesa_update.pago_tarjeta is not None:
+            update_fields.append("pago_tarjeta = :pago_tarjeta")
+            params["pago_tarjeta"] = mesa_update.pago_tarjeta
+
+        if mesa_update.pago_transfe is not None:
+            update_fields.append("pago_transfe = :pago_transfe")
+            params["pago_transfe"] = mesa_update.pago_transfe
+
         if not update_fields:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se enviaron datos para actualizar.")
 
@@ -86,7 +122,7 @@ class MesaService:
             UPDATE mesa 
             SET {', '.join(update_fields)} 
             WHERE id = :id 
-            RETURNING id, estado, hora_inicio, total, id_mesero, id_cliente;
+            RETURNING id, estado, hora_inicio, total, id_mesero, id_cliente, propina, domicilio, tipo, pago_efectivo, pago_tarjeta, pago_transfe;
         """
         
         try:
@@ -117,7 +153,7 @@ class MesaService:
             logger.error(f"Error crítico al cambiar el estado de la mesa: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
         
-    async def aplicar_mesero_a_mesa(self, target_mesa_id: int, id_mesero: int) -> dict:
+    async def aplicar_mesero_a_mesa(self, target_mesa_id: int, id_mesero: UUID) -> dict:
         logger.info(f"Intentando asignar mesero ID: {id_mesero} a la mesa ID: {target_mesa_id}")
 
         # Verificar que la mesa objetivo realmente exista en PostgreSQL
@@ -125,6 +161,13 @@ class MesaService:
         if not check.first():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La mesa a asignar mesero no existe.")
 
+        # Verificar que el mesero realmente exista en PostgreSQL
+        check_mesero = await self.db.execute(text("SELECT id, role_id FROM users WHERE id = :id;"), {"id": id_mesero})
+        mesero = check_mesero.first()
+        if not mesero:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El mesero especificado no existe.")
+        if mesero.role_id != 3:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El ID proporcionado no corresponde a un mesero.")
         query = text("UPDATE mesa SET id_mesero = :id_mesero WHERE id = :id RETURNING id, id_mesero;")
         
         try:
@@ -136,13 +179,21 @@ class MesaService:
             logger.error(f"Error crítico al asignar mesero a la mesa: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
         
-    async def aplicar_cliente_a_mesa(self, target_mesa_id: int, id_cliente: int) -> dict:
+    async def aplicar_cliente_a_mesa(self, target_mesa_id: int, id_cliente: UUID) -> dict:
         logger.info(f"Intentando asignar cliente ID: {id_cliente} a la mesa ID: {target_mesa_id}")
 
         # Verificar que la mesa objetivo realmente exista en PostgreSQL
         check = await self.db.execute(text("SELECT id FROM mesa WHERE id = :id;"), {"id": target_mesa_id})
         if not check.first():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La mesa a asignar cliente no existe.")
+
+        # Verificar que el cliente realmente exista en PostgreSQL
+        check_cliente = await self.db.execute(text("SELECT id, role_id FROM users WHERE id = :id;"), {"id": id_cliente})
+        cliente = check_cliente.first()
+        if not cliente:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El cliente especificado no existe.")
+        if cliente.role_id != 5:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El ID proporcionado no corresponde a un cliente.")
 
         query = text("UPDATE mesa SET id_cliente = :id_cliente WHERE id = :id RETURNING id, id_cliente;")
         

@@ -11,6 +11,9 @@ from modules.productos.productos_router import router as productos_router
 from modules.cajas.cajas_router import router as cajas_router
 from modules.mesa.mesa_router import router as mesa_router
 from modules.mesa_consumo.mesa_consumo_router import router as mesa_consumo_router
+from modules.proveedores.proveedores_router import router as prooveedores_router
+from modules.empresa.empresa_router import router as empresa_router
+from modules.movimientos.movimientos_router import router as movimientos_router
 from core.logger import logger
 
 @asynccontextmanager
@@ -38,7 +41,9 @@ app.include_router(productos_router)  # Incluye el router de productos
 app.include_router(cajas_router)  # Incluye el router de cajas
 app.include_router(mesa_router)  # Incluye el router de mesas
 app.include_router(mesa_consumo_router)  # Incluye el router de consumo de mesas
-
+app.include_router(prooveedores_router)  # Incluye el router de proveedores
+app.include_router(empresa_router)  # Incluye el router de empresas
+app.include_router(movimientos_router)  # Incluye el router de movimientos
 # ==============================
 # FRONTEND
 # ==============================

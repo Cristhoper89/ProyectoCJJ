@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
 from core.security import get_current_user  # Nueva importación
 
-from modules.mesa_consumo.mesa_consumo_schema import MesaResponse, MesaUpdate, MesaCreate
+from modules.mesa_consumo.mesa_consumo_schema import MesaResponse, MesaUpdate, MesaCreate, PreparadoUpdate
 from modules.mesa_consumo.mesa_consumo_service import MesaCService
 
 router = APIRouter(prefix="/mesasC", tags=["MesasC"])
@@ -46,3 +46,19 @@ async def update_existing_mesaC(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MesaCService(db)
     return await service.update_mesaC(mesa_id, mesa_data, current_user)
+
+@router.patch("/{mesa_id}/preparado", response_model=MesaResponse, status_code=status.HTTP_200_OK)
+async def update_preparado_status(
+    mesa_id: int, 
+    preparado_data: PreparadoUpdate, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Endpoint Protegido por Token y RBAC:
+    - Cocina puede marcar productos como preparados.
+    """
+    if current_user["role_name"] not in ["Cocina"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
+    service = MesaCService(db)
+    return await service.cambiar_estado_preparado(mesa_id, preparado_data.preparado)

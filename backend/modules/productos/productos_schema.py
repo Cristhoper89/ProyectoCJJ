@@ -7,7 +7,6 @@ class ProductoBase(BaseModel):
     cantidad: Optional[int] = Field(None, gt=0)
     precio: Optional[float] = Field(None, gt=0)
     id_categoria: Optional[int] = Field(None, gt=0)
-    preparacion: Optional[bool] = Field(False)
     estado: Optional[bool] = Field(True)
 
 class ProductoCreate(ProductoBase):
