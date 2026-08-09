@@ -724,7 +724,7 @@ d.  Configurar las variables de entorno.
     archivo .env de su proyecto. Cada variable debe crearse con su respectivo nombre y
     valor para garantizar el correcto funcionamiento de la aplicación.
 
-    
+
 uvicorn main:app --reload
 
 
