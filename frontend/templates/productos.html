@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Productos</title>
+
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/productos.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+
+    <main class="productos-page">
+
+        <!-- ====================================================== -->
+        <!-- ENCABEZADO -->
+        <!-- ====================================================== -->
+
+        <header class="productos-header">
+
+            <div>
+                <h1>Productos</h1>
+                <p>Administre los productos registrados en el sistema.</p>
+            </div>
+
+            <button class="btn-primary" id="btnNuevoProducto">
+                <i data-lucide="plus"></i>
+                Registrar producto
+            </button>
+
+        </header>
+
+
+        <!-- ====================================================== -->
+        <!-- BUSCADOR -->
+        <!-- ====================================================== -->
+
+        <section class="productos-tools">
+
+            <div class="search-box">
+
+                <i data-lucide="search"></i>
+
+                <input
+                    type="text"
+                    id="buscarProducto"
+                    placeholder="Buscar producto..."
+                >
+
+            </div>
+
+        </section>
+
+
+        <!-- ====================================================== -->
+        <!-- TABLA -->
+        <!-- ====================================================== -->
+
+        <section class="productos-card">
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>ID</th>
+                            <th>Producto</th>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Precio</th>
+                            <th>Categoría</th>
+                            <th>Preparación</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="productosTable">
+
+                        <tr>
+                            <td colspan="9" class="loading">
+                                Cargando productos...
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- ====================================================== -->
+    <!-- MODAL REGISTRAR / EDITAR -->
+    <!-- ====================================================== -->
+
+    <div class="modal-overlay" id="productoModal">
+
+        <div class="modal">
+
+            <div class="modal-header">
+
+                <div>
+                    <h2 id="modalTitle">Registrar producto</h2>
+                    <p>Complete la información del producto.</p>
+                </div>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    id="cerrarModal"
+                >
+                    <i data-lucide="x"></i>
+                </button>
+
+            </div>
+
+
+            <form id="productoForm">
+
+                <input
+                    type="hidden"
+                    id="productoId"
+                >
+
+
+                <!-- NOMBRE -->
+
+                <div class="form-group">
+
+                    <label for="nombre">
+                        Nombre del producto
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre"
+                        placeholder="Ej. Hamburguesa especial"
+                    >
+
+                </div>
+
+
+                <!-- DESCRIPCIÓN -->
+
+                <div class="form-group">
+
+                    <label for="descripcion">
+                        Descripción
+                    </label>
+
+                    <textarea
+                        id="descripcion"
+                        placeholder="Descripción del producto"
+                    ></textarea>
+
+                </div>
+
+
+                <div class="form-row">
+
+                    <!-- CANTIDAD -->
+
+                    <div class="form-group">
+
+                        <label for="cantidad">
+                            Cantidad
+                        </label>
+
+                        <input
+                            type="number"
+                            id="cantidad"
+                            min="1"
+                            placeholder="0"
+                        >
+
+                    </div>
+
+
+                    <!-- PRECIO -->
+
+                    <div class="form-group">
+
+                        <label for="precio">
+                            Precio
+                        </label>
+
+                        <input
+                            type="number"
+                            id="precio"
+                            min="1"
+                            step="0.01"
+                            placeholder="0.00"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- CATEGORÍA -->
+
+                <div class="form-group">
+
+                    <label for="categoria">
+                        Categoría
+                    </label>
+
+                    <select id="categoria">
+
+                        <option value="">
+                            Seleccione una categoría
+                        </option>
+
+                        <option value="1">
+                            Comidas
+                        </option>
+
+                        <option value="2">
+                            Bebidas
+                        </option>
+
+                        <option value="3">
+                            Postres
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- PREPARACIÓN -->
+
+                <div class="switch-container">
+
+                    <div>
+
+                        <strong>Requiere preparación</strong>
+
+                        <span>
+                            Indica si el producto necesita preparación.
+                        </span>
+
+                    </div>
+
+                    <label class="switch">
+
+                        <input
+                            type="checkbox"
+                            id="preparacion"
+                        >
+
+                        <span class="slider"></span>
+
+                    </label>
+
+                </div>
+
+
+                <!-- MENSAJE -->
+
+                <div
+                    id="productoMessage"
+                    class="producto-message"
+                ></div>
+
+
+                <!-- BOTONES -->
+
+                <div class="modal-actions">
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        id="cancelarModal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn-primary"
+                        id="btnGuardar"
+                    >
+                        Guardar producto
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ====================================================== -->
+    <!-- MODAL DESACTIVAR -->
+    <!-- ====================================================== -->
+
+    <div class="modal-overlay" id="desactivarModal">
+
+        <div class="confirm-modal">
+
+            <div class="confirm-icon">
+                <i data-lucide="triangle-alert"></i>
+            </div>
+
+            <h2>Desactivar producto</h2>
+
+            <p>
+                ¿Está seguro de que desea desactivar este producto?
+            </p>
+
+            <div class="confirm-actions">
+
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    id="cancelarDesactivar"
+                >
+                    Cancelar
+                </button>
+
+                <button
+                    type="button"
+                    class="btn-danger"
+                    id="confirmarDesactivar"
+                >
+                    Desactivar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+        lucide.createIcons();
+    </script>
+
+    <script src="../static/js/productos.js"></script>
+
+</body>
+</html>

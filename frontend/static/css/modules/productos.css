@@ -1,0 +1,636 @@
+/* ====================================================== */
+/* PRODUCTOS */
+/* ====================================================== */
+
+body {
+    font-family: "Manrope", sans-serif;
+    background: #1D1A17;
+    color: #F5F5F5;
+}
+
+
+/* ====================================================== */
+/* PÁGINA */
+/* ====================================================== */
+
+.productos-page {
+    padding: 32px;
+    min-height: 100vh;
+}
+
+
+/* ====================================================== */
+/* ENCABEZADO */
+/* ====================================================== */
+
+.productos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.productos-header h1 {
+    margin: 0 0 6px;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.productos-header p {
+    margin: 0;
+    color: #B8B1A8;
+    font-size: 14px;
+}
+
+
+/* ====================================================== */
+/* BOTONES */
+/* ====================================================== */
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+    border: none;
+    border-radius: 8px;
+    padding: 11px 18px;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+}
+
+.btn-primary {
+    background: #D8A85B;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #C28E3F;
+}
+
+.btn-secondary {
+    background: #2D2620;
+    color: #F5F5F5;
+    border: 1px solid #45382E;
+}
+
+.btn-secondary:hover {
+    background: #3A3028;
+}
+
+.btn-danger {
+    background: #E74C3C;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #C0392B;
+}
+
+
+/* ====================================================== */
+/* HERRAMIENTAS */
+/* ====================================================== */
+
+.productos-tools {
+    margin-bottom: 20px;
+}
+
+.search-box {
+    width: 100%;
+    max-width: 400px;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    background: #2D2620;
+    border: 1px solid #4A3D31;
+    border-radius: 8px;
+
+    padding: 0 14px;
+}
+
+.search-box svg {
+    width: 18px;
+    color: #B8B1A8;
+}
+
+.search-box input {
+    width: 100%;
+    border: none;
+    outline: none;
+
+    background: transparent;
+    color: #F5F5F5;
+
+    padding: 12px 0;
+
+    font-family: inherit;
+}
+
+.search-box input::placeholder {
+    color: #9C9287;
+}
+
+
+/* ====================================================== */
+/* TARJETA */
+/* ====================================================== */
+
+.productos-card {
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+
+    box-shadow: 0px 6px 18px rgba(0, 0, 0, .25);
+
+    overflow: hidden;
+}
+
+
+/* ====================================================== */
+/* TABLA */
+/* ====================================================== */
+
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1050px;
+}
+
+thead {
+    background: #2A221C;
+}
+
+th {
+    padding: 16px;
+    text-align: left;
+
+    color: #B8B1A8;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+td {
+    padding: 16px;
+
+    font-size: 13px;
+    color: #F5F5F5;
+
+    border-top: 1px solid #45382E;
+}
+
+tbody tr {
+    transition: 200ms ease-in-out;
+}
+
+tbody tr:hover {
+    background: #382D24;
+}
+
+
+/* ====================================================== */
+/* ESTADOS */
+/* ====================================================== */
+
+.status {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 5px 10px;
+    border-radius: 20px;
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.status.active {
+    background: rgba(46, 204, 113, .12);
+    color: #2ECC71;
+}
+
+.status.inactive {
+    background: rgba(231, 76, 60, .12);
+    color: #E74C3C;
+}
+
+
+/* ====================================================== */
+/* ACCIONES */
+/* ====================================================== */
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-button {
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #45382E;
+    border-radius: 8px;
+
+    background: #2D2620;
+    color: #B8B1A8;
+
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+}
+
+.action-button:hover {
+    color: #D8A85B;
+    border-color: #D8A85B;
+}
+
+.action-button.danger:hover {
+    color: #E74C3C;
+    border-color: #E74C3C;
+}
+
+.action-button svg {
+    width: 16px;
+}
+
+
+/* ====================================================== */
+/* CARGANDO */
+/* ====================================================== */
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #B8B1A8;
+}
+
+
+/* ====================================================== */
+/* MODAL */
+/* ====================================================== */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, .65);
+
+    z-index: 1000;
+
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+
+/* ====================================================== */
+/* MODAL FORMULARIO */
+/* ====================================================== */
+
+.modal {
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+
+    overflow-y: auto;
+
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+
+    padding: 28px;
+
+    box-shadow: 0px 10px 30px rgba(0, 0, 0, .4);
+}
+
+
+/* ====================================================== */
+/* HEADER MODAL */
+/* ====================================================== */
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    margin-bottom: 24px;
+}
+
+.modal-header h2 {
+    margin: 0 0 5px;
+    font-size: 21px;
+}
+
+.modal-header p {
+    margin: 0;
+    color: #B8B1A8;
+    font-size: 13px;
+}
+
+.modal-close {
+    border: none;
+    background: transparent;
+
+    color: #B8B1A8;
+
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: #F5F5F5;
+}
+
+
+/* ====================================================== */
+/* FORMULARIO */
+/* ====================================================== */
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    box-sizing: border-box;
+
+    background: #2D2620;
+    border: 1px solid #4A3D31;
+    border-radius: 8px;
+
+    color: #F5F5F5;
+
+    padding: 11px 12px;
+
+    font-family: inherit;
+    font-size: 13px;
+
+    outline: none;
+    transition: 200ms ease-in-out;
+}
+
+.form-group textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    border-color: #D8A85B;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: #9C9287;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+
+/* ====================================================== */
+/* SWITCH */
+/* ====================================================== */
+
+.switch-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    background: #2D2620;
+    border: 1px solid #45382E;
+    border-radius: 10px;
+
+    padding: 14px;
+    margin-bottom: 18px;
+}
+
+.switch-container strong {
+    display: block;
+    font-size: 13px;
+}
+
+.switch-container span {
+    display: block;
+    margin-top: 4px;
+
+    color: #B8B1A8;
+    font-size: 11px;
+}
+
+.switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    inset: 0;
+
+    background: #45382E;
+    border-radius: 20px;
+
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+}
+
+.slider::before {
+    content: "";
+
+    position: absolute;
+
+    width: 18px;
+    height: 18px;
+
+    left: 3px;
+    top: 3px;
+
+    background: #B8B1A8;
+    border-radius: 50%;
+
+    transition: 200ms ease-in-out;
+}
+
+.switch input:checked + .slider {
+    background: #D8A85B;
+}
+
+.switch input:checked + .slider::before {
+    transform: translateX(20px);
+    background: white;
+}
+
+
+/* ====================================================== */
+/* MENSAJE */
+/* ====================================================== */
+
+.producto-message {
+    display: none;
+
+    padding: 10px 12px;
+    margin-bottom: 15px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+}
+
+.producto-message.show {
+    display: block;
+}
+
+.producto-message.error {
+    background: rgba(231, 76, 60, .12);
+    color: #E74C3C;
+}
+
+.producto-message.success {
+    background: rgba(46, 204, 113, .12);
+    color: #2ECC71;
+}
+
+
+/* ====================================================== */
+/* BOTONES MODAL */
+/* ====================================================== */
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+
+    margin-top: 24px;
+}
+
+
+/* ====================================================== */
+/* MODAL CONFIRMACIÓN */
+/* ====================================================== */
+
+.confirm-modal {
+    width: 100%;
+    max-width: 400px;
+
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+
+    padding: 28px;
+
+    text-align: center;
+}
+
+.confirm-icon {
+    width: 50px;
+    height: 50px;
+
+    margin: 0 auto 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(231, 76, 60, .12);
+    color: #E74C3C;
+
+    border-radius: 50%;
+}
+
+.confirm-icon svg {
+    width: 24px;
+}
+
+.confirm-modal h2 {
+    margin: 0 0 10px;
+    font-size: 20px;
+}
+
+.confirm-modal p {
+    margin: 0;
+
+    color: #B8B1A8;
+    font-size: 13px;
+}
+
+.confirm-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+
+    margin-top: 24px;
+}
+
+
+/* ====================================================== */
+/* RESPONSIVE */
+/* ====================================================== */
+
+@media (max-width: 700px) {
+
+    .productos-page {
+        padding: 20px;
+    }
+
+    .productos-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 18px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .modal {
+        padding: 20px;
+    }
+
+}
