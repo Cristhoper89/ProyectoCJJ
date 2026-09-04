@@ -73,3 +73,7 @@ async def desbloquear():
 async def recuperar():
 
     return FileResponse("../frontend/templates/olvido_contrasena.html")
+
+@app.get("/productos")
+async def ver_productos():
+    return FileResponse("../frontend/templates/productos.html")
