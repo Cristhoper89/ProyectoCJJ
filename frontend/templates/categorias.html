@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Categorías</title>
+
+<link rel="stylesheet" href="../static/css/base/variables.css">
+<link rel="stylesheet" href="../static/css/base/global.css">
+<link rel="stylesheet" href="../static/css/modules/categorias.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/lucide@latest"></script>
+
+</head>
+
+<body>
+
+<main class="categorias-page">
+
+    <!-- ENCABEZADO -->
+
+    <header class="categorias-header">
+
+        <div>
+
+            <h1>Categorías</h1>
+
+            <p>
+                Administre las categorías registradas en el sistema.
+            </p>
+
+        </div>
+
+        <button
+            class="btn-primary"
+            id="btnNuevaCategoria"
+        >
+
+            <i data-lucide="plus"></i>
+
+            Registrar categoría
+
+        </button>
+
+    </header>
+
+
+    <!-- BUSCADOR -->
+
+    <section class="categorias-tools">
+
+        <div class="search-box">
+
+            <i data-lucide="search"></i>
+
+            <input
+                type="text"
+                id="buscarCategoria"
+                placeholder="Buscar categoría..."
+            >
+
+        </div>
+
+    </section>
+
+
+    <!-- TABLA -->
+
+    <section class="categorias-card">
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>ID</th>
+
+                        <th>Categoría</th>
+
+                        <th>Acciones</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="categoriasTable">
+
+                    <tr>
+
+                        <td
+                            colspan="3"
+                            class="loading"
+                        >
+                            Cargando categorías...
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- MODAL REGISTRAR CATEGORÍA -->
+
+<div
+    class="modal-overlay"
+    id="categoriaModal"
+>
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <div>
+
+                <h2>
+                    Registrar categoría
+                </h2>
+
+                <p>
+                    Complete la información de la categoría.
+                </p>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="cerrarModal"
+            >
+
+                <i data-lucide="x"></i>
+
+            </button>
+
+        </div>
+
+
+        <form id="categoriaForm">
+
+            <div class="form-group">
+
+                <label for="nombreCategoria">
+                    Nombre de la categoría
+                </label>
+
+                <input
+                    type="text"
+                    id="nombreCategoria"
+                    placeholder="Ej. Comidas"
+                    minlength="3"
+                    maxlength="50"
+                    required
+                >
+
+            </div>
+
+
+            <div
+                id="categoriaMessage"
+                class="categoria-message"
+            ></div>
+
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    id="cancelarModal"
+                >
+                    Cancelar
+                </button>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                    id="btnGuardarCategoria"
+                >
+                    Guardar categoría
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<script src="../static/js/categorias.js"></script>
+
+<script>
+
+    lucide.createIcons();
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,391 @@
+/* ====================================================== */
+/* CATEGORÍAS */
+/* ====================================================== */
+
+body {
+
+    font-family: "Manrope", sans-serif;
+    background: #1D1A17;
+    color: #F5F5F5;
+}
+
+/* ====================================================== */
+/* PÁGINA */
+/* ====================================================== */
+
+.categorias-page {
+
+    padding: 32px;
+    min-height: 100vh;
+}
+
+/* ====================================================== */
+/* ENCABEZADO */
+/* ====================================================== */
+
+.categorias-header {
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.categorias-header h1 {
+
+    margin: 0 0 6px;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.categorias-header p {
+    margin: 0;
+    color: #B8B1A8;
+    font-size: 14px;
+}
+
+/* ====================================================== */
+/* BOTONES */
+/* ====================================================== */
+
+.btn-primary,
+.btn-secondary {
+
+    border: none;
+    border-radius: 8px;
+    padding: 11px 18px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+}
+
+.btn-primary {
+
+    background: #D8A85B;
+    color: white;
+}
+
+.btn-primary:hover {
+
+    background: #C28E3F;
+}
+
+.btn-primary:disabled {
+
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+
+    background: #2D2620;
+    color: #F5F5F5;
+    border: 1px solid #45382E;
+}
+
+.btn-secondary:hover {
+
+    background: #3A3028;
+}
+
+/* ====================================================== */
+/* HERRAMIENTAS */
+/* ====================================================== */
+
+.categorias-tools {
+
+    margin-bottom: 20px;
+}
+
+.search-box {
+
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #2D2620;
+    border: 1px solid #4A3D31;
+    border-radius: 8px;
+    padding: 0 14px;
+}
+
+.search-box svg {
+
+    width: 18px;
+    color: #B8B1A8;
+}
+
+.search-box input {
+
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #F5F5F5;
+    padding: 12px 0;
+    font-family: inherit;
+}
+
+.search-box input::placeholder {
+
+    color: #9C9287;
+}
+
+/* ====================================================== */
+/* TARJETA */
+/* ====================================================== */
+
+.categorias-card {
+
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+    box-shadow: 0px 6px 18px rgba(0, 0, 0, .25);
+    overflow: hidden;
+}
+
+/* ====================================================== */
+/* TABLA */
+/* ====================================================== */
+
+.table-container {
+
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead {
+
+    background: #2A221C;
+}
+
+th {
+
+    padding: 16px;
+    text-align: left;
+    color: #B8B1A8;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+td {
+
+    padding: 16px;
+    font-size: 13px;
+    color: #F5F5F5;
+    border-top: 1px solid #45382E;
+}
+
+tbody tr {
+
+    transition: 200ms ease-in-out;
+}
+
+tbody tr:hover {
+    background: #382D24;
+}
+
+/* ====================================================== */
+/* ACCIONES */
+/* ====================================================== */
+
+.actions {
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-button {
+
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #45382E;
+    border-radius: 8px;
+    background: #2D2620;
+    color: #B8B1A8;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+}
+
+.action-button:hover {
+
+    color: #D8A85B;
+    border-color: #D8A85B;
+}
+
+.action-button.danger:hover {
+
+    color: #E74C3C;
+    border-color: #E74C3C;
+}
+
+.action-button svg {
+
+    width: 16px;
+}
+
+/* ====================================================== */
+/* CARGANDO */
+/* ====================================================== */
+
+.loading {
+
+    text-align: center;
+    padding: 40px;
+    color: #B8B1A8;
+}
+
+/* ====================================================== */
+/* MODAL */
+/* ====================================================== */
+
+.modal-overlay {
+
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .65);
+    z-index: 1000;
+}
+
+.modal {
+
+    width: 100%;
+    max-width: 500px;
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+    box-shadow: 0px 12px 35px rgba(0, 0, 0, .4);
+    padding: 24px;
+}
+
+.modal-header {
+
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.modal-header h2 {
+
+    margin: 0 0 6px;
+    font-size: 20px;
+}
+
+.modal-header p {
+
+    margin: 0;
+    color: #B8B1A8;
+    font-size: 13px;
+}
+
+.modal-close {
+
+    border: none;
+    background: transparent;
+    color: #B8B1A8;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+
+    color: #F5F5F5;
+}
+
+.modal-close svg {
+
+    width: 20px;
+}
+
+/* ====================================================== */
+/* FORMULARIO */
+/* ====================================================== */
+
+.form-group {
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+
+    font-size: 13px;
+    font-weight: 600;
+    color: #F5F5F5;
+}
+
+.form-group input {
+
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #4A3D31;
+    background: #2D2620;
+    color: #F5F5F5;
+    outline: none;
+    font-family: inherit;
+}
+
+.form-group input:focus {
+
+    border-color: #D8A85B;
+}
+
+.form-group input::placeholder {
+
+    color: #9C9287;
+}
+
+/* ====================================================== */
+/* MENSAJES */
+/* ====================================================== */
+
+.categoria-message {
+    min-height: 20px;
+    margin-top: 14px;
+    font-size: 13px;
+}
+
+.categoria-message.error {
+
+    color: #E74C3C;
+}
+
+.categoria-message.success {
+
+    color: #2ECC71;
+}
+
+/* ====================================================== */
+/* ACCIONES DEL MODAL */
+/* ====================================================== */
+
+.modal-actions {
+
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+}

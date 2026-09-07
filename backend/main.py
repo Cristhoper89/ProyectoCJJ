@@ -77,3 +77,7 @@ async def recuperar():
 @app.get("/productos")
 async def ver_productos():
     return FileResponse("../frontend/templates/productos.html")
+#johan
+@app.get("/categorias")
+async def ver_categorias():
+    return FileResponse("../frontend/templates/categorias.html")

@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
 from core.security import get_current_user  # Nueva importación
-from modules.categorias.categorias_schema import CategoriaCreate, CategoriaResponse
+from modules.categorias.categorias_schema import (
+    CategoriaCreate,
+    CategoriaResponse,
+    CategoriaUpdate
+)
 from modules.categorias.categorias_service import CategoriaService
 
 router = APIRouter(prefix="/categorias", tags=["Categorías"])
@@ -37,9 +41,25 @@ async def update_existing_categoria(
     db: AsyncSession = Depends(get_db), 
     current_user: dict = Depends(get_current_user)
 ):
-    """
-    Endpoint Protegido por Token y RBAC:
-    - Admin y cajero: Modifica a cualquier categoría sin restricciones.
-    """
     service = CategoriaService(db)
     return await service.update_categoria(categoria_id, categoria_data)
+
+@router.delete(
+    "/{categoria_id}",
+    response_model=CategoriaResponse,
+    status_code=status.HTTP_200_OK
+)
+async def deactivate_categoria(
+    categoria_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user["role_name"] != "Administrador" and current_user["role_name"] != "cajero":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado. Rol insuficiente."
+        )
+
+    service = CategoriaService(db)
+
+    return await service.desactivar_categoria(categoria_id)
