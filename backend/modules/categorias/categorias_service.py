@@ -103,7 +103,7 @@ class CategoriaService:
                 UPDATE categorias
                 SET {', '.join(update_fields)}
                 WHERE id = :id
-                RETURNING id, nombre, estado;
+                RETURNING id, nombre, COALESCE(estado, TRUE) AS estado;
             """
         
         try:
