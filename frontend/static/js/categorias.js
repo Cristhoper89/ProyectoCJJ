@@ -57,6 +57,13 @@ return {
 // ======================================================
 
 function abrirModal(categoria = null) {
+
+    // Evita que un evento de click sea interpretado como una categoría
+    if (categoria instanceof Event) {
+        categoria = null;
+    }
+
+    categoriaForm.reset();
     categoriaForm.reset();
     categoriaMessage.textContent = "";
     categoriaMessage.className = "categoria-message";
@@ -497,8 +504,10 @@ categoriaMessage.className =
 // ======================================================
 
 btnNuevaCategoria.addEventListener(
-"click",
-abrirModal
+    "click",
+    () => {
+        abrirModal();
+    }
 );
 
 cerrarModal.addEventListener(
