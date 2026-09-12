@@ -60,10 +60,10 @@ export default function LoginScreen() {
       setLoading(false);
 
       if (response.ok) {
-        // En React Native guardamos en AsyncStorage o memoria local, ejemplo con global/state o router param
         setMessage({ text: 'Bienvenido al sistema.', type: 'success' });
         setTimeout(() => {
-          router.replace('/dashboard' as any); // Ajusta la ruta a tu panel principal
+          // Redirige a mesa.tsx ubicado en la estructura de rutas de Expo Router
+          router.replace('/mesa' as any); 
         }, 1000);
         return;
       }
@@ -166,11 +166,11 @@ export default function LoginScreen() {
 
           {/* Opciones adicionales */}
           <View style={styles.optionsContainer}>
-            <TouchableOpacity onPress={() => router.push('/olvido-contrasena')}>
-  <Text style={styles.linkText}>¿Olvidaste tu contraseña?</Text>
-</TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/olvido-contrasena' as any)}>
+              <Text style={styles.linkText}>¿Olvidaste tu contraseña?</Text>
+            </TouchableOpacity>
             <View style={styles.separator} />
-            <TouchableOpacity onPress={() => router.push('/desbloquear-cuenta')}>
+            <TouchableOpacity onPress={() => router.push('/desbloquear-cuenta' as any)}>
               <Text style={styles.linkText}>¿Cuenta bloqueada?</Text>
             </TouchableOpacity>
           </View>
@@ -304,10 +304,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  optionLink: {
-    color: '#B8B1A8',
-    fontSize: 13,
-  },
   separator: {
     width: 1,
     height: 14,
@@ -318,5 +314,4 @@ const styles = StyleSheet.create({
     color: '#D8A85B',
     fontSize: 13,
   },
-  
 });

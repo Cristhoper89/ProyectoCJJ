@@ -10,7 +10,7 @@ class MesaCService:
 
     async def get_all_mesasC(self) -> list[dict]:
         logger.info("SQL Nativo: Consultando todas las mesas.")
-        query = text("SELECT id, id_producto, id_mov, id_mesa, cantidad, precio_unitario, subtotal FROM mesa_consumo ORDER BY id ASC;")
+        query = text("SELECT id, id_producto, id_mov, id_mesa, cantidad, precio_unitario, subtotal, preparado, hora FROM mesa_consumo ORDER BY id ASC;")
         result = await self.db.execute(query)
         return [dict(row) for row in result.mappings().all()]
 
@@ -63,9 +63,6 @@ class MesaCService:
         if not check.first():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La mesa a modificar no existe.")
 
-        if current_user["role_name"] == "Cliente" and mesa_update.id_cliente != current_user["id"]:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. No puedes modificar la mesa de otro cliente.")
-
         # Construcción dinámica de la sentencia UPDATE con SQL Puro
         update_fields = []
         params = {"id": target_mesa_id}
@@ -94,6 +91,14 @@ class MesaCService:
             update_fields.append("subtotal = :subtotal")
             params["subtotal"] = mesa_update.subtotal
 
+        if mesa_update.preparado is not None:
+            update_fields.append("preparado = :preparado")
+            params["preparado"] = mesa_update.preparado
+
+        if mesa_update.hora is not None:
+            update_fields.append("hora = :hora")
+            params["hora"] = mesa_update.hora
+
         if not update_fields:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se enviaron datos para actualizar.")
 
@@ -102,7 +107,7 @@ class MesaCService:
             UPDATE mesa_consumo
             SET {', '.join(update_fields)} 
             WHERE id = :id 
-            RETURNING id, id_producto, id_mov, id_mesa, cantidad, precio_unitario, subtotal;
+            RETURNING id, id_producto, id_mov, id_mesa, cantidad, precio_unitario, subtotal, preparado, hora;
         """
         
         try:
@@ -126,7 +131,7 @@ class MesaCService:
             UPDATE mesa_consumo
             SET preparado = :preparado
             WHERE id = :id
-            RETURNING id, id_producto, id_mov, id_mesa, cantidad, precio_unitario, subtotal, preparado;
+            RETURNING id, id_producto, id_mov, id_mesa, cantidad, precio_unitario, subtotal, preparado, hora;
         """)
         
         try:

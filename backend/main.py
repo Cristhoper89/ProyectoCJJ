@@ -15,6 +15,9 @@ from modules.mesa_consumo.mesa_consumo_router import router as mesa_consumo_rout
 from modules.proveedores.proveedores_router import router as prooveedores_router
 from modules.empresa.empresa_router import router as empresa_router
 from modules.movimientos.movimientos_router import router as movimientos_router
+from modules.ingredientes.ingredientes_router import router as ingredientes_router
+from modules.producto_ingredientes.producto_ingredientes_router import router as producto_ingredientes_router
+from modules.mesa_consumo_ingrediente.mesa_consumo_ingrediente_router import router as mesa_consumo_ingrediente_router
 from core.logger import logger
 
 @asynccontextmanager
@@ -46,6 +49,9 @@ app.include_router(prooveedores_router)  # Incluye el router de proveedores
 app.include_router(empresa_router)  # Incluye el router de empresas
 app.include_router(movimientos_router)  # Incluye el router de movimientos
 app.include_router(metodo_pago_router)  # Incluye el router de métodos de pago
+app.include_router(ingredientes_router)
+app.include_router(producto_ingredientes_router)
+app.include_router(mesa_consumo_ingrediente_router)
 
 # ==============================
 # FRONTEND
@@ -56,7 +62,6 @@ app.mount(
     StaticFiles(directory="../frontend/static"),
     name="static"
 )
-
 
 @app.get("/")
 async def login():

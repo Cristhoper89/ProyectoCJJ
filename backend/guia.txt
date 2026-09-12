@@ -726,5 +726,9 @@ d.  Configurar las variables de entorno.
 
 
 uvicorn main:app --reload
+venv\Scripts\Activate.ps1
 
+fastapi cloud
+https://fastapicloud.com/
 
+https://www.youtube.com/watch?v=nMCudUDuzH0&t=246s

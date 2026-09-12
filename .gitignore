@@ -1,14 +1,24 @@
 .env
 .env.local
-.env.*.localgit rm --cached .env
+.env.*.local
 
-# Archivos compilados de Python
+# Entornos virtuales y cachés de Python
+backend/env/
+venv/
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Opcional
+# Cachés de herramientas
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
+
+# Dependencias y artefactos de JavaScript/Expo
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/jdk17/
+*.log
