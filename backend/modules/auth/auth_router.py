@@ -20,12 +20,27 @@ from core.mailer import (
 )
 from core.security import (
     hash_password,
+    get_current_user,
 )
 
 from modules.auth.auth_service import AuthService
 
 # Crear las rutas del módulo de autenticación
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
+
+
+# Obtener el perfil del usuario autenticado
+@router.get("/me", status_code=status.HTTP_200_OK)
+async def read_current_user(
+    current_user: dict = Depends(get_current_user)
+):
+    return {
+        "id": current_user["id"],
+        "username": current_user["username"],
+        "email": current_user["email"],
+        "role_name": current_user["role_name"],
+        "is_active": current_user["is_active"]
+    }
 
 
 # Iniciar sesión
