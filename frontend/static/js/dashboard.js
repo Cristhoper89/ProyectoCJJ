@@ -9,18 +9,18 @@ let toastTimeout;
 
 const modules = {
 	admin: [
-		["Perfil", "user-round", "#perfil"], ["Caja", "wallet-cards", "../templates/caja.html"],
-		["Categorías", "tags", "../templates/categorias.html"], ["Mesa", "layout-grid", "../templates/mesas.html"],
-		["Movimientos", "arrow-left-right", null], ["Productos", "package", "../templates/productos.html"],
-		["Proveedores", "truck", null], ["Empleados", "users-round", "../templates/usuarios.html"],
-		["Clientes", "contact-round", null], ["Estadística", "chart-no-axes-combined", "../templates/reportes.html"],
-		["Pedidos", "clipboard-list", "../templates/pedidos.html"], ["Carta", "book-open", null],
-		["Configuración", "settings-2", "../templates/configuracion.html"]
+		["Perfil", "user-round", "#perfil"], ["Caja", "wallet-cards", "/caja"],
+		["Categorías", "tags", "/categorias"], ["Mesa", "layout-grid", "/mesas"],
+		["Movimientos", "arrow-left-right", null], ["Productos", "package", "/productos"],
+		["Proveedores", "truck", null], ["Empleados", "users-round", "/usuarios"],
+		["Clientes", "contact-round", null], ["Estadística", "chart-no-axes-combined", "/reportes"],
+		["Pedidos", "clipboard-list", "/pedidos"], ["Carta", "book-open", null],
+		["Configuración", "settings-2", "/configuracion"]
 	],
 	cajero: [
-		["Perfil", "user-round", "#perfil"], ["Mesa", "layout-grid", "../templates/mesas.html"],
-		["Movimientos", "arrow-left-right", null], ["Caja", "wallet-cards", "../templates/caja.html"],
-		["Categorías", "tags", "../templates/categorias.html"], ["Productos", "package", "../templates/productos.html"]
+		["Perfil", "user-round", "#perfil"], ["Mesa", "layout-grid", "/mesas"],
+		["Movimientos", "arrow-left-right", null], ["Caja", "wallet-cards", "/caja"],
+		["Categorías", "tags", "/categorias"], ["Productos", "package", "/productos"]
 	]
 };
 
@@ -39,14 +39,14 @@ function setUser(user){
 	document.getElementById("rolePill").textContent = user.role_name;
 	document.getElementById("accessCount").textContent = availableModules.length;
 
-	sideNav.innerHTML = availableModules.slice(0, 7).map(([name, icon, href], index) => `
-		<a class="nav-item ${index === 0 ? "active" : ""} ${href ? "" : "disabled"}" href="${href || "#"}" ${href ? "" : "aria-disabled=\"true\""}>
+	sideNav.innerHTML = availableModules.map(([name, icon, href], index) => `
+		<a class="nav-item ${index === 0 ? "active" : ""} ${href ? "" : "is-coming-soon"}" href="${href || "#"}" ${href ? "" : "data-coming-soon=\"true\""}>
 			<i data-lucide="${icon}"></i><span>${name}</span>${href ? "" : "<small>Próximamente</small>"}
 		</a>
 	`).join("");
 
 	moduleGrid.innerHTML = availableModules.map(([name, icon, href]) => `
-		<a class="module-card ${href ? "" : "is-disabled"}" href="${href || "#"}" ${href ? "" : "aria-disabled=\"true\""}>
+		<a class="module-card ${href ? "" : "is-coming-soon"}" href="${href || "#"}" ${href ? "" : "data-coming-soon=\"true\""}>
 			<div class="module-card-icon"><i data-lucide="${icon}"></i></div>
 			<div class="module-card-copy"><h3>${name}</h3><p>${href ? "Abrir módulo" : "Disponible próximamente"}</p></div>
 			<i class="module-arrow" data-lucide="${href ? "arrow-up-right" : "lock-keyhole"}"></i>
@@ -56,23 +56,23 @@ function setUser(user){
 }
 
 async function loadDashboard(){
-	if(!token){ window.location.href = "../templates/login.html"; return; }
+	if(!token){ window.location.href = "/"; return; }
 	try{
 		const response = await fetch(`${API_URL}/auth/me`, {headers: getHeaders()});
 		if(!response.ok) throw new Error("Sesión inválida");
 		setUser(await response.json());
 	}catch(error){
 		localStorage.removeItem("access_token");
-		window.location.href = "../templates/login.html";
+		window.location.href = "/";
 	}
 }
 
 document.getElementById("currentDate").textContent = new Intl.DateTimeFormat("es-CO", {day: "numeric", month: "long", year: "numeric"}).format(new Date());
-document.getElementById("logoutButton").addEventListener("click", () => { localStorage.clear(); window.location.href = "../templates/login.html"; });
+document.getElementById("logoutButton").addEventListener("click", () => { localStorage.clear(); window.location.href = "/"; });
 document.getElementById("menuButton").addEventListener("click", () => { sidebar.classList.add("open"); mobileBackdrop.classList.add("visible"); });
 mobileBackdrop.addEventListener("click", () => { sidebar.classList.remove("open"); mobileBackdrop.classList.remove("visible"); });
 document.addEventListener("click", event => {
-	const unavailableModule = event.target.closest("[aria-disabled='true']");
+	const unavailableModule = event.target.closest("[data-coming-soon='true']");
 	if(!unavailableModule) return;
 	event.preventDefault();
 	dashboardToast.classList.add("visible");

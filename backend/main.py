@@ -79,6 +79,11 @@ async def recuperar():
 
     return FileResponse("../frontend/templates/olvido_contrasena.html")
 
+@app.get("/templates/dashboard")
+@app.get("/dashboard")
+async def ver_dashboard():
+    return FileResponse("../frontend/templates/dashboard.html")
+
 @app.get("/productos")
 async def ver_productos():
     return FileResponse("../frontend/templates/productos.html")
@@ -86,3 +91,27 @@ async def ver_productos():
 @app.get("/categorias")
 async def ver_categorias():
     return FileResponse("../frontend/templates/categorias.html")
+
+@app.get("/caja")
+async def ver_caja():
+    return FileResponse("../frontend/templates/caja.html")
+
+@app.get("/mesas")
+async def ver_mesas():
+    return FileResponse("../frontend/templates/mesas.html")
+
+@app.get("/usuarios")
+async def ver_usuarios():
+    return FileResponse("../frontend/templates/usuarios.html")
+
+@app.get("/reportes")
+async def ver_reportes():
+    return FileResponse("../frontend/templates/reportes.html")
+
+@app.get("/pedidos")
+async def ver_pedidos():
+    return FileResponse("../frontend/templates/pedidos.html")
+
+@app.get("/configuracion")
+async def ver_configuracion():
+    return FileResponse("../frontend/templates/configuracion.html")
