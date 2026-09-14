@@ -13,7 +13,7 @@ import {
 import { Mail, Key, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
-const API_URL = "http://192.168.101.10:8000"; // Reemplaza con tu IP local de FastAPI
+const API_URL = "https://backend-6ad6b6fa.fastapicloud.dev";
 
 export default function OlvidoContrasenaScreen() {
   const router = useRouter();

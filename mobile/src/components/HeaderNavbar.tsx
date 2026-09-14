@@ -5,6 +5,8 @@ import {
   Menu, X, User, DollarSign, Layers, Home, ArrowLeftRight, 
   Package, Truck, Users, UserCheck, BarChart2, ShoppingBag, BookOpen, Settings 
 } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { clearAccessToken } from '../constants/api';
 
 const menuItems = [
   { label: 'Perfil', icon: User },
@@ -23,6 +25,7 @@ const menuItems = [
 ];
 
 export default function HeaderNavbar() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState('');
 
@@ -49,6 +52,12 @@ export default function HeaderNavbar() {
         <Text style={styles.menuText}>{item.label}</Text>
       </TouchableOpacity>
     );
+  };
+
+  const handleLogout = async () => {
+    await clearAccessToken();
+    setIsOpen(false);
+    router.replace('/');
   };
 
   return (
@@ -89,6 +98,9 @@ export default function HeaderNavbar() {
             renderItem={renderItem}
             contentContainerStyle={styles.listContainer}
           />
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Cerrar sesión</Text>
+          </TouchableOpacity>
         </SafeAreaView>
       </Modal>
     </View>
@@ -181,5 +193,18 @@ const styles = StyleSheet.create({
     color: '#F5F5F5',
     fontSize: 16,
     fontWeight: '600',
+  },
+  logoutButton: {
+    margin: 20,
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#B86B57',
+    alignItems: 'center',
+  },
+  logoutText: {
+    color: '#E7A28C',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

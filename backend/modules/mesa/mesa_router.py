@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
 from core.security import get_current_user  # Nueva importación
 
-from modules.mesa.mesa_schema import MesaResponse, MesaUpdate, MesaCreate
+from modules.mesa.mesa_schema import MesaResponse, MesaUpdate, MesaCreate, MesaFinalize
 from modules.mesa.mesa_service import MesaService
 
 router = APIRouter(prefix="/mesas", tags=["Mesas"])
@@ -44,7 +44,7 @@ async def update_existing_mesa(
     Endpoint Protegido por Token y RBAC:
     - Admin y cajero: Modifica a cualquier mesa sin restricciones.
     """
-    if current_user["role_name"] not in ["Administrador", "Cajero"]:
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MesaService(db)
     return await service.update_mesa(mesa_id, mesa_data, current_user)
@@ -64,6 +64,17 @@ async def change_mesa_state(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MesaService(db)
     return await service.cambiar_estado_mesa(mesa_id, new_state)
+
+@router.post("/{mesa_id}/finalizar", status_code=status.HTTP_201_CREATED)
+async def finalize_mesa(
+    mesa_id: int,
+    data: MesaFinalize,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
+    return await MesaService(db).finalizar_mesa(mesa_id, data)
 
 @router.patch("/{mesa_id}/asignar_mesero", response_model=MesaResponse, status_code=status.HTTP_200_OK)
 async def assign_mesero_to_mesa(

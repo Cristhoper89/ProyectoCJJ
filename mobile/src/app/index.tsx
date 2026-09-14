@@ -13,16 +13,23 @@ import {
 } from 'react-native';
 import { User, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-
-const API_URL = "http://192.168.101.10:8000"; // Usa la IP real de tu PC en la red local
+import { API_URL, restoreAccessToken, setAccessToken } from '../constants/api';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const [checkingSession, setCheckingSession] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    restoreAccessToken().then((token) => {
+      if (token) router.replace('/mesa' as any);
+      else setCheckingSession(false);
+    }).catch(() => setCheckingSession(false));
+  }, [router]);
 
   const handleLogin = async () => {
     setMessage({ text: '', type: '' });
@@ -60,6 +67,7 @@ export default function LoginScreen() {
       setLoading(false);
 
       if (response.ok) {
+        await setAccessToken(data.access_token);
         setMessage({ text: 'Bienvenido al sistema.', type: 'success' });
         setTimeout(() => {
           // Redirige a mesa.tsx ubicado en la estructura de rutas de Expo Router
@@ -81,6 +89,8 @@ export default function LoginScreen() {
       setMessage({ text: 'No fue posible conectar con el servidor.', type: 'error' });
     }
   };
+
+  if (checkingSession) return <View style={styles.container}><ActivityIndicator color="#D8A85B" /></View>;
 
   return (
     <KeyboardAvoidingView

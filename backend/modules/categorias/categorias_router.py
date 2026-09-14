@@ -17,7 +17,7 @@ async def read_categorias(
     current_user: dict = Depends(get_current_user)
 ):
     """Acceso restringido: Solo Administradores y Cajeros pueden listar categorías."""
-    if current_user["role_name"] != "Administrador" and current_user["role_name"] != "cajero":
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = CategoriaService(db)
     return await service.get_all_categorias()
@@ -29,7 +29,7 @@ async def add_categoria(
     current_user: dict = Depends(get_current_user)
 ):
     """Acceso restringido: Solo Administradores pueden registrar nuevas categorías."""
-    if current_user["role_name"] != "Administrador" and current_user["role_name"] != "cajero":
+    if current_user["role_name"] not in ["Administrador", "Cajero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = CategoriaService(db)
     return await service.create_categoria(categoria_in)
@@ -54,7 +54,7 @@ async def deactivate_categoria(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role_name"] != "Administrador" and current_user["role_name"] != "cajero":
+    if current_user["role_name"] not in ["Administrador", "Cajero"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acceso denegado. Rol insuficiente."

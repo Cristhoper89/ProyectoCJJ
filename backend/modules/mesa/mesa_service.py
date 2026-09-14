@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import UUID, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.logger import logger
-from modules.mesa.mesa_schema import MesaCreate, MesaUpdate
+from modules.mesa.mesa_schema import MesaCreate, MesaUpdate, MesaFinalize
 
 class MesaService:
     def __init__(self, db: AsyncSession) -> None:
@@ -10,16 +10,17 @@ class MesaService:
 
     async def get_all_mesas(self) -> list[dict]:
         logger.info("SQL Nativo: Consultando todas las mesas.")
-        query = text("SELECT id, estado, hora_inicio, total, id_mesero, id_cliente FROM mesa ORDER BY id ASC;")
+        query = text("SELECT id, nombre, estado, hora_inicio, total, propina, domicilio, tipo, id_mesero, id_cliente FROM mesa ORDER BY id ASC;")
         result = await self.db.execute(query)
         return [dict(row) for row in result.mappings().all()]
 
     async def create_mesa(self, mesa_data: MesaCreate) -> dict:
         logger.info(f"SQL Nativo: Insertando mesa {mesa_data.estado}")
 
-        query = text("INSERT INTO mesa (estado) VALUES (:estado) RETURNING id, estado;")
+        query = text("INSERT INTO mesa (nombre, estado) VALUES (:nombre, :estado) RETURNING id, nombre, estado;")
         try:
             result = await self.db.execute(query, {
+                "nombre": mesa_data.nombre,
                 "estado": mesa_data.estado
             })
             await self.db.commit()
@@ -47,6 +48,10 @@ class MesaService:
         if mesa_update.estado is not None:
             update_fields.append("estado = :estado")
             params["estado"] = mesa_update.estado
+
+        if mesa_update.nombre is not None:
+            update_fields.append("nombre = :nombre")
+            params["nombre"] = mesa_update.nombre
 
         if mesa_update.hora_inicio is not None:
             update_fields.append("hora_inicio = :hora_inicio")
@@ -122,7 +127,7 @@ class MesaService:
             UPDATE mesa 
             SET {', '.join(update_fields)} 
             WHERE id = :id 
-            RETURNING id, estado, hora_inicio, total, id_mesero, id_cliente, propina, domicilio, tipo, pago_efectivo, pago_tarjeta, pago_transfe;
+            RETURNING id, nombre, estado, hora_inicio, total, id_mesero, id_cliente, propina, domicilio, tipo, pago_efectivo, pago_tarjeta, pago_transfe;
         """
         
         try:
@@ -205,3 +210,42 @@ class MesaService:
             await self.db.rollback()
             logger.error(f"Error crítico al asignar cliente a la mesa: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
+
+    async def finalizar_mesa(self, mesa_id: int, data: MesaFinalize) -> dict:
+        try:
+            mesa = (await self.db.execute(text("SELECT id, nombre, tipo FROM mesa WHERE id = :id FOR UPDATE;"), {"id": mesa_id})).mappings().first()
+            if not mesa:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La mesa no existe.")
+
+            caja_id = data.id_caja
+            if caja_id is None:
+                caja = (await self.db.execute(text("SELECT id FROM caja ORDER BY id DESC LIMIT 1;"))).first()
+                if not caja:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No hay una caja abierta para registrar el movimiento.")
+                caja_id = caja.id
+
+            movimiento = (await self.db.execute(text("""
+                INSERT INTO movimiento (tipo, descripcion, estado, propina, domicilio, total, id_caja, metodo)
+                VALUES (TRUE, :descripcion, TRUE, :propina, :domicilio, :total, :id_caja, :metodo)
+                RETURNING id, total, propina, domicilio, metodo;
+            """), {
+                "descripcion": mesa["nombre"] or ("Barra" if mesa["tipo"] is False else f"Mesa {mesa_id}"),
+                "propina": data.propina, "domicilio": data.domicilio, "total": data.total,
+                "id_caja": caja_id, "metodo": data.metodo,
+            })).mappings().first()
+
+            await self.db.execute(text("UPDATE mesa_consumo SET id_mov = :movimiento_id, id_mesa = NULL WHERE id_mesa = :mesa_id AND subtotal > 0;"), {"movimiento_id": movimiento["id"], "mesa_id": mesa_id})
+            await self.db.execute(text("""
+                UPDATE mesa SET estado = FALSE, hora_inicio = NULL, total = 0, propina = 0, domicilio = 0,
+                    pago_efectivo = 0, pago_tarjeta = 0, pago_transfe = 0
+                WHERE id = :mesa_id;
+            """), {"mesa_id": mesa_id})
+            await self.db.commit()
+            return dict(movimiento)
+        except HTTPException:
+            await self.db.rollback()
+            raise
+        except Exception as exc:
+            await self.db.rollback()
+            logger.error(f"Error al finalizar mesa {mesa_id}: {exc}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No fue posible crear el movimiento y cerrar la cuenta.")

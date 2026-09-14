@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -19,9 +21,17 @@ from modules.ingredientes.ingredientes_router import router as ingredientes_rout
 from modules.producto_ingredientes.producto_ingredientes_router import router as producto_ingredientes_router
 from modules.mesa_consumo_ingrediente.mesa_consumo_ingrediente_router import router as mesa_consumo_ingrediente_router
 from core.logger import logger
+from core.database import engine
+from sqlalchemy import text
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    async with engine.begin() as connection:
+        await connection.execute(text("ALTER TABLE mesa ADD COLUMN IF NOT EXISTS nombre VARCHAR(100);"))
+        await connection.execute(text("UPDATE mesa SET nombre = CASE WHEN tipo IS FALSE THEN 'Barra' ELSE 'Mesa ' || id::text END WHERE nombre IS NULL;"))
+        await connection.execute(text("UPDATE mesa_consumo SET id_mesa = NULL WHERE id_mov IS NOT NULL AND id_mesa IS NOT NULL;"))
     logger.info("==========================================================")
     logger.info("  ¡API Modular Inicializada en Raíz con Éxito (Lifespan)!")
     logger.info("  Documentación interactiva: http://127.0.0.1:8000/docs")
@@ -57,32 +67,33 @@ app.include_router(mesa_consumo_ingrediente_router)
 # FRONTEND
 # ==============================
 
-app.mount(
-    "/static",
-    StaticFiles(directory="../frontend/static"),
-    name="static"
-)
+if FRONTEND_DIR.is_dir():
+    app.mount(
+        "/static",
+        StaticFiles(directory=FRONTEND_DIR / "static"),
+        name="static"
+    )
 
 @app.get("/")
 async def login():
 
-    return FileResponse("../frontend/templates/login.html")
+    return FileResponse(FRONTEND_DIR / "templates" / "login.html")
 
 @app.get("/desbloquear")
 async def desbloquear():
 
-    return FileResponse("../frontend/templates/desbloquear_cuenta.html")
+    return FileResponse(FRONTEND_DIR / "templates" / "desbloquear_cuenta.html")
 
 
 @app.get("/recuperar")
 async def recuperar():
 
-    return FileResponse("../frontend/templates/olvido_contrasena.html")
+    return FileResponse(FRONTEND_DIR / "templates" / "olvido_contrasena.html")
 
 @app.get("/productos")
 async def ver_productos():
-    return FileResponse("../frontend/templates/productos.html")
+    return FileResponse(FRONTEND_DIR / "templates" / "productos.html")
 #johan
 @app.get("/categorias")
 async def ver_categorias():
-    return FileResponse("../frontend/templates/categorias.html")
+    return FileResponse(FRONTEND_DIR / "templates" / "categorias.html")

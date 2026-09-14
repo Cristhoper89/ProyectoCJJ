@@ -727,8 +727,17 @@ d.  Configurar las variables de entorno.
 
 uvicorn main:app --reload
 venv\Scripts\Activate.ps1
-
+python -m fastapi deploy
 fastapi cloud
 https://fastapicloud.com/
 
 https://www.youtube.com/watch?v=nMCudUDuzH0&t=246s
+
+https://dashboard.fastapicloud.com/obitocamargo89-a6d237ca/apps/backend-368ae3fb/deployments/d13095b8-a991-4cda-9a6d-152f64d5315c
+https://backend-6ad6b6fa.fastapicloud.dev/docs
+
+
+movil/
+npx expo run:android
+
+./gradlew assembleRelease
