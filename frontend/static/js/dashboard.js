@@ -1,10 +1,12 @@
 const API_URL = "http://127.0.0.1:8000";
 const token = localStorage.getItem("access_token");
-const sideNav = document.getElementById("sideNav");
-const moduleGrid = document.getElementById("moduleGrid");
-const sidebar = document.getElementById("sidebar");
-const mobileBackdrop = document.getElementById("mobileBackdrop");
-const dashboardToast = document.getElementById("dashboardToast");
+let sideNav;
+let moduleGrid;
+let sidebar;
+let mobileBackdrop;
+let dashboardToast;
+let menuButton;
+let logoutButton;
 let toastTimeout;
 
 const modules = {
@@ -28,7 +30,34 @@ function getHeaders(){
 	return {"Authorization": `Bearer ${token}`};
 }
 
+function getDashboardElements(){
+	sideNav = document.getElementById("sideNav");
+	moduleGrid = document.getElementById("moduleGrid");
+	sidebar = document.getElementById("sidebar");
+	mobileBackdrop = document.getElementById("mobileBackdrop");
+	dashboardToast = document.getElementById("dashboardToast");
+	menuButton = document.getElementById("menuButton");
+	logoutButton = document.getElementById("logoutButton");
+}
+
+function initSidebarEvents(){
+	if(!menuButton || !mobileBackdrop || !sidebar || !logoutButton) return;
+	menuButton.addEventListener("click", () => {
+		sidebar.classList.add("open");
+		mobileBackdrop.classList.add("visible");
+	});
+	mobileBackdrop.addEventListener("click", () => {
+		sidebar.classList.remove("open");
+		mobileBackdrop.classList.remove("visible");
+	});
+	logoutButton.addEventListener("click", () => {
+		localStorage.clear();
+		window.location.href = "/";
+	});
+}
+
 function setUser(user){
+	if(!sideNav || !moduleGrid) return;
 	const role = user.role_name.toLowerCase() === "cajero" ? "cajero" : "admin";
 	const availableModules = modules[role];
 	const firstName = user.username || "Usuario";
@@ -55,6 +84,21 @@ function setUser(user){
 	lucide.createIcons();
 }
 
+async function loadMenu(){
+	const menuContainer = document.getElementById("menu-container");
+	if(!menuContainer) return;
+	try{
+		const response = await fetch("/static/components/menu.html");
+		if(!response.ok) throw new Error("No se pudo cargar el menú");
+		menuContainer.innerHTML = await response.text();
+		getDashboardElements();
+		initSidebarEvents();
+		lucide.createIcons();
+	}catch(error){
+		console.error(error);
+	}
+}
+
 async function loadDashboard(){
 	if(!token){ window.location.href = "/"; return; }
 	try{
@@ -68,15 +112,19 @@ async function loadDashboard(){
 }
 
 document.getElementById("currentDate").textContent = new Intl.DateTimeFormat("es-CO", {day: "numeric", month: "long", year: "numeric"}).format(new Date());
-document.getElementById("logoutButton").addEventListener("click", () => { localStorage.clear(); window.location.href = "/"; });
-document.getElementById("menuButton").addEventListener("click", () => { sidebar.classList.add("open"); mobileBackdrop.classList.add("visible"); });
-mobileBackdrop.addEventListener("click", () => { sidebar.classList.remove("open"); mobileBackdrop.classList.remove("visible"); });
+
 document.addEventListener("click", event => {
 	const unavailableModule = event.target.closest("[data-coming-soon='true']");
 	if(!unavailableModule) return;
 	event.preventDefault();
-	dashboardToast.classList.add("visible");
+	dashboardToast?.classList.add("visible");
 	clearTimeout(toastTimeout);
-	toastTimeout = setTimeout(() => dashboardToast.classList.remove("visible"), 3200);
+	toastTimeout = setTimeout(() => dashboardToast?.classList.remove("visible"), 3200);
 });
-loadDashboard();
+
+async function initDashboard(){
+	await loadMenu();
+	await loadDashboard();
+}
+
+initDashboard();
