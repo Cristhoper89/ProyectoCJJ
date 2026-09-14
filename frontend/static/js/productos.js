@@ -35,6 +35,8 @@ const cancelarModal = document.getElementById("cancelarModal");
 
 const cancelarDesactivar = document.getElementById("cancelarDesactivar");
 const confirmarDesactivar = document.getElementById("confirmarDesactivar");
+const desactivarModalTitle = document.getElementById("desactivarModalTitle");
+const desactivarModalMessage = document.getElementById("desactivarModalMessage");
 
 
 // ======================================================
@@ -43,7 +45,11 @@ const confirmarDesactivar = document.getElementById("confirmarDesactivar");
 
 let productos = [];
 
+let categorias = [];
+
 let productoSeleccionado = null;
+
+let nuevoEstadoProducto = false;
 
 
 // ======================================================
@@ -94,6 +100,56 @@ function showMessage(text, type){
 // ======================================================
 // CARGAR PRODUCTOS
 // ======================================================
+
+async function cargarCategorias(){
+
+    categoria.innerHTML = `
+        <option value="">Cargando categorías...</option>
+    `;
+
+    try{
+
+        const response = await fetch(`${API_URL}/categorias/`,{
+            method: "GET",
+            headers: getHeaders()
+        });
+
+        const data = await response.json();
+
+        if(!response.ok){
+
+            throw new Error(data.detail || "No fue posible cargar las categorías.");
+
+        }
+
+        categorias = data;
+
+        categoria.innerHTML = `
+            <option value="">Seleccione una categoría</option>
+            ${categorias.map(item => `
+                <option value="${item.id}">${item.nombre}</option>
+            `).join("")}
+        `;
+
+    }
+    catch(error){
+
+        console.error(error);
+
+        categorias = [];
+
+        categoria.innerHTML = `
+            <option value="">No fue posible cargar las categorías</option>
+        `;
+
+        showMessage(
+            "No fue posible cargar las categorías desde la base de datos.",
+            "error"
+        );
+
+    }
+
+}
 
 async function cargarProductos(){
 
@@ -252,13 +308,22 @@ function mostrarProductos(lista){
                             type="button"
                             class="action-button danger"
                             title="Desactivar"
-                            onclick="abrirDesactivar(${producto.id})"
+                            onclick="abrirCambioEstado(${producto.id}, false)"
                         >
                             <i data-lucide="ban"></i>
                         </button>
                         `
                         :
-                        ""
+                        `
+                        <button
+                            type="button"
+                            class="action-button danger"
+                            title="Activar"
+                            onclick="abrirCambioEstado(${producto.id}, true)"
+                        >
+                            <i data-lucide="power"></i>
+                        </button>
+                        `
                     }
 
                 </div>
@@ -284,15 +349,9 @@ function mostrarProductos(lista){
 
 function obtenerCategoria(id){
 
-    const categorias = {
+    const categoriaEncontrada = categorias.find(item => item.id === id);
 
-        1: "Comidas",
-        2: "Bebidas",
-        3: "Postres"
-
-    };
-
-    return categorias[id] || "Sin categoría";
+    return categoriaEncontrada?.nombre || "Sin categoría";
 
 }
 
@@ -651,12 +710,30 @@ productoForm.addEventListener("submit", async (e)=>{
 
 
 // ======================================================
-// ABRIR MODAL DESACTIVAR
+// ABRIR MODAL CAMBIAR ESTADO
 // ======================================================
 
-function abrirDesactivar(id){
+function abrirCambioEstado(id, nuevoEstado){
 
     productoSeleccionado = id;
+    nuevoEstadoProducto = nuevoEstado;
+
+    const activar = nuevoEstado === true;
+
+    desactivarModalTitle.textContent = activar
+        ? "Activar producto"
+        : "Desactivar producto";
+
+    desactivarModalMessage.textContent = activar
+        ? "¿Está seguro de que desea activar este producto?"
+        : "¿Está seguro de que desea desactivar este producto?";
+
+    confirmarDesactivar.textContent = activar
+        ? "Activar"
+        : "Desactivar";
+
+    confirmarDesactivar.classList.toggle("btn-danger", !activar);
+    confirmarDesactivar.classList.toggle("btn-primary", activar);
 
     desactivarModal.classList.add("active");
 
@@ -670,6 +747,7 @@ function abrirDesactivar(id){
 function cerrarDesactivar(){
 
     productoSeleccionado = null;
+    nuevoEstadoProducto = false;
 
     desactivarModal.classList.remove("active");
 
@@ -683,7 +761,7 @@ cancelarDesactivar.addEventListener(
 
 
 // ======================================================
-// CONFIRMAR DESACTIVACIÓN
+// CONFIRMAR CAMBIO DE ESTADO
 // ======================================================
 
 confirmarDesactivar.addEventListener("click", async ()=>{
@@ -697,7 +775,7 @@ confirmarDesactivar.addEventListener("click", async ()=>{
     try{
 
         const response = await fetch(
-            `${API_URL}/productos/${productoSeleccionado}/estado?new_state=false`,
+            `${API_URL}/productos/${productoSeleccionado}/estado?new_state=${nuevoEstadoProducto}`,
             {
                 method: "PATCH",
                 headers: getHeaders()
@@ -712,7 +790,7 @@ confirmarDesactivar.addEventListener("click", async ()=>{
 
             alert(
                 data.detail ||
-                "No fue posible desactivar el producto."
+                "No fue posible cambiar el estado del producto."
             );
 
             return;
@@ -740,6 +818,8 @@ confirmarDesactivar.addEventListener("click", async ()=>{
 // ======================================================
 // INICIAR
 // ======================================================
+
+cargarCategorias();
 
 cargarProductos();
 

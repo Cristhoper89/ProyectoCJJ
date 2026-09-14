@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Panel principal</title>
+	<link rel="stylesheet" href="../static/css/base/variables.css">
+	<link rel="stylesheet" href="../static/css/base/global.css">
+	<link rel="stylesheet" href="../static/css/modules/dashboard.css">
+	<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+	<div class="dashboard-shell">
+		<aside class="sidebar" id="sidebar">
+			<div class="brand">
+				<div class="brand-mark"><i data-lucide="utensils"></i></div>
+				<div>
+					<strong>Cabaña</strong>
+					<span>Gestión del restaurante</span>
+				</div>
+			</div>
+
+			<div class="sidebar-label">Principal</div>
+			<nav class="side-nav" id="sideNav"></nav>
+
+			<div class="sidebar-footer">
+				<div class="security-note">
+					<i data-lucide="shield-check"></i>
+					<span>Sesión protegida</span>
+				</div>
+				<button class="logout-button" id="logoutButton" type="button">
+					<i data-lucide="log-out"></i>
+					Cerrar sesión
+				</button>
+			</div>
+		</aside>
+
+		<main class="dashboard-main">
+			<header class="topbar">
+				<button class="menu-button" id="menuButton" type="button" aria-label="Abrir menú">
+					<i data-lucide="menu"></i>
+				</button>
+				<div class="breadcrumb"><span>Inicio</span><i data-lucide="chevron-right"></i><strong>Panel principal</strong></div>
+				<div class="user-chip">
+					<div class="avatar" id="userAvatar">--</div>
+					<div><strong id="userName">Cargando...</strong><span id="userRole">...</span></div>
+				</div>
+			</header>
+
+			<div class="dashboard-content">
+				<section class="welcome-block">
+					<div>
+						<span class="eyebrow">Panel de control</span>
+						<h1 id="welcomeTitle">Bienvenido</h1>
+						<p id="welcomeText">Aquí tienes una vista general de las operaciones del restaurante.</p>
+					</div>
+					<div class="date-badge"><i data-lucide="calendar-days"></i><span id="currentDate"></span></div>
+				</section>
+
+				<section class="summary-grid" aria-label="Resumen">
+					<article class="summary-card accent"><div class="summary-icon"><i data-lucide="layout-dashboard"></i></div><div><span>Accesos disponibles</span><strong id="accessCount">0</strong></div></article>
+					<article class="summary-card"><div class="summary-icon"><i data-lucide="check-circle-2"></i></div><div><span>Estado de sesión</span><strong>Activa</strong></div></article>
+					<article class="summary-card"><div class="summary-icon"><i data-lucide="clock-3"></i></div><div><span>Último acceso</span><strong>Ahora</strong></div></article>
+				</section>
+
+				<section class="modules-section">
+					<div class="section-heading"><div><span class="eyebrow">Operación</span><h2>Módulos del sistema</h2></div><span class="role-pill" id="rolePill">Cargando rol</span></div>
+					<div class="module-grid" id="moduleGrid"></div>
+				</section>
+			</div>
+		</main>
+	</div>
+	<div class="mobile-backdrop" id="mobileBackdrop"></div>
+	<div class="dashboard-toast" id="dashboardToast" role="status" aria-live="polite">
+		<i data-lucide="info"></i>
+		<span id="dashboardToastText">Este módulo estará disponible próximamente.</span>
+	</div>
+	<script>lucide.createIcons();</script>
+	<script src="../static/js/dashboard.js"></script>
+</body>
+</html>

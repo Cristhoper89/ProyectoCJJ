@@ -150,7 +150,7 @@ loginForm.addEventListener("submit", async (e)=>{
 
             setTimeout(()=>{
 
-                window.location.href="../templates/dashboard.html";
+                window.location.href="/dashboard";
 
             },1000);
 
