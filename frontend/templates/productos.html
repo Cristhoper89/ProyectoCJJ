@@ -8,6 +8,7 @@
 
     <link rel="stylesheet" href="../static/css/base/variables.css">
     <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css">
     <link rel="stylesheet" href="../static/css/modules/productos.css">
 
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +18,11 @@
 
 <body>
 
-    <main class="productos-page">
+    <div class="dashboard-shell">
+
+        <div id="menu-container"></div>
+
+        <main class="productos-page">
 
         <!-- ====================================================== -->
         <!-- ENCABEZADO -->
@@ -101,7 +106,9 @@
 
         </section>
 
-    </main>
+        </main>
+
+    </div>
 
 
     <!-- ====================================================== -->
@@ -344,6 +351,7 @@
     </script>
 
     <script src="../static/js/productos.js"></script>
+    <script src="../static/js/menu.js"></script>
 
 </body>
 </html>

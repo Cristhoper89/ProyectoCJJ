@@ -1,5 +1,7 @@
 const API_URL = "http://127.0.0.1:8000";
 const token = localStorage.getItem("access_token");
+const MENU_HTML_CACHE_KEY = "cabana_menu_html";
+const MENU_USER_CACHE_KEY = "cabana_menu_user";
 let sideNav;
 let moduleGrid;
 let sidebar;
@@ -11,7 +13,7 @@ let toastTimeout;
 
 const modules = {
 	admin: [
-		["Perfil", "user-round", "#perfil"], ["Caja", "wallet-cards", "/caja"],
+		["Perfil", "user-round", "/dashboard"], ["Caja", "wallet-cards", "/caja"],
 		["Categorías", "tags", "/categorias"], ["Mesa", "layout-grid", "/mesas"],
 		["Movimientos", "arrow-left-right", null], ["Productos", "package", "/productos"],
 		["Proveedores", "truck", null], ["Empleados", "users-round", "/usuarios"],
@@ -20,7 +22,7 @@ const modules = {
 		["Configuración", "settings-2", "/configuracion"]
 	],
 	cajero: [
-		["Perfil", "user-round", "#perfil"], ["Mesa", "layout-grid", "/mesas"],
+		["Perfil", "user-round", "/dashboard"], ["Mesa", "layout-grid", "/mesas"],
 		["Movimientos", "arrow-left-right", null], ["Caja", "wallet-cards", "/caja"],
 		["Categorías", "tags", "/categorias"], ["Productos", "package", "/productos"]
 	]
@@ -57,30 +59,23 @@ function initSidebarEvents(){
 }
 
 function setUser(user){
-	if(!sideNav || !moduleGrid) return;
+	if(!sideNav || !user) return;
 	const role = user.role_name.toLowerCase() === "cajero" ? "cajero" : "admin";
 	const availableModules = modules[role];
 	const firstName = user.username || "Usuario";
+	const currentPath = window.location.pathname;
 	document.getElementById("userName").textContent = firstName;
 	document.getElementById("userRole").textContent = user.role_name;
 	document.getElementById("userAvatar").textContent = firstName.slice(0, 2).toUpperCase();
 	document.getElementById("welcomeTitle").textContent = `Hola, ${firstName}`;
-	document.getElementById("rolePill").textContent = user.role_name;
 	document.getElementById("accessCount").textContent = availableModules.length;
 
-	sideNav.innerHTML = availableModules.map(([name, icon, href], index) => `
-		<a class="nav-item ${index === 0 ? "active" : ""} ${href ? "" : "is-coming-soon"}" href="${href || "#"}" ${href ? "" : "data-coming-soon=\"true\""}>
+	sideNav.innerHTML = availableModules.map(([name, icon, href]) => `
+		<a class="nav-item ${href === currentPath ? "active" : ""} ${href ? "" : "is-coming-soon"}" href="${href || "#"}" ${href ? "" : "data-coming-soon=\"true\""}>
 			<i data-lucide="${icon}"></i><span>${name}</span>${href ? "" : "<small>Próximamente</small>"}
 		</a>
 	`).join("");
 
-	moduleGrid.innerHTML = availableModules.map(([name, icon, href]) => `
-		<a class="module-card ${href ? "" : "is-coming-soon"}" href="${href || "#"}" ${href ? "" : "data-coming-soon=\"true\""}>
-			<div class="module-card-icon"><i data-lucide="${icon}"></i></div>
-			<div class="module-card-copy"><h3>${name}</h3><p>${href ? "Abrir módulo" : "Disponible próximamente"}</p></div>
-			<i class="module-arrow" data-lucide="${href ? "arrow-up-right" : "lock-keyhole"}"></i>
-		</a>
-	`).join("");
 	lucide.createIcons();
 }
 
@@ -88,9 +83,16 @@ async function loadMenu(){
 	const menuContainer = document.getElementById("menu-container");
 	if(!menuContainer) return;
 	try{
-		const response = await fetch("/static/components/menu.html");
-		if(!response.ok) throw new Error("No se pudo cargar el menú");
-		menuContainer.innerHTML = await response.text();
+		const cachedHtml = sessionStorage.getItem(MENU_HTML_CACHE_KEY);
+		if (cachedHtml) {
+			menuContainer.innerHTML = cachedHtml;
+		} else {
+			const response = await fetch("/static/components/menu.html");
+			if(!response.ok) throw new Error("No se pudo cargar el menú");
+			const html = await response.text();
+			sessionStorage.setItem(MENU_HTML_CACHE_KEY, html);
+			menuContainer.innerHTML = html;
+		}
 		getDashboardElements();
 		initSidebarEvents();
 		lucide.createIcons();
@@ -101,10 +103,18 @@ async function loadMenu(){
 
 async function loadDashboard(){
 	if(!token){ window.location.href = "/"; return; }
+	try {
+		const cached = JSON.parse(sessionStorage.getItem(MENU_USER_CACHE_KEY) || "null");
+		if (cached?.token === token) setUser(cached.user);
+	} catch (error) {
+		console.warn("No se pudo leer la sesión guardada.");
+	}
 	try{
 		const response = await fetch(`${API_URL}/auth/me`, {headers: getHeaders()});
 		if(!response.ok) throw new Error("Sesión inválida");
-		setUser(await response.json());
+		const user = await response.json();
+		sessionStorage.setItem(MENU_USER_CACHE_KEY, JSON.stringify({token, user}));
+		setUser(user);
 	}catch(error){
 		localStorage.removeItem("access_token");
 		window.location.href = "/";

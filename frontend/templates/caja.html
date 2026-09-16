@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caja</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css">
+    <link rel="stylesheet" href="../static/css/modules/caja.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+
+        <main class="caja-page">
+            <header class="caja-header">
+                <div>
+                    <span class="eyebrow">Control financiero</span>
+                    <h1>Caja</h1>
+                    <p>Consulta los ingresos, gastos y balance de la jornada.</p>
+                </div>
+                <div class="caja-actions">
+                    <span class="caja-status" id="cajaStatus">Sin caja activa</span>
+                    <button class="btn-secondary" id="abrirCajaButton" type="button">
+                        <i data-lucide="lock-open"></i>
+                        Abrir caja
+                    </button>
+                    <button class="btn-primary" id="cerrarCajaButton" type="button" disabled>
+                        <i data-lucide="lock-keyhole"></i>
+                        Cerrar caja
+                    </button>
+                </div>
+            </header>
+
+            <section class="caja-summary" aria-label="Resumen de caja">
+                <article class="caja-summary-card income">
+                    <div class="summary-icon"><i data-lucide="trending-up"></i></div>
+                    <div><span>Ingresos</span><strong id="totalIngresos">$0</strong></div>
+                </article>
+                <article class="caja-summary-card expense">
+                    <div class="summary-icon"><i data-lucide="trending-down"></i></div>
+                    <div><span>Gastos</span><strong id="totalGastos">$0</strong></div>
+                </article>
+                <article class="caja-summary-card balance">
+                    <div class="summary-icon"><i data-lucide="scale"></i></div>
+                    <div><span>Balance final</span><strong id="balanceFinal">$0</strong></div>
+                </article>
+            </section>
+
+            <section class="caja-grid">
+                <article class="caja-panel">
+                    <div class="panel-heading">
+                        <div><span class="eyebrow">Recaudo</span><h2>Ingresos por método</h2></div>
+                        <i data-lucide="wallet-cards"></i>
+                    </div>
+                    <div class="method-list">
+                        <div class="method-row"><span><i data-lucide="banknote"></i>Efectivo</span><strong id="ingresoEfectivo">$0</strong></div>
+                        <div class="method-row"><span><i data-lucide="arrow-left-right"></i>Transferencia</span><strong id="ingresoTransferencia">$0</strong></div>
+                        <div class="method-row"><span><i data-lucide="credit-card"></i>Tarjeta</span><strong id="ingresoTarjeta">$0</strong></div>
+                    </div>
+                </article>
+
+                <article class="caja-panel">
+                    <div class="panel-heading">
+                        <div><span class="eyebrow">Descuentos</span><h2>Gastos y propinas</h2></div>
+                        <i data-lucide="receipt-text"></i>
+                    </div>
+                    <div class="detail-list">
+                        <div><span>Gastos registrados</span><strong id="detalleGastos">$0</strong></div>
+                        <div><span>Propinas descontadas</span><strong id="detallePropinas">$0</strong></div>
+                        <div class="detail-total"><span>Total descontado</span><strong id="totalDescontado">$0</strong></div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="caja-panel caja-history">
+                <div class="panel-heading">
+                    <div><span class="eyebrow">Historial</span><h2>Últimos cierres de caja</h2></div>
+                    <i data-lucide="history"></i>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Fecha</th><th>Ingresos</th><th>Gastos</th><th>Propinas</th><th>Balance</th><th>Estado</th></tr></thead>
+                        <tbody id="cajasTable"><tr><td colspan="6" class="loading">Cargando cajas...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <p class="caja-message" id="cajaMessage" role="status"></p>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="cerrarCajaModal" hidden>
+        <div class="confirm-modal">
+            <div class="confirm-icon"><i data-lucide="lock-keyhole"></i></div>
+            <h2>Cerrar caja</h2>
+            <p>Al cerrar la caja ya no se considerará activa para nuevos movimientos.</p>
+            <div class="confirm-actions">
+                <button class="btn-secondary" id="cancelarCierre" type="button">Cancelar</button>
+                <button class="btn-danger" id="confirmarCierre" type="button">Confirmar cierre</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/js/menu.js"></script>
+    <script src="../static/js/caja.js"></script>
+</body>
+</html>

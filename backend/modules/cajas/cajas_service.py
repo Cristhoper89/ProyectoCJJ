@@ -11,14 +11,14 @@ class CajasService:
 
     async def get_all_cajas(self) -> list[dict]:
         logger.info("SQL Nativo: Consultando todos las cajas.")
-        query = text("SELECT id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia, egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas, balance_inicial, balance_final FROM caja ORDER BY id ASC;")
+        query = text("SELECT id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia, egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas, balance_inicial, balance_final, estado FROM caja ORDER BY id ASC;")
         result = await self.db.execute(query)
         return [dict(row) for row in result.mappings().all()]
 
     async def create_caja(self, caja_data: CajasCreate) -> dict:
         logger.info(f"SQL Nativo: Insertando caja {caja_data.fecha}")
 
-        query = text("INSERT INTO caja (fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia, egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas, balance_inicial, balance_final) VALUES (:fecha, :ingresos_efectivo, :ingresos_tarjeta, :ingresos_transferencia, :egresos_efectivo, :egresos_tarjeta, :egresos_transferencia, :total_propinas, :balance_inicial, :balance_final) RETURNING id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia, egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas, balance_inicial, balance_final;")
+        query = text("INSERT INTO caja (fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia, egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas, balance_inicial, balance_final, estado) VALUES (:fecha, :ingresos_efectivo, :ingresos_tarjeta, :ingresos_transferencia, :egresos_efectivo, :egresos_tarjeta, :egresos_transferencia, :total_propinas, :balance_inicial, :balance_final, :estado) RETURNING id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia, egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas, balance_inicial, balance_final, estado;")
         try:
             result = await self.db.execute(query, {
                 "fecha": caja_data.fecha,
@@ -30,7 +30,8 @@ class CajasService:
                 "egresos_transferencia": caja_data.egresos_transferencia,
                 "total_propinas": caja_data.total_propinas,
                 "balance_inicial": caja_data.balance_inicial,
-                "balance_final": caja_data.balance_final
+                "balance_final": caja_data.balance_final,
+                "estado": caja_data.estado or "abierta"
             })
             await self.db.commit()
             return dict(result.mappings().first())
@@ -99,7 +100,7 @@ class CajasService:
             UPDATE caja 
             SET {', '.join(update_fields)} 
             WHERE id = :id 
-            RETURNING id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia, egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas, balance_inicial, balance_final;
+            RETURNING id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia, egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas, balance_inicial, balance_final, estado;
         """
         
         try:
@@ -111,7 +112,7 @@ class CajasService:
             logger.error(f"Error crítico en actualización SQL: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
 
-    async def cambiar_estado_caja(self, target_caja_id: int, estado: bool) -> dict:
+    async def cambiar_estado_caja(self, target_caja_id: int, estado: str) -> dict:
         logger.info(f"Intentando cambiar el estado de la caja ID: {target_caja_id}")
 
         # Verificar que la caja objetivo realmente exista en PostgreSQL
@@ -119,7 +120,7 @@ class CajasService:
         if not check.first():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La caja a desactivar no existe.")
 
-        query = text("UPDATE caja SET estado = :estado WHERE id = :id RETURNING id, estado;")
+        query = text("UPDATE caja SET estado = :estado WHERE id = :id RETURNING id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia, egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas, balance_inicial, balance_final, estado;")
         
         try:
             result = await self.db.execute(query, {"id": target_caja_id, "estado": estado})
