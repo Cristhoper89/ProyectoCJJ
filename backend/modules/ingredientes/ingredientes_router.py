@@ -8,6 +8,7 @@ from modules.ingredientes.ingredientes_schema import (
     GastoResponse,
     GastoUpdate,
     IngredienteCreate,
+    IngredienteEstadoUpdate,
     IngredienteResponse,
     IngredienteUpdate,
 )
@@ -44,6 +45,17 @@ async def update_ingrediente(item_id: int, data: IngredienteUpdate, db: AsyncSes
 async def delete_ingrediente(item_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     require_staff(current_user)
     await IngredienteService(db).delete(item_id)
+
+
+@router.patch("/ingredientes/{item_id}/estado", response_model=IngredienteResponse)
+async def change_ingrediente_state(
+    item_id: int,
+    data: IngredienteEstadoUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    require_staff(current_user)
+    return await IngredienteService(db).change_state(item_id, data.estado)
 
 
 @router.get("/gastos/", response_model=list[GastoResponse])

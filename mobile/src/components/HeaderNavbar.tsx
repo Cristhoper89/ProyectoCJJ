@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView, Image } from 'react-native';
 import { 
   Menu, X, User, DollarSign, Layers, Home, ArrowLeftRight, 
-  Package, Truck, Users, UserCheck, BarChart2, ShoppingBag, BookOpen, Settings 
+  Package, Truck, Users, UserCheck, BarChart2, ShoppingBag, BookOpen, Settings, Carrot
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { clearAccessToken } from '../constants/api';
@@ -15,6 +15,7 @@ const menuItems = [
   { label: 'Mesa (página inicial)', icon: Home },
   { label: 'Movimientos', icon: ArrowLeftRight },
   { label: 'Productos', icon: Package },
+  { label: 'Ingredientes', icon: Carrot, route: '/ingredientes' },
   { label: 'Proveedores', icon: Truck },
   { label: 'Empleados', icon: Users },
   { label: 'Clientes', icon: UserCheck },
@@ -47,7 +48,7 @@ export default function HeaderNavbar() {
   const renderItem = ({ item }: { item: typeof menuItems[0] }) => {
     const IconComponent = item.icon;
     return (
-      <TouchableOpacity style={styles.menuItem} onPress={() => setIsOpen(false)}>
+      <TouchableOpacity style={styles.menuItem} onPress={() => { setIsOpen(false); if (item.route) router.push(item.route as any); }}>
         <IconComponent size={22} color="#D8A85B" style={styles.icon} />
         <Text style={styles.menuText}>{item.label}</Text>
       </TouchableOpacity>

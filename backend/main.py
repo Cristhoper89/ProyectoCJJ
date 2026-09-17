@@ -30,6 +30,8 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 async def lifespan(app: FastAPI):
     async with engine.begin() as connection:
         await connection.execute(text("ALTER TABLE mesa ADD COLUMN IF NOT EXISTS nombre VARCHAR(100);"))
+        await connection.execute(text("ALTER TABLE ingredientes ADD COLUMN IF NOT EXISTS estado BOOLEAN DEFAULT TRUE;"))
+        await connection.execute(text("UPDATE ingredientes SET estado = FALSE WHERE estado IS NULL;"))
         await connection.execute(text("UPDATE mesa SET nombre = CASE WHEN tipo IS FALSE THEN 'Barra' ELSE 'Mesa ' || id::text END WHERE nombre IS NULL;"))
         await connection.execute(text("UPDATE mesa_consumo SET id_mesa = NULL WHERE id_mov IS NOT NULL AND id_mesa IS NOT NULL;"))
     logger.info("==========================================================")

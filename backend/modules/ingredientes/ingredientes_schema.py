@@ -12,12 +12,17 @@ class IngredienteCreate(BaseModel):
 class IngredienteResponse(BaseModel):
     id: int
     nombre: str
+    estado: bool
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class IngredienteUpdate(BaseModel):
     nombre: Optional[str] = Field(None, min_length=1, max_length=100)
+
+
+class IngredienteEstadoUpdate(BaseModel):
+    estado: bool
 
 
 class GastoCreate(BaseModel):

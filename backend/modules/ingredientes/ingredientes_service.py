@@ -16,7 +16,7 @@ class IngredienteService:
 
     async def get_all(self) -> list[dict]:
         result = await self.db.execute(
-            text("SELECT id, nombre FROM ingredientes ORDER BY id ASC;")
+            text("SELECT id, nombre, COALESCE(estado, FALSE) AS estado FROM ingredientes ORDER BY id ASC;")
         )
         return [dict(row) for row in result.mappings().all()]
 
@@ -24,9 +24,9 @@ class IngredienteService:
         try:
             result = await self.db.execute(
                 text("""
-                    INSERT INTO ingredientes (nombre)
-                    VALUES (:nombre)
-                    RETURNING id, nombre;
+                    INSERT INTO ingredientes (nombre, estado)
+                    VALUES (:nombre, TRUE)
+                    RETURNING id, nombre, COALESCE(estado, FALSE) AS estado;
                 """),
                 {"nombre": data.nombre},
             )
@@ -51,9 +51,48 @@ class IngredienteService:
                     UPDATE ingredientes
                     SET nombre = :nombre
                     WHERE id = :id
-                    RETURNING id, nombre;
+                    AND COALESCE(estado, FALSE) = TRUE
+                    RETURNING id, nombre, COALESCE(estado, FALSE) AS estado;
                 """),
                 {"id": item_id, "nombre": data.nombre},
+            )
+            row = result.mappings().first()
+            if row is None:
+                await self.db.rollback()
+                raise HTTPException(status_code=404, detail="El ingrediente no existe o está desactivado.")
+            await self.db.commit()
+            return dict(row)
+        except HTTPException:
+            raise
+        except Exception as error:
+            await self.db.rollback()
+            raise HTTPException(status_code=400, detail="No fue posible actualizar el ingrediente.") from error
+
+    async def delete(self, item_id: int) -> None:
+        result = await self.db.execute(
+            text("""
+                UPDATE ingredientes
+                SET estado = FALSE
+                WHERE id = :id AND COALESCE(estado, FALSE) = TRUE
+                RETURNING id;
+            """),
+            {"id": item_id},
+        )
+        if result.first() is None:
+            await self.db.rollback()
+            raise HTTPException(status_code=404, detail="El ingrediente no existe o ya está desactivado.")
+        await self.db.commit()
+
+    async def change_state(self, item_id: int, estado: bool) -> dict:
+        try:
+            result = await self.db.execute(
+                text("""
+                    UPDATE ingredientes
+                    SET estado = :estado
+                    WHERE id = :id
+                    RETURNING id, nombre, COALESCE(estado, FALSE) AS estado;
+                """),
+                {"id": item_id, "estado": estado},
             )
             row = result.mappings().first()
             if row is None:
@@ -65,17 +104,7 @@ class IngredienteService:
             raise
         except Exception as error:
             await self.db.rollback()
-            raise HTTPException(status_code=400, detail="No fue posible actualizar el ingrediente.") from error
-
-    async def delete(self, item_id: int) -> None:
-        result = await self.db.execute(
-            text("DELETE FROM ingredientes WHERE id = :id RETURNING id;"),
-            {"id": item_id},
-        )
-        if result.first() is None:
-            await self.db.rollback()
-            raise HTTPException(status_code=404, detail="El ingrediente no existe.")
-        await self.db.commit()
+            raise HTTPException(status_code=400, detail="No fue posible cambiar el estado del ingrediente.") from error
 
 
 class GastoService:
