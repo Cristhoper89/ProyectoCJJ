@@ -25,11 +25,7 @@ async def add_mesaC(
     db: AsyncSession = Depends(get_db), 
     current_user: dict = Depends(get_current_user)
 ):
-<<<<<<< Updated upstream
-    """Acceso restringido: Solo Administradores y Cajeros pueden registrar nuevas mesas."""
-=======
     """Acceso restringido: Admin, cajeros y meseros pueden registrar consumos."""
->>>>>>> Stashed changes
     if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MesaCService(db)

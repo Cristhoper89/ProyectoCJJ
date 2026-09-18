@@ -18,7 +18,7 @@ class MesaBase(BaseModel):
     pago_transfe: Optional[float] = Field(None, description="Monto pagado por transferencia")
 
 class MesaCreate(BaseModel):
-    nombre: str = Field(..., min_length=1, max_length=100)
+    nombre: Optional[str] = Field(None, min_length=1, max_length=100)
     estado: bool = Field(..., description="Estado de la mesa (disponible/ocupada)")
     tipo: Optional[bool] = Field(True, description="MESA TRUE, BARRA FALSE")
 

@@ -10,12 +10,10 @@ class MesaService:
 
     async def get_all_mesas(self) -> list[dict]:
         logger.info("SQL Nativo: Consultando todas las mesas.")
-<<<<<<< Updated upstream
-        query = text("SELECT id, nombre, estado, hora_inicio, total, propina, domicilio, tipo, id_mesero, id_cliente FROM mesa ORDER BY id ASC;")
-=======
         query = text("""
             SELECT
                 id,
+                nombre,
                 estado,
                 hora_inicio,
                 total,
@@ -30,25 +28,18 @@ class MesaService:
             FROM mesa
             ORDER BY id ASC;
         """)
->>>>>>> Stashed changes
         result = await self.db.execute(query)
         return [dict(row) for row in result.mappings().all()]
 
     async def create_mesa(self, mesa_data: MesaCreate) -> dict:
         logger.info(f"SQL Nativo: Insertando mesa {mesa_data.estado}")
 
-<<<<<<< Updated upstream
-        query = text("INSERT INTO mesa (nombre, estado) VALUES (:nombre, :estado) RETURNING id, nombre, estado;")
-        try:
-            result = await self.db.execute(query, {
-                "nombre": mesa_data.nombre,
-                "estado": mesa_data.estado
-=======
         query = text("""
-            INSERT INTO mesa (estado, tipo)
-            VALUES (:estado, :tipo)
+            INSERT INTO mesa (nombre, estado, tipo)
+            VALUES (:nombre, :estado, :tipo)
             RETURNING
                 id,
+                nombre,
                 estado,
                 hora_inicio,
                 total,
@@ -63,9 +54,9 @@ class MesaService:
         """)
         try:
             result = await self.db.execute(query, {
+                "nombre": mesa_data.nombre,
                 "estado": mesa_data.estado,
                 "tipo": mesa_data.tipo
->>>>>>> Stashed changes
             })
             await self.db.commit()
             return dict(result.mappings().first())
