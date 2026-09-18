@@ -14,9 +14,9 @@ engine = create_async_engine(
     echo=True,
     pool_pre_ping=True,
 
-    # Limitar conexiones
-    pool_size=5,
-    max_overflow=2,
+    # Pool reducido para no agotar el límite de conexiones de Postgres (Aiven)
+    pool_size=3,
+    max_overflow=0,
 
     connect_args={
         "server_settings": {}
