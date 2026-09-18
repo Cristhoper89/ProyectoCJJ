@@ -22,11 +22,21 @@ const cerrarModal = document.getElementById("cerrarModal");
 
 const cancelarModal = document.getElementById("cancelarModal");
 
+const confirmarModal = document.getElementById("confirmarModal");
+
+const cancelarConfirmar = document.getElementById("cancelarConfirmar");
+
+const confirmarAccion = document.getElementById("confirmarAccion");
+
 // ======================================================
 // VARIABLES
 // ======================================================
 
 let categorias = [];
+
+let accionConfirmar = null;
+
+let categoriaSeleccionada = null;
 
 // ======================================================
 // TOKEN
@@ -63,7 +73,6 @@ function abrirModal(categoria = null) {
         categoria = null;
     }
 
-    categoriaForm.reset();
     categoriaForm.reset();
     categoriaMessage.textContent = "";
     categoriaMessage.className = "categoria-message";
@@ -228,7 +237,7 @@ categoriasTable.innerHTML = `
     <tr>
 
         <td
-            colspan="3"
+            colspan="4"
             class="loading"
         >
             Cargando categorías...
@@ -277,7 +286,7 @@ try {
         <tr>
 
             <td
-                colspan="3"
+                colspan="4"
                 class="loading"
             >
                 No fue posible conectar con el servidor.
@@ -297,84 +306,93 @@ try {
 
 function mostrarCategorias(lista) {
 
+categoriasTable.innerHTML = "";
+
 if (lista.length === 0) {
 
     categoriasTable.innerHTML = `
-
         <tr>
-
             <td
-                colspan="3"
+                colspan="4"
                 class="loading"
             >
                 No hay categorías registradas.
             </td>
-
         </tr>
-
     `;
 
     return;
-
 }
-
-
-categoriasTable.innerHTML = "";
-
 
 lista.forEach(categoria => {
 
     const fila = document.createElement("tr");
 
+    const estadoActivo = categoria.estado !== false;
 
     fila.innerHTML = `
-
         <td>
             ${categoria.id}
         </td>
 
         <td>
-
             <strong>
                 ${categoria.nombre}
             </strong>
-
         </td>
 
         <td>
-
-            <div class="actions">
-
-                <button
-                    type="button"
-                    class="action-button btn-editar"
-                    title="${categoria.estado === false ? 'Categoría desactivada' : 'Editar'}"
-                    data-id="${categoria.id}"
-                    ${categoria.estado === false ? 'disabled' : ''}
-                >
-                    <i data-lucide="pencil"></i>
-                </button>
-
-                <button
-                    type="button"
-                    class="action-button danger"
-                    title="Desactivar"
-                    onclick="desactivarCategoria(${categoria.id})"
-                >
-                    <i data-lucide="ban"></i>
-                </button>
-
-            </div>
-
+            <span class="estado-categoria ${estadoActivo ? 'activo' : 'desactivado'}">
+                ${estadoActivo ? 'Activo' : 'Desactivado'}
+            </span>
         </td>
 
+        <td>
+            <div class="actions">
+
+                ${
+                    estadoActivo
+                    ?
+                    `
+                    <button
+                        type="button"
+                        class="action-button btn-editar"
+                        title="Editar"
+                        data-id="${categoria.id}"
+                    >
+                        <i data-lucide="pencil"></i>
+                    </button>
+
+                    <button
+                        type="button"
+                        class="action-button danger"
+                        title="Desactivar"
+                        data-action="desactivar"
+                        data-id="${categoria.id}"
+                    >
+                        <i data-lucide="ban"></i>
+                    </button>
+                    `
+                    :
+                    `
+                    <button
+                        type="button"
+                        class="action-button success"
+                        title="Reactivar"
+                        data-action="reactivar"
+                        data-id="${categoria.id}"
+                    >
+                        <i data-lucide="rotate-ccw"></i>
+                    </button>
+                    `
+                }
+
+            </div>
+        </td>
     `;
 
-
     categoriasTable.appendChild(fila);
-
 });
-
 
 lucide.createIcons();
 
@@ -382,8 +400,6 @@ lucide.createIcons();
 
 
 window.editarCategoria = function(id) {
-
-    console.log("EDITAR CATEGORIA CARGADO", id);
 
     const categoria = categorias.find(c => c.id === Number(id));
 
@@ -396,7 +412,20 @@ window.editarCategoria = function(id) {
 };
 
 categoriasTable.addEventListener("click", function(event) {
-    console.log("LISTENER DE CATEGORIAS ACTIVO");
+
+    const botonAccion = event.target.closest("[data-action]");
+
+    if (botonAccion) {
+
+        const accion = botonAccion.getAttribute("data-action");
+
+        const id = botonAccion.getAttribute("data-id");
+
+        abrirConfirmar(accion, id);
+
+        return;
+    }
+
     const botonEditar = event.target.closest(".btn-editar");
 
     if (!botonEditar) {
@@ -405,48 +434,112 @@ categoriasTable.addEventListener("click", function(event) {
 
     const id = botonEditar.getAttribute("data-id");
 
-    console.log("CLICK EN EDITAR", id);
-
     editarCategoria(id);
 });
 
 
 // ======================================================
-// DESACTIVAR CATEGORÍA
+// CONFIRMAR ACCIÓN (DESACTIVAR / REACTIVAR)
 // ======================================================
 
-async function desactivarCategoria(id) {
+function abrirConfirmar(accion, id) {
 
-    const confirmar = confirm(
-        "¿Está seguro de que desea desactivar esta categoría?"
-    );
+    const categoria = categorias.find(c => c.id === Number(id));
 
-    if (!confirmar) {
+    if (!categoria) {
         return;
     }
 
+    accionConfirmar = accion;
+    categoriaSeleccionada = id;
+
+    confirmarModal.classList.toggle(
+        "confirmar-reactivar",
+        accion === "reactivar"
+    );
+
+    const titulo = document.getElementById("confirmarTitulo");
+    const mensaje = document.getElementById("confirmarMensaje");
+    const boton = document.getElementById("confirmarAccion");
+
+    if (accion === "desactivar") {
+
+        titulo.textContent = "Desactivar categoría";
+
+        mensaje.textContent =
+            `¿Está seguro de que desea desactivar la categoría "${categoria.nombre}"?`;
+
+        boton.textContent = "Desactivar";
+
+    } else {
+
+        titulo.textContent = "Reactivar categoría";
+
+        mensaje.textContent =
+            `¿Está seguro de que desea reactivar la categoría "${categoria.nombre}"?`;
+
+        boton.textContent = "Reactivar";
+
+    }
+
+    confirmarModal.classList.add("active");
+}
+
+function cerrarConfirmar() {
+
+    confirmarModal.classList.remove("active");
+
+    accionConfirmar = null;
+
+    categoriaSeleccionada = null;
+}
+
+async function ejecutarConfirmacion() {
+
+    if (!accionConfirmar || !categoriaSeleccionada) {
+        return;
+    }
+
+    const id = categoriaSeleccionada;
+
     try {
 
-        const response = await fetch(
-            `${API_URL}/categorias/${id}`,
-            {
-                method: "DELETE",
-                headers: getHeaders()
-            }
-        );
+        let response;
+
+        if (accionConfirmar === "desactivar") {
+
+            response = await fetch(
+                `${API_URL}/categorias/${id}`,
+                {
+                    method: "DELETE",
+                    headers: getHeaders()
+                }
+            );
+
+        } else {
+
+            response = await fetch(
+                `${API_URL}/categorias/${id}/estado?new_state=true`,
+                {
+                    method: "PATCH",
+                    headers: getHeaders()
+                }
+            );
+        }
 
         const data = await response.json();
 
         if (!response.ok) {
 
-            throw new Error(
+            alert(
                 data.detail ||
-                "No fue posible desactivar la categoría."
+                "No fue posible realizar la operación."
             );
 
+            return;
         }
 
-        alert("Categoría desactivada correctamente.");
+        cerrarConfirmar();
 
         await cargarCategorias();
 
@@ -455,13 +548,11 @@ async function desactivarCategoria(id) {
         console.error(error);
 
         alert(
-            error.message ||
             "No fue posible conectar con el servidor."
         );
-
     }
-
 }
+
 // ======================================================
 // BUSCAR CATEGORÍA
 // ======================================================
@@ -541,6 +632,30 @@ function(event) {
     if (event.target === categoriaModal) {
 
         cerrarCategoriaModal();
+
+    }
+
+}
+
+);
+
+cancelarConfirmar.addEventListener(
+"click",
+cerrarConfirmar
+);
+
+confirmarAccion.addEventListener(
+"click",
+ejecutarConfirmacion
+);
+
+confirmarModal.addEventListener(
+"click",
+function(event) {
+
+    if (event.target === confirmarModal) {
+
+        cerrarConfirmar();
 
     }
 

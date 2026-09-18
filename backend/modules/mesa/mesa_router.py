@@ -42,7 +42,7 @@ async def update_existing_mesa(
 ):
     """
     Endpoint Protegido por Token y RBAC:
-    - Admin y cajero: Modifica a cualquier mesa sin restricciones.
+    - Admin, cajero y mesero: Modifica a cualquier mesa sin restricciones.
     """
     if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
@@ -65,6 +65,7 @@ async def change_mesa_state(
     service = MesaService(db)
     return await service.cambiar_estado_mesa(mesa_id, new_state)
 
+<<<<<<< Updated upstream
 @router.post("/{mesa_id}/finalizar", status_code=status.HTTP_201_CREATED)
 async def finalize_mesa(
     mesa_id: int,
@@ -75,6 +76,22 @@ async def finalize_mesa(
     if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     return await MesaService(db).finalizar_mesa(mesa_id, data)
+=======
+@router.patch("/{mesa_id}/cerrar", response_model=MesaResponse, status_code=status.HTTP_200_OK)
+async def close_mesa(
+    mesa_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Cierra la mesa: pasa a estado inactivo y limpia la hora de inicio.
+    Acceso: Admin, cajero y mesero.
+    """
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
+    service = MesaService(db)
+    return await service.cerrar_mesa(mesa_id)
+>>>>>>> Stashed changes
 
 @router.patch("/{mesa_id}/asignar_mesero", response_model=MesaResponse, status_code=status.HTTP_200_OK)
 async def assign_mesero_to_mesa(

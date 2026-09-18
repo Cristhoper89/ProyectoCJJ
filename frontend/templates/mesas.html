@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mesas</title>
+
+    <link rel="stylesheet" href="../static/css/base/variables.css?v=1">
+    <link rel="stylesheet" href="../static/css/base/global.css?v=1">
+    <link rel="stylesheet" href="../static/css/modules/mesas.css?v=5">
+
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+</head>
+
+<body>
+
+<main class="mesas-page">
+
+    <!-- ====================================================== -->
+    <!-- ENCABEZADO -->
+    <!-- ====================================================== -->
+
+    <header class="mesas-header">
+
+        <div>
+
+            <h1>Mesas</h1>
+
+            <p>
+                Administre las mesas del local y registre los productos entregados.
+            </p>
+
+        </div>
+
+        <button
+            type="button"
+            class="btn-primary"
+            id="btnRegistrarMesa"
+        >
+
+            <i data-lucide="plus"></i>
+
+            Registrar mesa
+
+        </button>
+
+    </header>
+
+
+    <!-- ====================================================== -->
+    <!-- BUSCADOR -->
+    <!-- ====================================================== -->
+
+    <section class="mesas-tools">
+
+        <div class="search-box">
+
+            <i data-lucide="search"></i>
+
+            <input
+                type="text"
+                id="buscarMesa"
+                placeholder="Buscar mesa..."
+            >
+
+        </div>
+
+    </section>
+
+
+    <!-- ====================================================== -->
+    <!-- GRILLA DE MESAS -->
+    <!-- ====================================================== -->
+
+    <section class="mesas-card">
+
+        <div class="mesas-grid" id="mesasTable">
+
+            <div class="mesa-loading">
+                Cargando mesas...
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- ====================================================== -->
+<!-- MODAL REGISTRAR MESA -->
+<!-- ====================================================== -->
+
+<div
+    class="modal-overlay"
+    id="mesaModal"
+>
+
+    <div class="modal">
+
+        <div class="modal-header">
+
+            <div>
+
+                <h2>
+                    Registrar mesa
+                </h2>
+
+                <p>
+                    Seleccione el tipo de mesa a registrar.
+                </p>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="cerrarMesaModal"
+            >
+
+                <i data-lucide="x"></i>
+
+            </button>
+
+        </div>
+
+
+        <form id="mesaForm">
+
+            <div class="form-group">
+
+                <label for="tipoMesa">
+                    Tipo
+                </label>
+
+                <select id="tipoMesa">
+
+                    <option value="true">
+                        Mesa
+                    </option>
+
+                    <option value="false">
+                        Barra
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div
+                id="mesaMessage"
+                class="mesa-message"
+            ></div>
+
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    id="cancelarMesaModal"
+                >
+                    Cancelar
+                </button>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                    id="btnGuardarMesa"
+                >
+                    Registrar mesa
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- MODAL PEDIDO -->
+<!-- ====================================================== -->
+
+<div
+    class="modal-overlay"
+    id="pedidoModal"
+>
+
+    <div class="pedido-modal">
+
+        <div class="pedido-header">
+
+            <div class="pedido-titulo">
+
+                <h2 id="pedidoMesaNombre">
+                    Mesa
+                </h2>
+
+                <span
+                    class="estado-mesa-badge"
+                    id="pedidoEstadoBadge"
+                >
+                    Ocupada
+                </span>
+
+            </div>
+
+            <div class="pedido-tiempo">
+
+                <i data-lucide="timer"></i>
+
+                <span id="pedidoTiempo">
+                    00:00:00
+                </span>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="cerrarPedido"
+            >
+
+                <i data-lucide="x"></i>
+
+            </button>
+
+        </div>
+
+
+        <div class="pedido-cuerpo">
+
+            <!-- ============================================== -->
+            <!-- PANEL IZQUIERDO: PRODUCTOS -->
+            <!-- ============================================== -->
+
+            <div class="pedido-productos">
+
+                <div
+                    class="categorias-chips"
+                    id="categoriasChips"
+                >
+
+                    <span class="loading-chip">
+                        Cargando categorías...
+                    </span>
+
+                </div>
+
+                <div
+                    class="productos-grid"
+                    id="productosGrid"
+                >
+
+                    <span class="loading-chip">
+                        Cargando productos...
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- ============================================== -->
+            <!-- PANEL DERECHO: RESUMEN -->
+            <!-- ============================================== -->
+
+            <div class="pedido-resumen">
+
+                <div class="resumen-titulo">
+
+                    <h3>Resumen del pedido</h3>
+
+                </div>
+
+
+                <div
+                    class="pedido-lineas"
+                    id="pedidoLineas"
+                >
+
+                    <p class="pedido-vacio">
+                        Aún no se han registrado productos.
+                    </p>
+
+                </div>
+
+
+                <div class="pedido-totales">
+
+                    <div class="total-fila">
+
+                        <span>Subtotal</span>
+
+                        <strong id="campoSubtotal">
+                            $0.00
+                        </strong>
+
+                    </div>
+
+
+                    <div class="total-fila total-editable">
+
+                        <span>
+                            Propina (10%)
+                        </span>
+
+                        <div class="total-editable-control">
+
+                            <input
+                                type="number"
+                                id="campoPropina"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                            >
+
+                            <button
+                                type="button"
+                                id="btnQuitarPropina"
+                                title="Quitar propina"
+                            >
+
+                                <i data-lucide="x"></i>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="total-fila total-editable">
+
+                        <span>Domicilio</span>
+
+                        <input
+                            type="number"
+                            id="campoDomicilio"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                        >
+
+                    </div>
+
+
+                    <div class="total-fila total-grande">
+
+                        <span>Total</span>
+
+                        <strong id="campoTotal">
+                            $0.00
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="pedido-acciones">
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        id="btnCancelarPedido"
+                    >
+
+                        <i data-lucide="ban"></i>
+
+                        Cancelar pedido
+
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-imprimir"
+                        id="btnImprimirCuenta"
+                    >
+
+                        <i data-lucide="printer"></i>
+
+                        Imprimir cuenta
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- MODAL COMFIRMACIÓN (CANCELAR PEDIDO) -->
+<!-- ====================================================== -->
+
+<div
+    class="modal-overlay"
+    id="confirmarModal"
+>
+
+    <div class="confirm-modal">
+
+        <div class="confirm-icon">
+
+            <i data-lucide="triangle-alert"></i>
+
+        </div>
+
+        <h2 id="confirmarTitulo">
+            Cancelar pedido
+        </h2>
+
+        <p id="confirmarMensaje"></p>
+
+        <div class="confirm-actions">
+
+            <button
+                type="button"
+                class="btn-secondary"
+                id="cancelarConfirmar"
+            >
+                No, mantener
+            </button>
+
+            <button
+                type="button"
+                class="btn-danger"
+                id="confirmarAccion"
+            >
+                Sí, cancelar
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- MODAL CUENTA / IMPRESIÓN -->
+<!-- ====================================================== -->
+
+<div
+    class="modal-overlay"
+    id="cuentaModal"
+>
+
+    <div class="cuenta-modal">
+
+        <div class="cuenta-acciones">
+
+            <button
+                type="button"
+                class="btn-imprimir"
+                id="btnImprimirCuentaFinal"
+            >
+
+                <i data-lucide="printer"></i>
+
+                Imprimir
+
+            </button>
+
+            <button
+                type="button"
+                class="btn-secondary"
+                id="btnCerrarCuenta"
+            >
+
+                <i data-lucide="x"></i>
+
+                Cerrar
+
+            </button>
+
+        </div>
+
+
+        <div
+            class="print-area"
+            id="comprobanteImpresion"
+        ></div>
+
+    </div>
+
+</div>
+
+
+<script src="../static/js/mesas.js?v=5"></script>
+
+<script>
+
+    lucide.createIcons();
+
+</script>
+
+</body>
+
+</html>

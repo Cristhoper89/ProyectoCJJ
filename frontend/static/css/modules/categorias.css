@@ -7,6 +7,7 @@ body {
     font-family: "Manrope", sans-serif;
     background: #1D1A17;
     color: #F5F5F5;
+    overflow-y: auto;
 }
 
 /* ====================================================== */
@@ -49,7 +50,8 @@ body {
 /* ====================================================== */
 
 .btn-primary,
-.btn-secondary {
+.btn-secondary,
+.btn-danger {
 
     border: none;
     border-radius: 8px;
@@ -92,6 +94,17 @@ body {
 .btn-secondary:hover {
 
     background: #3A3028;
+}
+
+.btn-danger {
+
+    background: #E74C3C;
+    color: white;
+}
+
+.btn-danger:hover {
+
+    background: #C0392B;
 }
 
 /* ====================================================== */
@@ -236,6 +249,12 @@ tbody tr:hover {
     border-color: #E74C3C;
 }
 
+.action-button.success:hover {
+
+    color: #2ECC71;
+    border-color: #2ECC71;
+}
+
 .action-button svg {
 
     width: 16px;
@@ -265,6 +284,11 @@ tbody tr:hover {
     justify-content: center;
     background: rgba(0, 0, 0, .65);
     z-index: 1000;
+}
+
+.modal-overlay.active {
+
+    display: flex;
 }
 
 .modal {
@@ -388,4 +412,103 @@ tbody tr:hover {
     justify-content: flex-end;
     gap: 10px;
     margin-top: 24px;
+}
+
+.estado-categoria {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.estado-categoria.activo {
+    background: rgba(46, 204, 113, .12);
+    color: #2ECC71;
+}
+
+.estado-categoria.desactivado {
+    background: rgba(231, 76, 60, .12);
+    color: #E74C3C;
+}
+
+/* ====================================================== */
+/* MODAL CONFIRMACIÓN */
+/* ====================================================== */
+
+.confirm-modal {
+
+    width: 100%;
+    max-width: 400px;
+
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+
+    padding: 28px;
+
+    text-align: center;
+
+    box-shadow: 0px 12px 35px rgba(0, 0, 0, .4);
+}
+
+.confirm-icon {
+
+    width: 50px;
+    height: 50px;
+
+    margin: 0 auto 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(231, 76, 60, .12);
+    color: #E74C3C;
+
+    border-radius: 50%;
+}
+
+.confirm-icon svg {
+
+    width: 24px;
+}
+
+.confirm-modal h2 {
+
+    margin: 0 0 10px;
+    font-size: 20px;
+}
+
+.confirm-modal p {
+
+    margin: 0;
+
+    color: #B8B1A8;
+    font-size: 13px;
+}
+
+.confirm-actions {
+
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+
+    margin-top: 24px;
+}
+
+.confirmar-reactivar .confirm-icon {
+
+    background: rgba(46, 204, 113, .12);
+    color: #2ECC71;
+}
+
+.confirmar-reactivar .btn-danger {
+
+    background: #2ECC71;
+}
+
+.confirmar-reactivar .btn-danger:hover {
+
+    background: #27AE60;
 }

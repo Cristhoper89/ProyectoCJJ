@@ -64,6 +64,7 @@ async def deactivate_categoria(
 
     return await service.desactivar_categoria(categoria_id)
 
+<<<<<<< Updated upstream
 
 @router.patch("/{categoria_id}/estado", response_model=CategoriaResponse)
 async def change_categoria_state(
@@ -75,3 +76,25 @@ async def change_categoria_state(
     if current_user["role_name"] not in ["Administrador", "Cajero"]:
         raise HTTPException(status_code=403, detail="Acceso denegado. Rol insuficiente.")
     return await CategoriaService(db).cambiar_estado_categoria(categoria_id, estado)
+=======
+@router.patch(
+    "/{categoria_id}/estado",
+    response_model=CategoriaResponse,
+    status_code=status.HTTP_200_OK
+)
+async def change_categoria_state(
+    categoria_id: int,
+    new_state: bool,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user["role_name"] != "Administrador" and current_user["role_name"] != "cajero":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado. Rol insuficiente."
+        )
+
+    service = CategoriaService(db)
+
+    return await service.cambiar_estado_categoria(categoria_id, new_state)
+>>>>>>> Stashed changes

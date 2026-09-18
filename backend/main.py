@@ -4,6 +4,9 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from sqlalchemy import text
+
+from core.database import engine
 
 from modules.metodos_pagos.metodo_pago_router import router as metodo_pago_router
 from modules.categorias.categorias_router import router as categorias_router
@@ -40,6 +43,20 @@ async def lifespan(app: FastAPI):
     logger.info("  ¡API Modular Inicializada en Raíz con Éxito (Lifespan)!")
     logger.info("  Documentación interactiva: http://127.0.0.1:8000/docs")
     logger.info("==========================================================")
+
+    # ------------------------------------------------------
+    # MIGRACIONES LIGERAS (idempotentes)
+    # ------------------------------------------------------
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("""
+                ALTER TABLE mesa_consumo
+                ADD COLUMN IF NOT EXISTS descuento numeric(10,2) DEFAULT 0.00;
+            """))
+        logger.info("Migración: columna 'descuento' verificada en mesa_consumo.")
+    except Exception as e:
+        logger.error(f"Migración de mesa_consumo falló: {str(e)}")
+
     yield
     logger.info("Cerrando recursos de la API de forma segura.")
 

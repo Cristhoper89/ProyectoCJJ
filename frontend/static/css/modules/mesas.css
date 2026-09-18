@@ -1,0 +1,1490 @@
+/* ====================================================== */
+/* MESAS */
+/* ====================================================== */
+
+body {
+
+    font-family: "Manrope", sans-serif;
+    background: #1D1A17;
+    color: #F5F5F5;
+    overflow-y: auto;
+
+}
+
+/* ====================================================== */
+/* PÁGINA */
+/* ====================================================== */
+
+.mesas-page {
+
+    padding: 32px;
+    min-height: 100vh;
+
+}
+
+/* ====================================================== */
+/* ENCABEZADO */
+/* ====================================================== */
+
+.mesas-header {
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+
+}
+
+.mesas-header h1 {
+
+    margin: 0 0 6px;
+    font-size: 28px;
+    font-weight: 700;
+
+}
+
+.mesas-header p {
+
+    margin: 0;
+    color: #B8B1A8;
+    font-size: 14px;
+
+}
+
+/* ====================================================== */
+/* BOTONES */
+/* ====================================================== */
+
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-imprimir {
+
+    border: none;
+    border-radius: 8px;
+    padding: 11px 18px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+
+}
+
+.btn-primary {
+
+    background: #D8A85B;
+    color: white;
+
+}
+
+.btn-primary:hover {
+
+    background: #C28E3F;
+
+}
+
+.btn-primary:disabled {
+
+    opacity: .6;
+    cursor: not-allowed;
+
+}
+
+.btn-secondary {
+
+    background: #2D2620;
+    color: #F5F5F5;
+    border: 1px solid #45382E;
+
+}
+
+.btn-secondary:hover {
+
+    background: #3A3028;
+
+}
+
+.btn-danger {
+
+    background: #E74C3C;
+    color: white;
+
+}
+
+.btn-danger:hover {
+
+    background: #C0392B;
+
+}
+
+.btn-imprimir {
+
+    background: #2ECC71;
+    color: white;
+
+}
+
+.btn-imprimir:hover {
+
+    background: #27AE60;
+
+}
+
+.btn-imprimir:disabled {
+
+    opacity: .6;
+    cursor: not-allowed;
+
+}
+
+/* ====================================================== */
+/* HERRAMIENTAS */
+/* ====================================================== */
+
+.mesas-tools {
+
+    margin-bottom: 20px;
+
+}
+
+.search-box {
+
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #2D2620;
+    border: 1px solid #4A3D31;
+    border-radius: 8px;
+    padding: 0 14px;
+
+}
+
+.search-box svg {
+
+    width: 18px;
+    color: #B8B1A8;
+
+}
+
+.search-box input {
+
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #F5F5F5;
+    padding: 12px 0;
+    font-family: inherit;
+
+}
+
+.search-box input::placeholder {
+
+    color: #9C9287;
+
+}
+
+/* ====================================================== */
+/* TARJETA */
+/* ====================================================== */
+
+.mesas-card {
+
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+    box-shadow: 0px 6px 18px rgba(0, 0, 0, .25);
+    overflow: hidden;
+
+}
+
+/* ====================================================== */
+/* GRILLA */
+/* ====================================================== */
+
+.mesas-grid {
+
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
+    gap: 24px;
+    padding: 26px;
+
+}
+
+/* ====================================================== */
+/* TARJETA */
+/* ====================================================== */
+
+.mesa-card {
+
+    background: #2D2620;
+    border: 1px solid #45382E;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: 200ms ease-in-out;
+    display: flex;
+    flex-direction: column;
+
+}
+
+.mesa-card:hover {
+
+    border-color: #D8A85B;
+    transform: translateY(-2px);
+    box-shadow: 0px 8px 20px rgba(0, 0, 0, .3);
+
+}
+
+.mesa-card.ocupada {
+
+    border-color: rgba(216, 168, 91, .5);
+
+}
+
+/* ====================================================== */
+/* IMAGEN */
+/* ====================================================== */
+
+.mesa-card-img {
+
+    position: relative;
+    aspect-ratio: 16 / 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #2A221C;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+}
+
+.mesa-card-img.disponible {
+
+    background-color: #232B23;
+
+}
+
+.mesa-card-img.ocupada {
+
+    background-color: #2A221C;
+
+}
+
+.mesa-card-img svg,
+.mesa-card-emoji {
+
+    width: 46px;
+    height: 46px;
+
+}
+
+.mesa-card-emoji {
+
+    font-size: 48px;
+    line-height: 1;
+    filter: drop-shadow(0px 4px 10px rgba(0, 0, 0, .4));
+
+}
+
+.mesa-card-img .tipo-badge {
+
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, .35);
+
+}
+
+/* ====================================================== */
+/* CUERPO */
+/* ====================================================== */
+
+.mesa-card-body {
+
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+
+}
+
+.mesa-card-cabecera {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+
+}
+
+.mesa-card-nombre {
+
+    font-size: 14px;
+    font-weight: 700;
+    color: #F5F5F5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+}
+
+.mesa-card-row {
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #B8B1A8;
+
+}
+
+.mesa-card-row svg {
+
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+
+}
+
+.mesa-tiempo {
+
+    font-variant-numeric: tabular-nums;
+
+}
+
+.mesa-card-total {
+
+    margin-top: 4px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #D8A85B;
+
+}
+
+.mesa-card .actions {
+
+    margin-top: auto;
+    gap: 8px;
+
+}
+
+/* ====================================================== */
+/* LOADING / VACIO */
+/* ====================================================== */
+
+.mesa-loading {
+
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 46px;
+    color: #B8B1A8;
+
+}
+
+.mesa-loading svg {
+
+    width: 22px;
+    height: 22px;
+    animation: girar 1s linear infinite;
+
+}
+
+.mesa-loading span {
+
+    font-size: 13px;
+
+}
+
+@keyframes girar {
+
+    to {
+
+        transform: rotate(360deg);
+
+    }
+
+}
+
+/* ====================================================== */
+/* BADGES */
+/* ====================================================== */
+
+.estado-mesa-badge {
+
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+
+}
+
+.estado-mesa-badge.disponible {
+
+    background: rgba(46, 204, 113, .12);
+    color: #2ECC71;
+
+}
+
+.estado-mesa-badge.ocupada {
+
+    background: rgba(216, 168, 91, .14);
+    color: #D8A85B;
+
+}
+
+.estado-mesa-badge.tipo-badge {
+
+    background: rgba(184, 177, 168, .12);
+    color: #B8B1A8;
+
+}
+
+/* ====================================================== */
+/* ACCIONES */
+/* ====================================================== */
+
+.actions {
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+}
+
+.action-button {
+
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #45382E;
+    border-radius: 8px;
+    background: #2D2620;
+    color: #B8B1A8;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+
+}
+
+.action-button:hover {
+
+    color: #D8A85B;
+    border-color: #D8A85B;
+
+}
+
+.action-button.danger:hover {
+
+    color: #E74C3C;
+    border-color: #E74C3C;
+
+}
+
+.action-button.success:hover {
+
+    color: #2ECC71;
+    border-color: #2ECC71;
+
+}
+
+.action-button svg {
+
+    width: 16px;
+
+}
+
+/* ====================================================== */
+/* CARGANDO */
+/* ====================================================== */
+
+.loading {
+
+    text-align: center;
+    padding: 40px;
+    color: #B8B1A8;
+
+}
+
+.loading-chip {
+
+    color: #B8B1A8;
+    font-size: 13px;
+
+}
+
+/* ====================================================== */
+/* MODAL */
+/* ====================================================== */
+
+.modal-overlay {
+
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .65);
+    z-index: 1000;
+
+}
+
+.modal-overlay.active {
+
+    display: flex;
+
+}
+
+.modal {
+
+    width: 100%;
+    max-width: 480px;
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+    box-shadow: 0px 12px 35px rgba(0, 0, 0, .4);
+    padding: 24px;
+
+}
+
+.modal-header {
+
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+
+}
+
+.modal-header h2 {
+
+    margin: 0 0 6px;
+    font-size: 20px;
+
+}
+
+.modal-header p {
+
+    margin: 0;
+    color: #B8B1A8;
+    font-size: 13px;
+
+}
+
+.modal-close {
+
+    border: none;
+    background: transparent;
+    color: #B8B1A8;
+    cursor: pointer;
+
+}
+
+.modal-close:hover {
+
+    color: #F5F5F5;
+
+}
+
+.modal-close svg {
+
+    width: 20px;
+
+}
+
+/* ====================================================== */
+/* FORMULARIO */
+/* ====================================================== */
+
+.form-group {
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+}
+
+.form-group label {
+
+    font-size: 13px;
+    font-weight: 600;
+    color: #F5F5F5;
+
+}
+
+.form-group input,
+.form-group select {
+
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #4A3D31;
+    background: #2D2620;
+    color: #F5F5F5;
+    outline: none;
+    font-family: inherit;
+
+}
+
+.form-group input:focus,
+.form-group select:focus {
+
+    border-color: #D8A85B;
+
+}
+
+.form-group input::placeholder,
+.form-group select::placeholder {
+
+    color: #9C9287;
+
+}
+
+/* ====================================================== */
+/* MENSAJES */
+/* ====================================================== */
+
+.mesa-message {
+
+    min-height: 20px;
+    margin-top: 14px;
+    font-size: 13px;
+
+}
+
+.mesa-message.error {
+
+    color: #E74C3C;
+
+}
+
+.mesa-message.success {
+
+    color: #2ECC71;
+
+}
+
+/* ====================================================== */
+/* ACCIONES DEL MODAL */
+/* ====================================================== */
+
+.modal-actions {
+
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+
+}
+
+/* ====================================================== */
+/* MODAL CONFIRMACIÓN */
+/* ====================================================== */
+
+.confirm-modal {
+
+    width: 100%;
+    max-width: 400px;
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+    padding: 28px;
+    text-align: center;
+    box-shadow: 0px 12px 35px rgba(0, 0, 0, .4);
+
+}
+
+.confirm-icon {
+
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(231, 76, 60, .12);
+    color: #E74C3C;
+    border-radius: 50%;
+
+}
+
+.confirm-icon svg {
+
+    width: 24px;
+
+}
+
+.confirm-modal h2 {
+
+    margin: 0 0 10px;
+    font-size: 20px;
+
+}
+
+.confirm-modal p {
+
+    margin: 0;
+    color: #B8B1A8;
+    font-size: 13px;
+
+}
+
+.confirm-actions {
+
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 24px;
+
+}
+
+/* ====================================================== */
+/* MODAL PEDIDO */
+/* ====================================================== */
+
+.pedido-modal {
+
+    width: 100%;
+    max-width: 1080px;
+    max-height: 90vh;
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+    box-shadow: 0px 12px 35px rgba(0, 0, 0, .4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+}
+
+.pedido-header {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid #45382E;
+
+}
+
+.pedido-titulo {
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+}
+
+.pedido-titulo h2 {
+
+    margin: 0;
+    font-size: 20px;
+
+}
+
+.pedido-tiempo {
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #D8A85B;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+
+}
+
+.pedido-tiempo svg {
+
+    width: 18px;
+
+}
+
+.pedido-cuerpo {
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    min-height: 0;
+    overflow: hidden;
+
+}
+
+/* ====================================================== */
+/* PANEL PRODUCTOS */
+/* ====================================================== */
+
+.pedido-productos {
+
+    padding: 20px 24px;
+    border-right: 1px solid #45382E;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+    max-height: calc(90vh - 73px);
+    overflow-y: auto;
+
+}
+
+.categorias-chips {
+
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+}
+
+.chip-categoria {
+
+    border: 1px solid #4A3D31;
+    background: #2D2620;
+    color: #F5F5F5;
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+
+}
+
+.chip-categoria:hover {
+
+    border-color: #D8A85B;
+    color: #D8A85B;
+
+}
+
+.chip-categoria.activa {
+
+    background: #D8A85B;
+    border-color: #D8A85B;
+    color: #1D1A17;
+
+}
+
+.productos-grid {
+
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+
+}
+
+.producto-tarjeta {
+
+    position: relative;
+    border: 1px solid #45382E;
+    background: #2D2620;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+    font-family: inherit;
+
+}
+
+.producto-tarjeta:hover {
+
+    border-color: #D8A85B;
+    background: #382D24;
+
+}
+
+.producto-tarjeta strong {
+
+    font-size: 14px;
+    color: #F5F5F5;
+
+}
+
+.producto-tarjeta span {
+
+    color: #D8A85B;
+    font-weight: 600;
+    font-size: 14px;
+
+}
+
+.producto-tarjeta small {
+
+    color: #9C9287;
+    font-size: 12px;
+
+}
+
+.producto-tarjeta svg {
+
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 18px;
+    color: #2ECC71;
+
+}
+
+/* ====================================================== */
+/* PANEL RESUMEN */
+/* ====================================================== */
+
+.pedido-resumen {
+
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+    max-height: calc(90vh - 73px);
+    overflow-y: auto;
+
+}
+
+.resumen-titulo h3 {
+
+    margin: 0;
+    font-size: 16px;
+
+}
+
+.pedido-lineas {
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 60px;
+
+}
+
+.pedido-vacio {
+
+    color: #9C9287;
+    font-size: 13px;
+    text-align: center;
+    padding: 20px 0;
+
+}
+
+.pedido-linea {
+
+    border: 1px solid #45382E;
+    border-radius: 12px;
+    background: #2D2620;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+}
+
+.linea-nombre {
+
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+
+}
+
+.linea-nombre strong {
+
+    font-size: 14px;
+
+}
+
+.linea-nombre span {
+
+    color: #B8B1A8;
+    font-size: 12px;
+
+}
+
+.linea-acciones {
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+}
+
+.stepper {
+
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #3A3028;
+    border: 1px solid #45382E;
+    border-radius: 8px;
+    padding: 2px;
+
+}
+
+.stepper span {
+
+    min-width: 28px;
+    text-align: center;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+
+}
+
+.step-btn {
+
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #F5F5F5;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+
+}
+
+.step-btn:hover {
+
+    background: #45382E;
+    color: #D8A85B;
+
+}
+
+.step-btn svg {
+
+    width: 14px;
+
+}
+
+.linea-descuento {
+
+    flex: 1;
+
+}
+
+.descuento-input {
+
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid #4A3D31;
+    background: #1D1A17;
+    color: #F5F5F5;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+
+}
+
+.descuento-input:focus {
+
+    border-color: #D8A85B;
+
+}
+
+.descuento-input::placeholder {
+
+    color: #9C9287;
+
+}
+
+.linea-subtotal {
+
+    min-width: 80px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+
+}
+
+/* ====================================================== */
+/* TOTALES */
+/* ====================================================== */
+
+.pedido-totales {
+
+    border-top: 1px solid #45382E;
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+}
+
+.total-fila {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+
+}
+
+.total-fila span {
+
+    color: #B8B1A8;
+
+}
+
+.total-fila strong {
+
+    font-variant-numeric: tabular-nums;
+
+}
+
+.total-editable-control {
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+}
+
+.total-editable input {
+
+    width: 130px;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #4A3D31;
+    background: #1D1A17;
+    color: #F5F5F5;
+    font-family: inherit;
+    font-size: 13px;
+    text-align: right;
+    outline: none;
+
+}
+
+.total-editable input:focus {
+
+    border-color: #D8A85B;
+
+}
+
+.total-editable-control button {
+
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #4A3D31;
+    border-radius: 8px;
+    background: #2D2620;
+    color: #B8B1A8;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+
+}
+
+.total-editable-control button:hover {
+
+    color: #E74C3C;
+    border-color: #E74C3C;
+
+}
+
+.total-editable-control button svg {
+
+    width: 14px;
+
+}
+
+.total-grande {
+
+    border-top: 1px solid #45382E;
+    padding-top: 14px;
+    font-size: 18px;
+
+}
+
+.total-grande strong {
+
+    color: #D8A85B;
+    font-size: 22px;
+
+}
+
+/* ====================================================== */
+/* ACCIONES DEL PEDIDO */
+/* ====================================================== */
+
+.pedido-acciones {
+
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+
+}
+
+.pedido-acciones .btn-secondary,
+.pedido-acciones .btn-imprimir {
+
+    flex: 1;
+
+}
+
+/* ====================================================== */
+/* MODAL CUENTA / IMPRESIÓN */
+/* ====================================================== */
+
+.cuenta-modal {
+
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+    box-shadow: 0px 12px 35px rgba(0, 0, 0, .4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+}
+
+.cuenta-acciones {
+
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #45382E;
+
+}
+
+.print-area {
+
+    padding: 24px 28px;
+    overflow-y: auto;
+    color: #1D1A17;
+    background: #F5F5F5;
+    font-size: 13px;
+
+}
+
+/* ====================================================== */
+/* COMPROBANTE */
+/* ====================================================== */
+
+.comprobante-cabecera {
+
+    text-align: center;
+    border-bottom: 2px solid #1D1A17;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+
+}
+
+.comprobante-cabecera h2 {
+
+    margin: 0 0 4px;
+    font-size: 18px;
+    letter-spacing: 1px;
+
+}
+
+.comprobante-cabecera p {
+
+    margin: 2px 0;
+    font-size: 12px;
+    color: #4a4a4a;
+
+}
+
+.comprobante-datos {
+
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 13px;
+
+}
+
+.comprobante-datos p {
+
+    margin: 0;
+
+}
+
+.comprobante-tabla {
+
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 14px;
+
+}
+
+.comprobante-tabla th {
+
+    background: #1D1A17;
+    color: #F5F5F5;
+    font-size: 11px;
+    padding: 8px 6px;
+    text-align: left;
+
+}
+
+.comprobante-tabla td {
+
+    padding: 8px 6px;
+    border-top: 1px solid #ccc;
+    font-size: 12px;
+    color: #1D1A17;
+
+}
+
+.texto-centro {
+
+    text-align: center;
+
+}
+
+.texto-derecha {
+
+    text-align: right;
+
+}
+
+.comprobante-totales {
+
+    border-top: 2px solid #1D1A17;
+    padding-top: 10px;
+    margin-bottom: 14px;
+
+}
+
+.comprobante-totales p {
+
+    display: flex;
+    justify-content: space-between;
+    margin: 5px 0;
+    font-size: 13px;
+
+}
+
+.comprobante-total {
+
+    font-size: 17px !important;
+    margin-top: 8px !important;
+    border-top: 1px dashed #1D1A17;
+    padding-top: 8px;
+
+}
+
+.comprobante-total strong {
+
+    color: #C28E3F;
+
+}
+
+.comprobante-pie {
+
+    text-align: center;
+    border-top: 1px dashed #1D1A17;
+    padding-top: 12px;
+    color: #4a4a4a;
+    font-size: 12px;
+
+}
+
+.comprobante-pie p {
+
+    margin: 0;
+
+}
+
+/* ====================================================== */
+/* RESPONSIVE */
+/* ====================================================== */
+
+@media (max-width: 860px) {
+
+    .pedido-cuerpo {
+
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+
+    }
+
+    .pedido-productos,
+    .pedido-resumen {
+
+        max-height: none;
+        overflow-y: visible;
+        border-right: none;
+
+    }
+
+    .pedido-productos {
+
+        border-bottom: 1px solid #45382E;
+
+    }
+
+}
+
+/* ====================================================== */
+/* IMPRESIÓN */
+/* ====================================================== */
+
+@media print {
+
+    body * {
+
+        visibility: hidden;
+
+    }
+
+    .print-area,
+    .print-area * {
+
+        visibility: visible;
+
+    }
+
+    .print-area {
+
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-height: none;
+        overflow: visible;
+        background: #fff;
+        color: #000;
+        padding: 20px;
+
+    }
+
+    .modal-overlay.active {
+
+        display: block;
+        position: static;
+        background: none;
+
+    }
+
+}

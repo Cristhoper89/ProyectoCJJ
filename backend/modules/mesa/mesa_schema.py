@@ -20,6 +20,7 @@ class MesaBase(BaseModel):
 class MesaCreate(BaseModel):
     nombre: str = Field(..., min_length=1, max_length=100)
     estado: bool = Field(..., description="Estado de la mesa (disponible/ocupada)")
+    tipo: Optional[bool] = Field(True, description="MESA TRUE, BARRA FALSE")
 
 class MesaResponse(MesaBase):
     id: int

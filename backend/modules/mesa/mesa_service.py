@@ -10,18 +10,62 @@ class MesaService:
 
     async def get_all_mesas(self) -> list[dict]:
         logger.info("SQL Nativo: Consultando todas las mesas.")
+<<<<<<< Updated upstream
         query = text("SELECT id, nombre, estado, hora_inicio, total, propina, domicilio, tipo, id_mesero, id_cliente FROM mesa ORDER BY id ASC;")
+=======
+        query = text("""
+            SELECT
+                id,
+                estado,
+                hora_inicio,
+                total,
+                id_mesero,
+                id_cliente,
+                propina,
+                domicilio,
+                tipo,
+                pago_efectivo,
+                pago_tarjeta,
+                pago_transfe
+            FROM mesa
+            ORDER BY id ASC;
+        """)
+>>>>>>> Stashed changes
         result = await self.db.execute(query)
         return [dict(row) for row in result.mappings().all()]
 
     async def create_mesa(self, mesa_data: MesaCreate) -> dict:
         logger.info(f"SQL Nativo: Insertando mesa {mesa_data.estado}")
 
+<<<<<<< Updated upstream
         query = text("INSERT INTO mesa (nombre, estado) VALUES (:nombre, :estado) RETURNING id, nombre, estado;")
         try:
             result = await self.db.execute(query, {
                 "nombre": mesa_data.nombre,
                 "estado": mesa_data.estado
+=======
+        query = text("""
+            INSERT INTO mesa (estado, tipo)
+            VALUES (:estado, :tipo)
+            RETURNING
+                id,
+                estado,
+                hora_inicio,
+                total,
+                id_mesero,
+                id_cliente,
+                propina,
+                domicilio,
+                tipo,
+                pago_efectivo,
+                pago_tarjeta,
+                pago_transfe;
+        """)
+        try:
+            result = await self.db.execute(query, {
+                "estado": mesa_data.estado,
+                "tipo": mesa_data.tipo
+>>>>>>> Stashed changes
             })
             await self.db.commit()
             return dict(result.mappings().first())
@@ -156,6 +200,30 @@ class MesaService:
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Error crítico al cambiar el estado de la mesa: {str(e)}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
+
+    async def cerrar_mesa(self, target_mesa_id: int) -> dict:
+        logger.info(f"Intentando cerrar la mesa ID: {target_mesa_id}")
+
+        # Verificar que la mesa objetivo realmente exista en PostgreSQL
+        check = await self.db.execute(text("SELECT id FROM mesa WHERE id = :id;"), {"id": target_mesa_id})
+        if not check.first():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La mesa a cerrar no existe.")
+
+        query = text("""
+            UPDATE mesa
+            SET estado = false, hora_inicio = NULL
+            WHERE id = :id
+            RETURNING id, estado, hora_inicio, total, propina, domicilio, tipo;
+        """)
+
+        try:
+            result = await self.db.execute(query, {"id": target_mesa_id})
+            await self.db.commit()
+            return dict(result.mappings().first())
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Error crítico al cerrar la mesa: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
         
     async def aplicar_mesero_a_mesa(self, target_mesa_id: int, id_mesero: UUID) -> dict:
