@@ -321,7 +321,7 @@ function mostrarProductos(lista){
                             title="Activar"
                             onclick="abrirCambioEstado(${producto.id}, true)"
                         >
-                            <i data-lucide="power"></i>
+                            <i data-lucide="rotate-ccw"></i>
                         </button>
                         `
                     }

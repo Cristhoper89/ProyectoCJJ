@@ -2,25 +2,25 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView, Image } from 'react-native';
 import { 
-  Menu, X, User, DollarSign, Layers, Home, ArrowLeftRight, 
-  Package, Truck, Users, UserCheck, BarChart2, ShoppingBag, BookOpen, Settings, Carrot
+  Menu, X, User, WalletCards, Tags, LayoutGrid, ArrowLeftRight,
+  Package, Truck, Users, ContactRound, ChartNoAxesCombined, ClipboardList, BookOpen, Settings, Carrot
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { clearAccessToken } from '../constants/api';
 
 const menuItems = [
   { label: 'Perfil', icon: User },
-  { label: 'Caja', icon: DollarSign },
-  { label: 'Categorías', icon: Layers },
-  { label: 'Mesa (página inicial)', icon: Home },
+  { label: 'Caja', icon: WalletCards },
+  { label: 'Categorías', icon: Tags, route: '/categorias' },
+  { label: 'Mesa (página inicial)', icon: LayoutGrid, route: '/mesa' },
   { label: 'Movimientos', icon: ArrowLeftRight },
-  { label: 'Productos', icon: Package },
+  { label: 'Productos', icon: Package, route: '/productos' },
   { label: 'Ingredientes', icon: Carrot, route: '/ingredientes' },
   { label: 'Proveedores', icon: Truck },
   { label: 'Empleados', icon: Users },
-  { label: 'Clientes', icon: UserCheck },
-  { label: 'Estadística', icon: BarChart2 },
-  { label: 'Pedidos', icon: ShoppingBag },
+  { label: 'Clientes', icon: ContactRound },
+  { label: 'Estadística', icon: ChartNoAxesCombined },
+  { label: 'Pedidos', icon: ClipboardList },
   { label: 'Carta', icon: BookOpen },
   { label: 'Configuración', icon: Settings },
 ];

@@ -6,10 +6,10 @@ const menuModules = {
 		["Perfil", "user-round", "/dashboard"], ["Caja", "wallet-cards", "/caja"],
 		["Categorías", "tags", "/categorias"], ["Mesa", "layout-grid", "/mesas"],
 		["Movimientos", "arrow-left-right", null], ["Productos", "package", "/productos"],
-		["Proveedores", "truck", null], ["Empleados", "users-round", "/usuarios"],
+		["Ingredientes", "carrot", null], ["Proveedores", "truck", null], ["Empleados", "users-round", "/usuarios"],
 		["Clientes", "contact-round", null], ["Estadística", "chart-no-axes-combined", "/reportes"],
 		["Pedidos", "clipboard-list", "/pedidos"], ["Carta", "book-open", null],
-		["Configuración", "settings-2", "/configuracion"]
+		["Configuración", "settings", "/configuracion"]
 	],
 	cajero: [
 		["Perfil", "user-round", "/dashboard"], ["Mesa", "layout-grid", "/mesas"],

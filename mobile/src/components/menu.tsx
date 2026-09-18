@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView } from 'react-native';
-import { Menu, X, User, DollarSign, Layers, Home, ArrowLeftRight, Package, Truck, Users, UserCheck, BarChart2, ShoppingBag, BookOpen, Settings } from 'lucide-react-native';
+import { Menu, X, User, WalletCards, Tags, LayoutGrid, ArrowLeftRight, Package, Truck, Users, ContactRound, ChartNoAxesCombined, ClipboardList, BookOpen, Settings, Carrot } from 'lucide-react-native';
 
 const menuItems = [
   { label: 'Perfil', icon: User },
-  { label: 'Caja', icon: DollarSign },
-  { label: 'Categorías', icon: Layers },
-  { label: 'Mesa (página inicial)', icon: Home },
+  { label: 'Caja', icon: WalletCards },
+  { label: 'Categorías', icon: Tags },
+  { label: 'Mesa (página inicial)', icon: LayoutGrid },
   { label: 'Movimientos', icon: ArrowLeftRight },
   { label: 'Productos', icon: Package },
+  { label: 'Ingredientes', icon: Carrot },
   { label: 'Proveedores', icon: Truck },
   { label: 'Empleados', icon: Users },
-  { label: 'Clientes', icon: UserCheck },
-  { label: 'Estadística', icon: BarChart2 },
-  { label: 'Pedidos', icon: ShoppingBag },
+  { label: 'Clientes', icon: ContactRound },
+  { label: 'Estadística', icon: ChartNoAxesCombined },
+  { label: 'Pedidos', icon: ClipboardList },
   { label: 'Carta', icon: BookOpen },
   { label: 'Configuración', icon: Settings },
 ];

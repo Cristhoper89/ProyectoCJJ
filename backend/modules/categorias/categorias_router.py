@@ -63,3 +63,15 @@ async def deactivate_categoria(
     service = CategoriaService(db)
 
     return await service.desactivar_categoria(categoria_id)
+
+
+@router.patch("/{categoria_id}/estado", response_model=CategoriaResponse)
+async def change_categoria_state(
+    categoria_id: int,
+    estado: bool,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if current_user["role_name"] not in ["Administrador", "Cajero"]:
+        raise HTTPException(status_code=403, detail="Acceso denegado. Rol insuficiente.")
+    return await CategoriaService(db).cambiar_estado_categoria(categoria_id, estado)

@@ -15,7 +15,7 @@ class CategoriaService:
             SELECT
                 id,
                 nombre,
-                COALESCE(estado, TRUE) AS estado
+                COALESCE(estado, FALSE) AS estado
             FROM categorias
             ORDER BY id ASC;
             """
@@ -64,7 +64,7 @@ class CategoriaService:
                 detail="La categoría a modificar no existe."
             )
 
-        if categoria["estado"] is False:
+        if categoria["estado"] is not True:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No se puede editar una categoría desactivada."
@@ -103,7 +103,7 @@ class CategoriaService:
                 UPDATE categorias
                 SET {', '.join(update_fields)}
                 WHERE id = :id
-                RETURNING id, nombre, COALESCE(estado, TRUE) AS estado;
+                RETURNING id, nombre, COALESCE(estado, FALSE) AS estado;
             """
         
         try:
@@ -125,7 +125,7 @@ class CategoriaService:
                 """
                 SELECT
                     id,
-                    COALESCE(estado, TRUE) AS estado
+                    COALESCE(estado, FALSE) AS estado
                 FROM categorias
                 WHERE id = :id;
                 """
@@ -141,7 +141,7 @@ class CategoriaService:
                 detail="La categoría no existe."
             )
 
-        if categoria["estado"] is False:
+        if categoria["estado"] is not True:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="La categoría ya está desactivada."
@@ -177,3 +177,23 @@ class CategoriaService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error interno del servidor."
             )
+
+    async def cambiar_estado_categoria(self, categoria_id: int, estado: bool) -> dict:
+        try:
+            result = await self.db.execute(text("""
+                UPDATE categorias
+                SET estado = :estado
+                WHERE id = :id
+                RETURNING id, nombre, COALESCE(estado, FALSE) AS estado;
+            """), {"id": categoria_id, "estado": estado})
+            row = result.mappings().first()
+            if row is None:
+                await self.db.rollback()
+                raise HTTPException(status_code=404, detail="La categoría no existe.")
+            await self.db.commit()
+            return dict(row)
+        except HTTPException:
+            raise
+        except Exception as error:
+            await self.db.rollback()
+            raise HTTPException(status_code=400, detail="No fue posible cambiar el estado de la categoría.") from error
