@@ -10,27 +10,69 @@ class MovimientoService:
 
     async def get_all_movimientos(self) -> list[dict]:
         logger.info("SQL Nativo: Consultando todos los movimientos.")
-        query = text("SELECT id, tipo, descripcion, estado, propina, domicilio, total, id_caja, metodo FROM movimiento ORDER BY id ASC;")
+        query = text("""
+            SELECT m.id, m.estado, m.propina, m.domicilio, m.total, m.id_caja,
+                   m.metodo, m.id_cliente, m.id_mesero, m.fecha_hora,
+                   b.id_mesa
+            FROM movimiento m
+            LEFT JOIN barra b ON b.id_movimiento = m.id
+            ORDER BY m.id ASC;
+        """)
         result = await self.db.execute(query)
         return [dict(row) for row in result.mappings().all()]
 
     async def create_movimiento(self, movimiento_data: MovimientoCreate) -> dict:
-        logger.info(f"SQL Nativo: Insertando movimiento {movimiento_data.descripcion}")
+        logger.info("SQL Nativo: Insertando movimiento.")
 
-        query = text("INSERT INTO movimiento (tipo, descripcion, estado, propina, domicilio, total, id_caja, metodo) VALUES (:tipo, :descripcion, :estado, :propina, :domicilio, :total, :id_caja, :metodo) RETURNING id, tipo, descripcion, estado, propina, domicilio, total, id_caja, metodo;")
+        if movimiento_data.id_mesa is not None:
+            barra = (await self.db.execute(text("""
+                SELECT m.id, m.tipo, m.estado
+                FROM mesa m
+                WHERE m.id = :id_mesa;
+            """), {"id_mesa": movimiento_data.id_mesa})).mappings().first()
+            if not barra:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La barra no existe.")
+            if barra["tipo"] != "barra":
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La mesa indicada no es una barra.")
+            if barra["estado"] is not True:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La barra debe estar activa para asociar un movimiento.")
+
+        caja_id = movimiento_data.id_caja
+        if caja_id is None:
+            caja = (await self.db.execute(
+                text("SELECT id FROM caja ORDER BY id DESC LIMIT 1;")
+            )).first()
+            if not caja:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No hay una caja disponible.")
+            caja_id = caja.id
+
+        query = text("""
+            INSERT INTO movimiento (estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, fecha_hora)
+            VALUES (:estado, :propina, :domicilio, :total, :id_caja, :metodo, :id_cliente, :id_mesero,
+                    COALESCE(:fecha_hora, CURRENT_TIMESTAMP))
+            RETURNING id, estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, fecha_hora;
+        """)
         try:
             result = await self.db.execute(query, {
-                "tipo": movimiento_data.tipo,
-                "descripcion": movimiento_data.descripcion,
                 "estado": movimiento_data.estado,
                 "propina": movimiento_data.propina,
                 "domicilio": movimiento_data.domicilio,
                 "total": movimiento_data.total,
-                "id_caja": movimiento_data.id_caja,
-                "metodo": movimiento_data.metodo
+                "id_caja": caja_id,
+                "metodo": movimiento_data.metodo,
+                "id_cliente": movimiento_data.id_cliente,
+                "id_mesero": movimiento_data.id_mesero,
+                "fecha_hora": movimiento_data.fecha_hora
             })
+            movimiento = dict(result.mappings().first())
+            movimiento["id_mesa"] = movimiento_data.id_mesa
+            if movimiento_data.id_mesa is not None:
+                await self.db.execute(
+                    text("INSERT INTO barra (id_mesa, id_movimiento) VALUES (:id_mesa, :id_movimiento);"),
+                    {"id_mesa": movimiento_data.id_mesa, "id_movimiento": movimiento["id"]},
+                )
             await self.db.commit()
-            return dict(result.mappings().first())
+            return movimiento
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Error al insertar movimiento: {str(e)}")
@@ -47,14 +89,6 @@ class MovimientoService:
         # Construcción dinámica de la sentencia UPDATE con SQL Puro
         update_fields = []
         params = {"id": target_movimiento_id}
-
-        if movimiento_update.tipo is not None:
-            update_fields.append("tipo = :tipo")
-            params["tipo"] = movimiento_update.tipo
-
-        if movimiento_update.descripcion is not None:
-            update_fields.append("descripcion = :descripcion")
-            params["descripcion"] = movimiento_update.descripcion
 
         if movimiento_update.estado is not None:
             update_fields.append("estado = :estado")
@@ -80,6 +114,18 @@ class MovimientoService:
             update_fields.append("metodo = :metodo")
             params["metodo"] = movimiento_update.metodo
 
+        if movimiento_update.id_cliente is not None:
+            update_fields.append("id_cliente = :id_cliente")
+            params["id_cliente"] = movimiento_update.id_cliente
+
+        if movimiento_update.id_mesero is not None:
+            update_fields.append("id_mesero = :id_mesero")
+            params["id_mesero"] = movimiento_update.id_mesero
+
+        if movimiento_update.fecha_hora is not None:
+            update_fields.append("fecha_hora = :fecha_hora")
+            params["fecha_hora"] = movimiento_update.fecha_hora
+
         if not update_fields:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se enviaron datos para actualizar.")
 
@@ -88,7 +134,7 @@ class MovimientoService:
             UPDATE movimiento 
             SET {', '.join(update_fields)} 
             WHERE id = :id 
-            RETURNING id, tipo, descripcion, estado, propina, domicilio, total, id_caja, metodo;
+            RETURNING id, estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, fecha_hora;
         """
         
         try:

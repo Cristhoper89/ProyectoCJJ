@@ -108,25 +108,31 @@ class IngredienteService:
 
 
 class GastoService:
-    columns = "id, id_ingrediente, nombre, descripcion, cantidad, valor, fecha, id_movimiento"
+    columns = "g.id, g.nombre, g.descripcion, g.valor, g.fecha_hora, g.categoria, g.id_caja, c.nombre AS categoria_nombre"
 
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
     async def get_all(self) -> list[dict]:
         result = await self.db.execute(
-            text(f"SELECT {self.columns} FROM gasto ORDER BY id ASC;")
+            text(f"""
+                SELECT {self.columns}
+                FROM gasto g
+                LEFT JOIN categorias c ON c.id = g.categoria
+                ORDER BY g.id ASC;
+            """)
         )
         return [dict(row) for row in result.mappings().all()]
 
     async def create(self, data: GastoCreate) -> dict:
         query = text(f"""
-            INSERT INTO gasto (id_ingrediente, nombre, descripcion, cantidad, valor, fecha, id_movimiento)
-            VALUES (:id_ingrediente, :nombre, :descripcion, :cantidad, :valor,
-                    COALESCE(:fecha, CURRENT_TIMESTAMP), :id_movimiento)
-            RETURNING {self.columns};
+            INSERT INTO gasto (nombre, descripcion, valor, fecha_hora, categoria, id_caja)
+            VALUES (:nombre, :descripcion, :valor,
+                COALESCE(:fecha_hora, CURRENT_TIMESTAMP), :categoria, :id_caja)
+            RETURNING id, nombre, descripcion, valor, fecha_hora, categoria, id_caja;
         """)
-        return await self._execute_write(query, data.model_dump())
+        gasto = await self._execute_write(query, data.model_dump())
+        return await self._with_categoria_nombre(gasto)
 
     async def update(self, item_id: int, data: GastoUpdate) -> dict:
         values = data.model_dump(exclude_none=True)
@@ -137,9 +143,18 @@ class GastoService:
         query = text(f"""
             UPDATE gasto SET {', '.join(assignments)}
             WHERE id = :id
-            RETURNING {self.columns};
+            RETURNING id, nombre, descripcion, valor, fecha_hora, categoria, id_caja;
         """)
-        return await self._execute_write(query, values, missing_detail="El gasto no existe.")
+        gasto = await self._execute_write(query, values, missing_detail="El gasto no existe.")
+        return await self._with_categoria_nombre(gasto)
+
+    async def _with_categoria_nombre(self, gasto: dict) -> dict:
+        result = await self.db.execute(
+            text("SELECT nombre FROM categorias WHERE id = :categoria;"),
+            {"categoria": gasto["categoria"]},
+        ) if gasto["categoria"] is not None else None
+        gasto["categoria_nombre"] = result.scalar_one_or_none() if result is not None else None
+        return gasto
 
     async def delete(self, item_id: int) -> None:
         result = await self.db.execute(

@@ -17,7 +17,7 @@ class UserService:
         logger.info("SQL Nativo: Consultando todos los usuarios.")
 
         query = text(
-            "SELECT id, username, email, is_active, role_id, created_at, last_login FROM users ORDER BY id ASC;"
+            "SELECT id, username, email, nombre, telefono, is_active, role_id, created_at, last_login FROM users ORDER BY id ASC;"
         )
 
         result = await self.db.execute(query)
@@ -56,7 +56,7 @@ class UserService:
         hashed_pwd = hash_password(user_data.password)
 
         query = text(
-            "INSERT INTO users (username, email, hashed_password, is_active, role_id, created_at) VALUES (:username, :email, :hashed_password, TRUE, :role_id, Now() AT TIME ZONE 'America/Bogota') RETURNING id, username, email, is_active, role_id, created_at;"
+            "INSERT INTO users (username, email, nombre, telefono, hashed_password, is_active, role_id, created_at) VALUES (:username, :email, :nombre, :telefono, :hashed_password, TRUE, :role_id, Now() AT TIME ZONE 'America/Bogota') RETURNING id, username, email, nombre, telefono, is_active, role_id, created_at, last_login;"
         )
 
         try:
@@ -66,6 +66,8 @@ class UserService:
                 {
                     "username": user_data.username,
                     "email": user_data.email,
+                    "nombre": user_data.nombre,
+                    "telefono": user_data.telefono,
                     "hashed_password": hashed_pwd,
                     "role_id": user_data.role_id
                 }
@@ -125,7 +127,7 @@ class UserService:
 
         # Registrar el usuario en la base de datos
         query = text(
-            "INSERT INTO users (username, email, hashed_password, is_active, role_id, created_at) VALUES (:username, :email, :hashed_password, TRUE, :role_id, Now() AT TIME ZONE 'America/Bogota') RETURNING id, username, email, is_active, role_id, created_at;"
+            "INSERT INTO users (username, email, nombre, telefono, hashed_password, is_active, role_id, created_at) VALUES (:username, :email, :nombre, :telefono, :hashed_password, TRUE, :role_id, Now() AT TIME ZONE 'America/Bogota') RETURNING id, username, email, nombre, telefono, is_active, role_id, created_at, last_login;"
         )
 
         try:
@@ -135,6 +137,8 @@ class UserService:
                 {
                     "username": user_data.username,
                     "email": user_data.email,
+                    "nombre": user_data.nombre,
+                    "telefono": user_data.telefono,
                     "hashed_password": hashed_pwd,
                     "role_id": user_data.role_id
                 }
@@ -210,6 +214,14 @@ class UserService:
         update_fields = []
         params = {"id": target_user_id}
 
+        if user_update.nombre is not None:
+            update_fields.append("nombre = :nombre")
+            params["nombre"] = user_update.nombre
+
+        if user_update.telefono is not None:
+            update_fields.append("telefono = :telefono")
+            params["telefono"] = user_update.telefono
+
         # Actualizar el correo
         if user_update.email is not None:
 
@@ -278,7 +290,7 @@ class UserService:
             UPDATE users
             SET {', '.join(update_fields)}
             WHERE id = :id
-            RETURNING id, username, email, is_active, role_id;
+            RETURNING id, username, email, nombre, telefono, is_active, role_id, created_at, last_login;
         """
 
         # Ejecutar la actualización

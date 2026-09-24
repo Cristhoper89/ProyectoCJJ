@@ -1,12 +1,12 @@
 from fastapi import HTTPException, status
-from sqlalchemy import false, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.logger import logger
 from modules.mesa_consumo.mesa_consumo_schema import MesaCreate, MesaUpdate
 
 MESA_CONSUMO_COLUMNS = """
-    id, id_producto, id_mov, id_mesa, cantidad,
-    precio_unitario, descuento, subtotal, preparado, hora
+    id, id_producto, id_mov, cantidad, precio_unitario,
+    subtotal, preparado, notas, descuento
 """
 
 
@@ -29,7 +29,7 @@ class MesaCService:
         return round(max(0.0, (precio - descuento) * cantidad), 2)
 
     async def create_mesaC(self, mesaC_data: MesaCreate) -> dict:
-        logger.info(f"SQL Nativo: Insertando consumo de mesa {mesaC_data.id_mesa}")
+        logger.info(f"SQL Nativo: Insertando consumo del movimiento {mesaC_data.id_mov}")
 
         dup = await self.db.execute(
             text("SELECT id, preparacion, precio FROM productos WHERE id = :id;"),
@@ -47,12 +47,12 @@ class MesaCService:
 
         query = text(f"""
             INSERT INTO mesa_consumo (
-                id_producto, id_mesa, cantidad,
-                precio_unitario, descuento, subtotal, preparado, hora
+                id_producto, id_mov, cantidad,
+                precio_unitario, subtotal, preparado, notas, descuento
             )
             VALUES (
-                :id_producto, :id_mesa, :cantidad,
-                :precio_unitario, :descuento, :subtotal, :preparado, CURRENT_TIME
+                :id_producto, :id_mov, :cantidad,
+                :precio_unitario, :subtotal, :preparado, :notas, :descuento
             )
             RETURNING {MESA_CONSUMO_COLUMNS};
         """)
@@ -60,12 +60,13 @@ class MesaCService:
         try:
             result = await self.db.execute(query, {
                 "id_producto": mesaC_data.id_producto,
-                "id_mesa": mesaC_data.id_mesa,
+                "id_mov": mesaC_data.id_mov,
                 "cantidad": cantidad,
                 "precio_unitario": precio_unitario,
-                "descuento": descuento,
                 "subtotal": subtotal,
-                "preparado": preparado
+                "preparado": preparado,
+                "notas": mesaC_data.notas,
+                "descuento": descuento,
             })
             await self.db.commit()
             return dict(result.mappings().first())
@@ -104,10 +105,6 @@ class MesaCService:
         update_fields = []
         params = {"id": target_mesa_id}
 
-        if mesa_update.id_mesa is not None:
-            update_fields.append("id_mesa = :id_mesa")
-            params["id_mesa"] = mesa_update.id_mesa
-
         if mesa_update.cantidad is not None:
             update_fields.append("cantidad = :cantidad")
             params["cantidad"] = mesa_update.cantidad
@@ -115,6 +112,14 @@ class MesaCService:
         if mesa_update.descuento is not None:
             update_fields.append("descuento = :descuento")
             params["descuento"] = mesa_update.descuento
+
+        if mesa_update.id_mov is not None:
+            update_fields.append("id_mov = :id_mov")
+            params["id_mov"] = mesa_update.id_mov
+
+        if mesa_update.notas is not None:
+            update_fields.append("notas = :notas")
+            params["notas"] = mesa_update.notas
 
         # Recalcular el subtotal según la cantidad y el descuento finales
         new_cantidad = mesa_update.cantidad if mesa_update.cantidad is not None else current_cantidad
@@ -171,13 +176,19 @@ class MesaCService:
                 text("""
                     DELETE FROM mesa_consumo_ingredientes
                     WHERE id_mesa_consumo IN (
-                        SELECT id FROM mesa_consumo WHERE id_mesa = :id_mesa
+                        SELECT mc.id FROM mesa_consumo mc
+                        WHERE mc.id_mov = (SELECT id_mov FROM mesa WHERE id = :id_mesa)
+                           OR mc.id_mov IN (SELECT id_movimiento FROM barra WHERE id_mesa = :id_mesa)
                     );
                 """),
                 {"id_mesa": target_mesa_id}
             )
             await self.db.execute(
-                text("DELETE FROM mesa_consumo WHERE id_mesa = :id_mesa;"),
+                text("""
+                    DELETE FROM mesa_consumo
+                    WHERE id_mov = (SELECT id_mov FROM mesa WHERE id = :id_mesa)
+                       OR id_mov IN (SELECT id_movimiento FROM barra WHERE id_mesa = :id_mesa);
+                """),
                 {"id_mesa": target_mesa_id}
             )
             await self.db.commit()
@@ -198,7 +209,7 @@ class MesaCService:
             UPDATE mesa_consumo
             SET preparado = :preparado
             WHERE id = :id
-            RETURNING id, id_producto, id_mov, id_mesa, cantidad, precio_unitario, subtotal, preparado, hora;
+            RETURNING id, id_producto, id_mov, cantidad, precio_unitario, subtotal, preparado, notas, descuento;
         """)
         
         try:

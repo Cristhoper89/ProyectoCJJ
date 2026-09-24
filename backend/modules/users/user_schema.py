@@ -7,6 +7,8 @@ from datetime import datetime
 class UserBase(BaseModel):
     username: str = Field(..., min_length=4, max_length=50)
     email: EmailStr
+    nombre: Optional[str] = Field(None, min_length=1, max_length=100)
+    telefono: Optional[str] = Field(None, max_length=10)
 
 
 # Validar los datos para crear un usuario
@@ -29,6 +31,8 @@ class UserResponse(UserBase):
 
 # Validar los datos para actualizar un usuario
 class UserUpdate(BaseModel):
+    nombre: Optional[str] = Field(None, min_length=1, max_length=100)
+    telefono: Optional[str] = Field(None, max_length=10)
     email: Optional[EmailStr] = None
     password: Optional[str] = Field(None, min_length=6, max_length=100)
     role_id: Optional[int] = Field(None, gt=0)

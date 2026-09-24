@@ -13,7 +13,7 @@ async def read_movimientos(
     current_user: dict = Depends(get_current_user)
 ):
     """Acceso restringido: Solo Administradores y Cajeros pueden listar proveedores."""
-    if current_user["role_name"] != "Administrador" and current_user["role_name"] != "Cajero":
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MovimientoService(db)
     return await service.get_all_movimientos()
@@ -24,8 +24,8 @@ async def add_movimiento(
     db: AsyncSession = Depends(get_db), 
     current_user: dict = Depends(get_current_user)
 ):
-    """Acceso restringido: Solo Administradores pueden registrar nuevos proveedores."""
-    if current_user["role_name"] != "Administrador":
+    """Acceso restringido: Personal autorizado puede registrar movimientos."""
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MovimientoService(db)
     return await service.create_movimiento(movimiento_in)

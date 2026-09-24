@@ -26,26 +26,25 @@ class IngredienteEstadoUpdate(BaseModel):
 
 
 class GastoCreate(BaseModel):
-    id_ingrediente: Optional[int] = Field(None, gt=0)
     nombre: str = Field(..., min_length=1, max_length=100)
     descripcion: Optional[str] = Field(None, max_length=255)
-    cantidad: Optional[Decimal] = Field(None, ge=0)
     valor: Optional[Decimal] = Field(None, ge=0)
-    fecha: Optional[datetime] = None
-    id_movimiento: Optional[int] = Field(None, gt=0)
+    fecha_hora: Optional[datetime] = None
+    categoria: Optional[int] = Field(None, gt=0)
+    id_caja: Optional[int] = Field(None, gt=0)
 
 
 class GastoResponse(GastoCreate):
     id: int
+    categoria_nombre: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class GastoUpdate(BaseModel):
-    id_ingrediente: Optional[int] = Field(None, gt=0)
     nombre: Optional[str] = Field(None, min_length=1, max_length=100)
     descripcion: Optional[str] = Field(None, max_length=255)
-    cantidad: Optional[Decimal] = Field(None, ge=0)
     valor: Optional[Decimal] = Field(None, ge=0)
-    fecha: Optional[datetime] = None
-    id_movimiento: Optional[int] = Field(None, gt=0)
+    fecha_hora: Optional[datetime] = None
+    categoria: Optional[int] = Field(None, gt=0)
+    id_caja: Optional[int] = Field(None, gt=0)
