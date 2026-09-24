@@ -170,20 +170,67 @@ class MesaService:
     async def cerrar_mesa(self, target_mesa_id: int) -> dict:
         logger.info(f"Intentando cerrar la mesa ID: {target_mesa_id}")
 
-        # Verificar que la mesa objetivo realmente exista en PostgreSQL
-        check = await self.db.execute(text("SELECT id FROM mesa WHERE id = :id;"), {"id": target_mesa_id})
-        if not check.first():
+        mesa = (await self.db.execute(
+            text("SELECT id, tipo, id_mov FROM mesa WHERE id = :id FOR UPDATE;"),
+            {"id": target_mesa_id},
+        )).mappings().first()
+        if not mesa:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La mesa a cerrar no existe.")
 
-        query = text("""
-            UPDATE mesa
-            SET estado = false, hora_inicio = NULL, id_mov = NULL
-            WHERE id = :id
-            RETURNING id, nombre, estado, hora_inicio, tipo, id_mov;
-        """)
+        movement_ids = []
+
+        if mesa["tipo"] == "mesa" and mesa["id_mov"] is not None:
+            movement_ids = [mesa["id_mov"]]
+        elif mesa["tipo"] == "barra":
+            rows = (await self.db.execute(
+                text("SELECT id_movimiento FROM barra WHERE id_mesa = :id_mesa;"),
+                {"id_mesa": target_mesa_id},
+            )).all()
+            movement_ids = [row.id_movimiento for row in rows]
 
         try:
-            result = await self.db.execute(query, {"id": target_mesa_id})
+            if movement_ids:
+                movement_ids = list(dict.fromkeys(movement_ids))
+
+                await self.db.execute(
+                    text("UPDATE mesa SET id_mov = NULL WHERE id = :id;"),
+                    {"id": target_mesa_id},
+                )
+
+                await self.db.execute(
+                    text("""
+                        DELETE FROM mesa_consumo_ingredientes
+                        WHERE id_mesa_consumo IN (
+                            SELECT mc.id
+                            FROM mesa_consumo mc
+                            WHERE mc.id_mov = ANY(:movement_ids)
+                        );
+                    """),
+                    {"movement_ids": movement_ids},
+                )
+
+                await self.db.execute(
+                    text("DELETE FROM mesa_consumo WHERE id_mov = ANY(:movement_ids);"),
+                    {"movement_ids": movement_ids},
+                )
+
+                await self.db.execute(
+                    text("DELETE FROM barra WHERE id_mesa = :id_mesa AND id_movimiento = ANY(:movement_ids);"),
+                    {"id_mesa": target_mesa_id, "movement_ids": movement_ids},
+                )
+
+                await self.db.execute(
+                    text("DELETE FROM movimiento WHERE id = ANY(:movement_ids);"),
+                    {"movement_ids": movement_ids},
+                )
+
+            result = await self.db.execute(text("""
+                UPDATE mesa
+                SET estado = false, hora_inicio = NULL, id_mov = NULL
+                WHERE id = :id
+                RETURNING id, nombre, estado, hora_inicio, tipo, id_mov;
+            """), {"id": target_mesa_id})
+
             await self.db.commit()
             return dict(result.mappings().first())
         except Exception as e:
@@ -227,7 +274,7 @@ class MesaService:
                     UPDATE movimiento
                     SET {', '.join(update_fields)}
                     WHERE id = :id
-                    RETURNING id, estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, fecha_hora;
+                    RETURNING id, estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, "fecha-hora" AS fecha_hora;
                 """), params)).mappings().first()
                 if movimiento is None:
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El movimiento de la mesa no existe.")

@@ -1,5 +1,11 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
+from typing import Literal
+
+
+class MesaIngredienteAccion(BaseModel):
+    id_ingrediente: int = Field(..., gt=0)
+    accion: Literal["agregar", "quitar", "mantener"]
 
 class MesaCBase(BaseModel):
     id_producto: Optional[int] = Field(None, description="ID del producto asociado a la mesa")
@@ -12,7 +18,7 @@ class MesaCBase(BaseModel):
     notas: Optional[str] = Field(None, description="Notas del consumo")
 
 class MesaCreate(MesaCBase):
-    pass
+    ingredientes: list[MesaIngredienteAccion] = Field(default_factory=list)
 
 class MesaResponse(MesaCBase):
     id: int

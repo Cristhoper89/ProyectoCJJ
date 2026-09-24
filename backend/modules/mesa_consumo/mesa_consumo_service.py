@@ -68,8 +68,25 @@ class MesaCService:
                 "notas": mesaC_data.notas,
                 "descuento": descuento,
             })
+            consumo = result.mappings().first()
+            for ingrediente in mesaC_data.ingredientes:
+                await self.db.execute(
+                    text("""
+                        INSERT INTO mesa_consumo_ingredientes (id_mesa_consumo, id_ingrediente, accion)
+                        VALUES (
+                            :id_mesa_consumo,
+                            :id_ingrediente,
+                            CAST(:accion AS tipo_accion)
+                        );
+                    """),
+                    {
+                        "id_mesa_consumo": consumo["id"],
+                        "id_ingrediente": ingrediente.id_ingrediente,
+                        "accion": ingrediente.accion,
+                    },
+                )
             await self.db.commit()
-            return dict(result.mappings().first())
+            return dict(consumo)
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Error al insertar consumo de mesa: {str(e)}")

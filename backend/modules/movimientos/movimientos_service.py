@@ -12,7 +12,7 @@ class MovimientoService:
         logger.info("SQL Nativo: Consultando todos los movimientos.")
         query = text("""
             SELECT m.id, m.estado, m.propina, m.domicilio, m.total, m.id_caja,
-                   m.metodo, m.id_cliente, m.id_mesero, m.fecha_hora,
+                   m.metodo, m.id_cliente, m.id_mesero, m."fecha-hora" AS fecha_hora,
                    b.id_mesa
             FROM movimiento m
             LEFT JOIN barra b ON b.id_movimiento = m.id
@@ -47,10 +47,10 @@ class MovimientoService:
             caja_id = caja.id
 
         query = text("""
-            INSERT INTO movimiento (estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, fecha_hora)
+            INSERT INTO movimiento (estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, "fecha-hora")
             VALUES (:estado, :propina, :domicilio, :total, :id_caja, :metodo, :id_cliente, :id_mesero,
                     COALESCE(:fecha_hora, CURRENT_TIMESTAMP))
-            RETURNING id, estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, fecha_hora;
+            RETURNING id, estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, "fecha-hora" AS fecha_hora;
         """)
         try:
             result = await self.db.execute(query, {
@@ -123,7 +123,7 @@ class MovimientoService:
             params["id_mesero"] = movimiento_update.id_mesero
 
         if movimiento_update.fecha_hora is not None:
-            update_fields.append("fecha_hora = :fecha_hora")
+            update_fields.append('"fecha-hora" = :fecha_hora')
             params["fecha_hora"] = movimiento_update.fecha_hora
 
         if not update_fields:
@@ -134,7 +134,7 @@ class MovimientoService:
             UPDATE movimiento 
             SET {', '.join(update_fields)} 
             WHERE id = :id 
-            RETURNING id, estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, fecha_hora;
+            RETURNING id, estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, "fecha-hora" AS fecha_hora;
         """
         
         try:

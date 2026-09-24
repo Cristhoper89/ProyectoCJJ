@@ -16,15 +16,19 @@ class MesaConsumoIngredienteService:
 
     async def get_all(self) -> list[dict]:
         result = await self.db.execute(
-            text(f"SELECT {self.columns} FROM mesa_consumo_ingrediente ORDER BY id ASC;")
+            text(f"SELECT {self.columns} FROM mesa_consumo_ingredientes ORDER BY id ASC;")
         )
         return [dict(row) for row in result.mappings().all()]
 
     async def create(self, data: MesaConsumoIngredienteCreate) -> dict:
         result = await self.db.execute(
             text(f"""
-                INSERT INTO mesa_consumo_ingrediente (id_mesa_consumo, id_ingrediente, accion)
-                VALUES (:id_mesa_consumo, :id_ingrediente, :accion)
+                INSERT INTO mesa_consumo_ingredientes (id_mesa_consumo, id_ingrediente, accion)
+                VALUES (
+                    :id_mesa_consumo,
+                    :id_ingrediente,
+                    CAST(:accion AS tipo_accion)
+                )
                 RETURNING {self.columns};
             """),
             data.model_dump(),
@@ -37,10 +41,15 @@ class MesaConsumoIngredienteService:
         if not values:
             raise HTTPException(status_code=400, detail="No se enviaron datos para actualizar.")
         values["id"] = item_id
-        assignments = [f"{field} = :{field}" for field in values if field != "id"]
+        assignments = [
+            f'{field} = CAST(:{field} AS tipo_accion)' if field == "accion"
+            else f"{field} = :{field}"
+            for field in values
+            if field != "id"
+        ]
         result = await self.db.execute(
             text(f"""
-                UPDATE mesa_consumo_ingrediente SET {', '.join(assignments)}
+                UPDATE mesa_consumo_ingredientes SET {', '.join(assignments)}
                 WHERE id = :id
                 RETURNING {self.columns};
             """),
@@ -55,7 +64,7 @@ class MesaConsumoIngredienteService:
 
     async def delete(self, item_id: int) -> None:
         result = await self.db.execute(
-            text("DELETE FROM mesa_consumo_ingrediente WHERE id = :id RETURNING id;"),
+            text("DELETE FROM mesa_consumo_ingredientes WHERE id = :id RETURNING id;"),
             {"id": item_id},
         )
         if result.first() is None:

@@ -23,41 +23,39 @@ from modules.movimientos.movimientos_router import router as movimientos_router
 from modules.ingredientes.ingredientes_router import router as ingredientes_router
 from modules.producto_ingredientes.producto_ingredientes_router import router as producto_ingredientes_router
 from modules.mesa_consumo_ingrediente.mesa_consumo_ingrediente_router import router as mesa_consumo_ingrediente_router
+from modules.opciones.opciones_router import router as opciones_router
 from core.logger import logger
-from core.database import engine
 from sqlalchemy import text
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as connection:
-        await connection.execute(text("ALTER TABLE mesa ADD COLUMN IF NOT EXISTS nombre VARCHAR(100);"))
-        await connection.execute(text("ALTER TABLE ingredientes ADD COLUMN IF NOT EXISTS estado BOOLEAN DEFAULT TRUE;"))
-        await connection.execute(text("UPDATE ingredientes SET estado = FALSE WHERE estado IS NULL;"))
-        await connection.execute(text("UPDATE categorias SET estado = FALSE WHERE estado IS NULL;"))
-        await connection.execute(text("UPDATE productos SET estado = FALSE WHERE estado IS NULL;"))
-        await connection.execute(text("UPDATE mesa SET nombre = CASE WHEN tipo = 'barra' THEN 'Barra' ELSE 'Mesa ' || id::text END WHERE nombre IS NULL;"))
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE mesa ADD COLUMN IF NOT EXISTS nombre VARCHAR(100);"))
+            await conn.execute(text("ALTER TABLE ingredientes ADD COLUMN IF NOT EXISTS estado BOOLEAN DEFAULT TRUE;"))
+            await conn.execute(text("UPDATE ingredientes SET estado = FALSE WHERE estado IS NULL;"))
+            await conn.execute(text("UPDATE categorias SET estado = FALSE WHERE estado IS NULL;"))
+            await conn.execute(text("UPDATE productos SET estado = FALSE WHERE estado IS NULL;"))
+            await conn.execute(text("UPDATE mesa SET nombre = CASE WHEN tipo = 'barra' THEN 'Barra' ELSE 'Mesa ' || id::text END WHERE nombre IS NULL;"))
+            await conn.execute(text("""
+                ALTER TABLE mesa_consumo
+                ADD COLUMN IF NOT EXISTS descuento numeric(10,2) DEFAULT 0.00;
+            """))
+    except Exception as e:
+        logger.error(f"Migraciones de inicio omitidas: {str(e)}")
+
     logger.info("==========================================================")
     logger.info("  ¡API Modular Inicializada en Raíz con Éxito (Lifespan)!")
     logger.info("  Documentación interactiva: http://127.0.0.1:8000/docs")
     logger.info("==========================================================")
 
-    # ------------------------------------------------------
-    # MIGRACIONES LIGERAS (idempotentes)
-    # ------------------------------------------------------
     try:
-        async with engine.begin() as conn:
-            await conn.execute(text("""
-                ALTER TABLE mesa_consumo
-                ADD COLUMN IF NOT EXISTS descuento numeric(10,2) DEFAULT 0.00;
-            """))
-        logger.info("Migración: columna 'descuento' verificada en mesa_consumo.")
-    except Exception as e:
-        logger.error(f"Migración de mesa_consumo falló: {str(e)}")
-
-    yield
-    logger.info("Cerrando recursos de la API de forma segura.")
+        yield
+    finally:
+        await engine.dispose()
+        logger.info("Cerrando recursos de la API de forma segura.")
 
 app = FastAPI(
     title="API FastAPI Modular sin SRC - SQL Puro",
@@ -82,6 +80,7 @@ app.include_router(metodo_pago_router)  # Incluye el router de métodos de pago
 app.include_router(ingredientes_router)
 app.include_router(producto_ingredientes_router)
 app.include_router(mesa_consumo_ingrediente_router)
+app.include_router(opciones_router)
 
 # ==============================
 # FRONTEND

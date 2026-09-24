@@ -15,7 +15,7 @@ router = APIRouter(prefix="/mesa-consumo-ingredientes", tags=["Mesa consumo ingr
 
 
 def require_staff(current_user: dict) -> None:
-    if current_user["role_name"] not in ["Administrador", "Cajero", "Cocina"]:
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Cocina", "Mesero"]:
         raise HTTPException(status_code=403, detail="Acceso denegado. Rol insuficiente.")
 
 

@@ -36,18 +36,33 @@ export async function clearAccessToken() {
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
-  headers.set('Content-Type', 'application/json');
+  if (!(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`);
   }
 
   const response = await fetch(`${API_URL}${path}`, { ...options, headers });
-  const body = await response.json().catch(() => null);
+  const rawText = await response.text();
+  let body: any = null;
 
-  if (!response.ok) {
-    throw new Error(body?.detail || 'No fue posible completar la solicitud.');
+  if (rawText) {
+    try {
+      body = JSON.parse(rawText);
+    } catch {
+      body = rawText;
+    }
   }
 
-  return body as T;
+  if (!response.ok) {
+    const detail = typeof body === 'object' && body !== null
+      ? body.detail ?? body.message ?? JSON.stringify(body)
+      : body || `HTTP ${response.status}`;
+
+    throw new Error(typeof detail === 'string' ? detail : 'No fue posible completar la solicitud.');
+  }
+
+  return (body ?? null) as T;
 }

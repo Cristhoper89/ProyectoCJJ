@@ -14,9 +14,10 @@ engine = create_async_engine(
     echo=True,
     pool_pre_ping=True,
 
-    # Pool reducido para no agotar el límite de conexiones de Postgres (Aiven)
-    pool_size=3,
+    # FastAPI Cloud puede ejecutar varias réplicas; cada proceso usa una sola conexión.
+    pool_size=1,
     max_overflow=0,
+    pool_timeout=10,
 
     connect_args={
         "server_settings": {}
