@@ -18,11 +18,12 @@ const menuItems = [
   { label: 'Carta', icon: BookOpen },
   { label: 'Configuración', icon: Settings },
 ];
+type MenuItem = (typeof menuItems)[number];
 
 export default function FullscreenDrawer() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item }: { item: MenuItem }) => {
     const IconComponent = item.icon;
     return (
       <TouchableOpacity style={styles.menuItem} onPress={() => setIsOpen(false)}>

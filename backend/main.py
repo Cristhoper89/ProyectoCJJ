@@ -38,6 +38,10 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("UPDATE ingredientes SET estado = FALSE WHERE estado IS NULL;"))
             await conn.execute(text("UPDATE categorias SET estado = FALSE WHERE estado IS NULL;"))
             await conn.execute(text("UPDATE productos SET estado = FALSE WHERE estado IS NULL;"))
+            await conn.execute(text("ALTER TABLE grupo_opcion ADD COLUMN IF NOT EXISTS estado BOOLEAN DEFAULT TRUE;"))
+            await conn.execute(text("ALTER TABLE opcion ADD COLUMN IF NOT EXISTS estado BOOLEAN DEFAULT TRUE;"))
+            await conn.execute(text("UPDATE grupo_opcion SET estado = TRUE WHERE estado IS NULL;"))
+            await conn.execute(text("UPDATE opcion SET estado = TRUE WHERE estado IS NULL;"))
             await conn.execute(text("UPDATE mesa SET nombre = CASE WHEN tipo = 'barra' THEN 'Barra' ELSE 'Mesa ' || id::text END WHERE nombre IS NULL;"))
             await conn.execute(text("""
                 ALTER TABLE mesa_consumo
@@ -117,6 +121,14 @@ async def ver_dashboard():
 @app.get("/productos")
 async def ver_productos():
     return FileResponse(FRONTEND_DIR / "templates" / "productos.html")
+
+@app.get("/opciones-productos")
+async def ver_opciones_productos():
+    return FileResponse(FRONTEND_DIR / "templates" / "opciones_productos.html")
+
+@app.get("/ingredientes")
+async def ver_ingredientes():
+    return FileResponse(FRONTEND_DIR / "templates" / "ingredientes.html")
 #johan
 @app.get("/categorias")
 async def ver_categorias():

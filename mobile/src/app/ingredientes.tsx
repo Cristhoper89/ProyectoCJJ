@@ -41,7 +41,7 @@ export default function IngredientesScreen() {
     }
     try {
       setError('');
-      const response = await apiRequest<Array<Ingrediente & { estado?: boolean | null }>>('/ingredientes/');
+      const response = await apiRequest<(Ingrediente & { estado?: boolean | null })[]>('/ingredientes/');
       setIngredientes(response.map((item) => ({ ...item, estado: item.estado === true })));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'No fue posible cargar los ingredientes.');

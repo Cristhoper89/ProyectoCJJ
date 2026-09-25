@@ -17,11 +17,11 @@ class OpcionesService:
 
     async def list_groups(self) -> list[dict]:
         groups = (await self.db.execute(
-            text("SELECT id, nombre FROM grupo_opcion ORDER BY id ASC;")
+            text("SELECT id, nombre, estado FROM grupo_opcion ORDER BY id ASC;")
         )).mappings().all()
         options = (await self.db.execute(
             text("""
-                SELECT id, id_grupo_opcion, nombre
+                SELECT id, id_grupo_opcion, nombre, estado
                 FROM opcion
                 ORDER BY id ASC;
             """)
@@ -37,9 +37,9 @@ class OpcionesService:
     async def create_group(self, data: GrupoOpcionCreate) -> dict:
         return await self._write(
             text("""
-                INSERT INTO grupo_opcion (nombre)
-                VALUES (:nombre)
-                RETURNING id, nombre;
+                INSERT INTO grupo_opcion (nombre, estado)
+                VALUES (:nombre, :estado)
+                RETURNING id, nombre, estado;
             """),
             data.model_dump(),
             "No fue posible crear el grupo de opciones.",
@@ -56,7 +56,7 @@ class OpcionesService:
                 UPDATE grupo_opcion
                 SET {assignments}
                 WHERE id = :id
-                RETURNING id, nombre;
+                RETURNING id, nombre, estado;
             """),
             values,
             "No fue posible actualizar el grupo de opciones.",
@@ -70,15 +70,17 @@ class OpcionesService:
             "El grupo de opciones no existe.",
         )
 
-    async def list_options(self, group_id: int | None = None) -> list[dict]:
+    async def list_options(self, group_id: int | None = None, active_only: bool = False) -> list[dict]:
         query = """
-            SELECT id, id_grupo_opcion, nombre
+            SELECT id, id_grupo_opcion, nombre, estado
             FROM opcion
         """
         params = {}
         if group_id is not None:
             query += " WHERE id_grupo_opcion = :group_id"
             params["group_id"] = group_id
+            if active_only:
+                query += " AND estado = TRUE"
         query += " ORDER BY id ASC;"
         result = await self.db.execute(text(query), params)
         return [dict(row) for row in result.mappings().all()]
@@ -86,9 +88,9 @@ class OpcionesService:
     async def create_option(self, data: OpcionCreate) -> dict:
         return await self._write(
             text("""
-                INSERT INTO opcion (id_grupo_opcion, nombre)
-                VALUES (:id_grupo_opcion, :nombre)
-                RETURNING id, id_grupo_opcion, nombre;
+                INSERT INTO opcion (id_grupo_opcion, nombre, estado)
+                VALUES (:id_grupo_opcion, :nombre, :estado)
+                RETURNING id, id_grupo_opcion, nombre, estado;
             """),
             data.model_dump(),
             "No fue posible crear la opción.",
@@ -105,7 +107,7 @@ class OpcionesService:
                 UPDATE opcion
                 SET {assignments}
                 WHERE id = :id
-                RETURNING id, id_grupo_opcion, nombre;
+                RETURNING id, id_grupo_opcion, nombre, estado;
             """),
             values,
             "No fue posible actualizar la opción.",
@@ -121,10 +123,10 @@ class OpcionesService:
 
     async def list_product_groups(self, product_id: int) -> list[dict]:
         result = await self.db.execute(text("""
-            SELECT go.id, go.nombre
+            SELECT go.id, go.nombre, go.estado
             FROM producto_grupo_opcion pgo
             JOIN grupo_opcion go ON go.id = pgo.id_grupo_opcion
-            WHERE pgo.id_producto = :id_producto
+            WHERE pgo.id_producto = :id_producto AND go.estado = TRUE
             ORDER BY go.id ASC;
         """), {"id_producto": product_id})
         return [dict(row) for row in result.mappings().all()]

@@ -278,6 +278,11 @@ class MesaService:
                 """), params)).mappings().first()
                 if movimiento is None:
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El movimiento de la mesa no existe.")
+            else:
+                await self.db.execute(
+                    text("DELETE FROM barra WHERE id_mesa = :mesa_id;"),
+                    {"mesa_id": mesa_id},
+                )
 
             await self.db.execute(text("""
                 UPDATE mesa

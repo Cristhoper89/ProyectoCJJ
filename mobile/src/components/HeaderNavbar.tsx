@@ -1,21 +1,31 @@
 // components/HeaderNavbar.tsx
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView, Image } from 'react-native';
+import React, { Fragment, useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView } from 'react-native';
 import { 
   Menu, X, User, WalletCards, Tags, LayoutGrid, ArrowLeftRight,
-  Package, Truck, Users, ContactRound, ChartNoAxesCombined, ClipboardList, BookOpen, Settings, Carrot
+  Package, Truck, Users, ContactRound, ChartNoAxesCombined, ClipboardList, BookOpen, Settings, Carrot, ChevronDown
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { clearAccessToken } from '../constants/api';
 
-const menuItems = [
+type MenuItem = {
+  label: string;
+  icon: typeof User;
+  route?: string;
+  children?: MenuItem[];
+};
+
+const menuItems: MenuItem[] = [
   { label: 'Perfil', icon: User },
   { label: 'Caja', icon: WalletCards },
   { label: 'Categorías', icon: Tags, route: '/categorias' },
   { label: 'Mesa (página inicial)', icon: LayoutGrid, route: '/mesa' },
   { label: 'Movimientos', icon: ArrowLeftRight },
-  { label: 'Productos', icon: Package, route: '/productos' },
-  { label: 'Ingredientes', icon: Carrot, route: '/ingredientes' },
+  { label: 'Productos', icon: Package, children: [
+    { label: 'Productos', icon: Package, route: '/productos' },
+    { label: 'Ingredientes', icon: Carrot, route: '/ingredientes' },
+    { label: 'Opciones de productos', icon: Tags, route: '/opciones-productos' },
+  ] },
   { label: 'Proveedores', icon: Truck },
   { label: 'Empleados', icon: Users },
   { label: 'Clientes', icon: ContactRound },
@@ -28,6 +38,7 @@ const menuItems = [
 export default function HeaderNavbar() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [productsExpanded, setProductsExpanded] = useState(false);
   const [currentDate, setCurrentDate] = useState('');
 
   useEffect(() => {
@@ -45,13 +56,28 @@ export default function HeaderNavbar() {
     updateDateTime();
   }, []);
 
-  const renderItem = ({ item }: { item: typeof menuItems[0] }) => {
+  const navigate = (item: MenuItem) => {
+    setIsOpen(false);
+    if (item.route) router.push(item.route as any);
+  };
+
+  const renderItem = ({ item }: { item: MenuItem }) => {
     const IconComponent = item.icon;
     return (
-      <TouchableOpacity style={styles.menuItem} onPress={() => { setIsOpen(false); if (item.route) router.push(item.route as any); }}>
-        <IconComponent size={22} color="#D8A85B" style={styles.icon} />
-        <Text style={styles.menuText}>{item.label}</Text>
-      </TouchableOpacity>
+      <Fragment>
+        <TouchableOpacity style={styles.menuItem} onPress={() => item.children ? setProductsExpanded((current) => !current) : navigate(item)}>
+          <IconComponent size={22} color="#D8A85B" style={styles.icon} />
+          <Text style={styles.menuText}>{item.label}</Text>
+          {item.children && <ChevronDown size={19} color="#D8A85B" style={productsExpanded && styles.chevronExpanded} />}
+        </TouchableOpacity>
+        {item.children && productsExpanded && item.children.map((child) => {
+          const ChildIcon = child.icon;
+          return <TouchableOpacity key={child.label} style={styles.subMenuItem} onPress={() => navigate(child)}>
+            <ChildIcon size={19} color="#C9B9A9" style={styles.icon} />
+            <Text style={styles.subMenuText}>{child.label}</Text>
+          </TouchableOpacity>;
+        })}
+      </Fragment>
     );
   };
 
@@ -70,11 +96,6 @@ export default function HeaderNavbar() {
 
       {/* Logo y Título */}
       <View style={styles.logoContainer}>
-        <Image 
-          source={require('../../assets/images/icon.png')} 
-          style={styles.logo} 
-          resizeMode="contain" 
-        />
         <Text style={styles.brandTitle}>LA CABAÑA</Text>
       </View>
 
@@ -126,15 +147,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  logo: {
-    width: 32,
-    height: 32,
-    marginRight: 8,
-  },
   brandTitle: {
     color: '#F5F5F5',
     fontSize: 16,
-    fontWeight: '750',
+    fontWeight: '700',
     letterSpacing: 1,
   },
   dateContainer: {
@@ -193,6 +209,26 @@ const styles = StyleSheet.create({
   menuText: {
     color: '#F5F5F5',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  chevronExpanded: {
+    transform: [{ rotate: '180deg' }],
+  },
+  subMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#251F1B',
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    marginBottom: 8,
+    marginLeft: 18,
+    borderWidth: 1,
+    borderColor: '#45382E',
+  },
+  subMenuText: {
+    color: '#D8D0C8',
+    fontSize: 15,
     fontWeight: '600',
   },
   logoutButton: {

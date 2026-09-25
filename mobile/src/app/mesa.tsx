@@ -42,6 +42,7 @@ export default function MesaScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [now, setNow] = useState(() => Date.now());
 
   const loadData = async () => {
     if (!getAccessToken()) { setError('Inicia sesión para consultar las mesas.'); setLoading(false); return; }
@@ -86,6 +87,10 @@ export default function MesaScreen() {
   };
 
   useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
   const activeMovementId = selectedMesa?.tipo === 'barra' ? selectedMovimiento?.id : selectedMesa?.id_mov;
   const mesaConsumos = useMemo(() => consumos.filter((consumo) => consumo.id_mov === activeMovementId && (consumo.subtotal || 0) > 0), [consumos, activeMovementId]);
   const lineas = useMemo<Linea[]>(() => mesaConsumos.map((consumo) => ({ ...consumo, descuento: Math.min(100, Math.max(0, Number(discounts[consumo.id] || 0))) })), [mesaConsumos, discounts]);
@@ -223,7 +228,7 @@ export default function MesaScreen() {
 
   const elapsed = (startedAt?: string | null) => {
     if (!startedAt) return 'Disponible';
-    const minutes = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 60000));
+    const minutes = Math.max(0, Math.floor((now - new Date(startedAt).getTime()) / 60000));
     return `${Math.floor(minutes / 60)}h ${minutes % 60}m activa`;
   };
 

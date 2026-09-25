@@ -5,20 +5,24 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class GrupoOpcionCreate(BaseModel):
     nombre: str = Field(..., min_length=1, max_length=100)
+    estado: bool = True
 
 
 class GrupoOpcionUpdate(BaseModel):
     nombre: Optional[str] = Field(None, min_length=1, max_length=100)
+    estado: Optional[bool] = None
 
 
 class OpcionCreate(BaseModel):
     id_grupo_opcion: int = Field(..., gt=0)
     nombre: str = Field(..., min_length=1, max_length=100)
+    estado: bool = True
 
 
 class OpcionUpdate(BaseModel):
     id_grupo_opcion: Optional[int] = Field(None, gt=0)
     nombre: Optional[str] = Field(None, min_length=1, max_length=100)
+    estado: Optional[bool] = None
 
 
 class OpcionResponse(OpcionCreate):

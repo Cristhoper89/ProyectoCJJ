@@ -88,7 +88,7 @@ async def list_product_groups(product_id: int, db: AsyncSession = Depends(get_db
     service = OpcionesService(db)
     result = []
     for group in groups:
-        result.append({**group, "opciones": await service.list_options(group["id"])})
+        result.append({**group, "opciones": await service.list_options(group["id"], active_only=True)})
     return result
 
 
