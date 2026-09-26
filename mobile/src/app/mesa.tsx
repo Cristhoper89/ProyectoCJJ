@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as Print from 'expo-print';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Clock3, Minus, Plus, Printer, Trash2, X } from 'lucide-react-native';
+import { ChevronLeft, Clock3, Minus, Plus, Printer, Trash2, TriangleAlert, X } from 'lucide-react-native';
 import HeaderNavbar from '../components/HeaderNavbar';
 import { apiRequest, getAccessToken } from '../constants/api';
 
@@ -14,10 +14,17 @@ type ProductIngredient = { id: number; id_producto: number; id_ingrediente: numb
 type Option = { id: number; id_grupo_opcion: number; nombre: string };
 type OptionGroup = { id: number; nombre: string; opciones: Option[] };
 type Consumo = { id: number; id_producto?: number; id_mov?: number | null; cantidad?: number; precio_unitario?: number; subtotal?: number; notas?: string | null };
-type Movimiento = { id: number; estado?: boolean; propina?: number; domicilio?: number; total?: number; id_mesa?: number | null; metodo?: string | null };
+type Movimiento = { id: number; estado?: boolean; propina?: number | string; domicilio?: number | string; total?: number | string; id_mesa?: number | null; metodo?: string | null; fecha_hora?: string | null };
 type Linea = Consumo & { descuento: number };
 
 const money = (value: number) => `$${Math.round(value).toLocaleString('es-CO')}`;
+const formatMovementDate = (value?: string | null) => {
+  if (!value) return 'Sin hora';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? 'Sin hora'
+    : date.toLocaleString('es-CO', { day: 'numeric', month: 'numeric', hour: 'numeric', minute: '2-digit' });
+};
 
 export default function MesaScreen() {
   const [mesas, setMesas] = useState<Mesa[]>([]);
@@ -35,13 +42,14 @@ export default function MesaScreen() {
   const [discounts, setDiscounts] = useState<Record<number, string>>({});
   const [productQuantities, setProductQuantities] = useState<Record<number, number>>({});
   const [configProduct, setConfigProduct] = useState<Producto | null>(null);
-  const [configQuantity, setConfigQuantity] = useState(1);
+  const [configQuantity, setConfigQuantity] = useState(0);
   const [configIngredients, setConfigIngredients] = useState<Record<number, boolean>>({});
   const [configGroups, setConfigGroups] = useState<OptionGroup[]>([]);
   const [configOptions, setConfigOptions] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   const loadData = async () => {
@@ -93,24 +101,89 @@ export default function MesaScreen() {
   }, []);
   const activeMovementId = selectedMesa?.tipo === 'barra' ? selectedMovimiento?.id : selectedMesa?.id_mov;
   const mesaConsumos = useMemo(() => consumos.filter((consumo) => consumo.id_mov === activeMovementId && (consumo.subtotal || 0) > 0), [consumos, activeMovementId]);
+  const barMovements = useMemo(
+    () => selectedMesa?.tipo === 'barra'
+      ? [...movimientos].filter((movement) => movement.id_mesa === selectedMesa.id).reverse()
+      : [],
+    [movimientos, selectedMesa],
+  );
   const lineas = useMemo<Linea[]>(() => mesaConsumos.map((consumo) => ({ ...consumo, descuento: Math.min(100, Math.max(0, Number(discounts[consumo.id] || 0))) })), [mesaConsumos, discounts]);
   const subtotal = lineas.reduce((sum, line) => sum + (line.subtotal || 0) * (1 - line.descuento / 100), 0);
   const total = subtotal + propina + Math.max(0, Number(domicilio) || 0);
+
+  const getMovementTotal = (movement: Movimiento) => {
+    const movementLines = consumos.filter((consumo) => consumo.id_mov === movement.id && (consumo.subtotal || 0) > 0);
+    const movementSubtotal = movementLines.length > 0
+      ? movementLines.reduce((sum, line) => sum + (Number(line.subtotal) || 0) * (1 - Math.min(100, Math.max(0, Number(discounts[line.id] || 0))) / 100), 0)
+      : Math.max(0, (Number(movement.total) || 0) - (Number(movement.propina) || 0) - (Number(movement.domicilio) || 0));
+    const isSelected = selectedMovimiento?.id === movement.id;
+    return movementSubtotal
+      + (isSelected ? propina : Number(movement.propina) || 0)
+      + (isSelected ? Number(domicilio) || 0 : Number(movement.domicilio) || 0);
+  };
+
+  const getMesaTotal = (mesa: Mesa) => {
+    if (mesa.tipo === 'barra') {
+      return movimientos
+        .filter((movement) => movement.id_mesa === mesa.id)
+        .reduce((sum, movement) => sum + getMovementTotal(movement), 0);
+    }
+
+    const movement = movimientos.find((item) => item.id === mesa.id_mov);
+    return movement ? getMovementTotal(movement) : 0;
+  };
+
+  const getProductQuantityInMesa = (productId: number) => mesaConsumos
+    .filter((consumo) => consumo.id_producto === productId)
+    .reduce((sum, consumo) => sum + (Number(consumo.cantidad) || 0), 0);
+
+  useEffect(() => {
+    const nextQuantities = mesaConsumos.reduce<Record<number, number>>((accumulator, consumo) => {
+      if (typeof consumo.id_producto !== 'number') return accumulator;
+      accumulator[consumo.id_producto] = (accumulator[consumo.id_producto] || 0) + (Number(consumo.cantidad) || 0);
+      return accumulator;
+    }, {});
+    setProductQuantities(nextQuantities);
+  }, [mesaConsumos]);
 
   const openMesa = (mesa: Mesa) => {
     const currentMovement = mesa.tipo === 'barra'
       ? [...movimientos].filter((movimiento) => movimiento.id_mesa === mesa.id).slice(-1)[0] || null
       : null;
-    setSelectedMesa(mesa); setSelectedMovimiento(currentMovement); setSelectedCategory(null); setPropina(currentMovement?.propina || 0); setDomicilio(String(currentMovement?.domicilio || 0));
+    setSelectedMesa(mesa); setSelectedMovimiento(currentMovement); setSelectedCategory(null); setPropina(Number(currentMovement?.propina) || 0); setDomicilio(String(Number(currentMovement?.domicilio) || 0));
+  };
+
+  const selectBarMovement = (movement: Movimiento) => {
+    setSelectedMovimiento(movement);
+    setPropina(Number(movement.propina) || 0);
+    setDomicilio(String(Number(movement.domicilio) || 0));
   };
 
   const createBarMovement = async () => {
     if (!selectedMesa || selectedMesa.tipo !== 'barra') return;
     try {
       setSaving(true);
-      const movement = await apiRequest<Movimiento>('/movimientos/', { method: 'POST', body: JSON.stringify({ estado: true, propina: 0, domicilio: 0, total: 0, metodo: 'Efectivo', id_mesa: selectedMesa.id }) });
+      const movement = await apiRequest<Movimiento>('/movimientos/', {
+        method: 'POST',
+        body: JSON.stringify({
+          estado: true,
+          propina: 0,
+          domicilio: 0,
+          total: 0,
+          metodo: 'Efectivo',
+          id_mesa: selectedMesa.id,
+          fecha_hora: new Date().toISOString(),
+        }),
+      });
       setMovimientos((current) => [...current, movement]); setSelectedMovimiento(movement); setPropina(0); setDomicilio('0');
-    } catch (requestError) { Alert.alert('No se pudo crear el movimiento', requestError instanceof Error ? requestError.message : 'Intenta nuevamente.'); }
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : 'Intenta nuevamente.';
+      if (message.toLowerCase().includes('caja abierta')) {
+        setNotice({ title: 'Caja cerrada', message: 'Debes abrir una caja antes de registrar el movimiento.' });
+      } else {
+        Alert.alert('No se pudo crear el movimiento', message);
+      }
+    }
     finally { setSaving(false); }
   };
 
@@ -120,7 +193,7 @@ export default function MesaScreen() {
       const ingredientIds = productoIngredientes
         .filter((relation) => relation.id_producto === product.id)
         .map((relation) => relation.id_ingrediente);
-      if (!product.preparacion && groups.length === 0) {
+      if (!product.preparacion) {
         await addProduct(product, quantity);
         return;
       }
@@ -142,7 +215,7 @@ export default function MesaScreen() {
     selectedOptions?: Record<number, number>,
   ) => {
     if (!selectedMesa) return;
-    const quantity = Math.max(1, Math.floor(requestedQuantity));
+    const quantity = Math.max(0, Math.floor(requestedQuantity));
     try {
       setSaving(true);
       let activeMesa = selectedMesa;
@@ -158,6 +231,8 @@ export default function MesaScreen() {
       if (activeMesa.tipo === 'barra' && !activeMovement) throw new Error('La barra no tiene un movimiento activo.');
       const movementId = activeMesa.tipo === 'barra' ? activeMovement?.id : activeMesa.id_mov;
       if (!movementId) throw new Error('La mesa no tiene un movimiento activo.');
+
+      const existingLines = mesaConsumos.filter((consumo) => consumo.id_mov === movementId && consumo.id_producto === product.id);
       const optionNotes = (selectedGroups || [])
         .map((group) => {
           const optionId = selectedOptions?.[group.id];
@@ -178,11 +253,44 @@ export default function MesaScreen() {
             accion: included ? 'mantener' : 'quitar',
           }))
         : [];
-      const newConsumption = await apiRequest<Consumo>('/mesasC/', { method: 'POST', body: JSON.stringify({ id_producto: product.id, id_mov: movementId, cantidad: quantity, notas: optionNotes || null, ingredientes: ingredientActions }) });
-      setConsumos((current) => [...current, newConsumption]);
-      setProductQuantities((current) => ({ ...current, [product.id]: 1 }));
+
+      if (quantity === 0) {
+        if (existingLines.length > 0) {
+          await Promise.all(existingLines.map((line) => apiRequest(`/mesasC/${line.id}`, { method: 'DELETE' })));
+          setConsumos((current) => current.filter((consumo) => !(consumo.id_mov === movementId && consumo.id_producto === product.id)));
+        }
+        setProductQuantities((current) => ({ ...current, [product.id]: 0 }));
+        setConfigProduct(null);
+        return;
+      }
+
+      if (existingLines.length > 0) {
+        const targetLine = existingLines[0];
+        const totalPrice = Number(product.precio || 0) * quantity;
+        await apiRequest(`/mesasC/${targetLine.id}`, { method: 'PUT', body: JSON.stringify({ cantidad: quantity, subtotal: totalPrice, notas: optionNotes || targetLine.notas || null }) });
+        setConsumos((current) => current.map((consumo) => {
+          if (consumo.id !== targetLine.id) return consumo;
+          return { ...consumo, cantidad: quantity, subtotal: totalPrice, notas: optionNotes || consumo.notas || null };
+        }));
+        if (existingLines.length > 1) {
+          await Promise.all(existingLines.slice(1).map((line) => apiRequest(`/mesasC/${line.id}`, { method: 'DELETE' })));
+          setConsumos((current) => current.filter((consumo) => !existingLines.slice(1).some((line) => line.id === consumo.id)));
+        }
+      } else {
+        const newConsumption = await apiRequest<Consumo>('/mesasC/', { method: 'POST', body: JSON.stringify({ id_producto: product.id, id_mov: movementId, cantidad: quantity, notas: optionNotes || null, ingredientes: ingredientActions }) });
+        setConsumos((current) => [...current, newConsumption]);
+      }
+
+      setProductQuantities((current) => ({ ...current, [product.id]: quantity }));
       setConfigProduct(null);
-    } catch (requestError) { Alert.alert('No se pudo registrar', requestError instanceof Error ? requestError.message : 'Intenta nuevamente.'); }
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : 'Intenta nuevamente.';
+      if (message.toLowerCase().includes('caja abierta')) {
+        setNotice({ title: 'Caja cerrada', message: 'Debes abrir una caja antes de abrir la mesa.' });
+      } else {
+        Alert.alert('No se pudo registrar', message);
+      }
+    }
     finally { setSaving(false); }
   };
 
@@ -232,15 +340,90 @@ export default function MesaScreen() {
     return `${Math.floor(minutes / 60)}h ${minutes % 60}m activa`;
   };
 
+  const renderMesaCard = (mesa: Mesa) => {
+    const active = mesa.estado === true;
+    const title = mesa.nombre || (mesa.tipo === 'barra' ? 'Barra' : `Mesa ${mesa.id}`);
+    return <TouchableOpacity style={[styles.mesaCard, active && styles.activeCard]} onPress={() => openMesa(mesa)} activeOpacity={0.85}>
+      <View style={styles.cardHeader}><Text style={styles.cardTitle}>{title.toUpperCase()}</Text></View>
+      <View style={styles.imageContainer}><ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80' }} style={styles.foodImage} imageStyle={styles.foodImageStyle} /></View>
+      <View style={styles.cardFooter}>
+        <View>
+          <View style={[styles.status, active ? styles.statusActive : styles.statusFree]}><Text style={styles.statusText}>{active ? 'ACTIVA' : 'DISPONIBLE'}</Text></View>
+          {active && <Text style={styles.elapsed}>{elapsed(mesa.hora_inicio)}</Text>}
+        </View>
+        <Text style={styles.cardAmount}>{money(getMesaTotal(mesa))}</Text>
+      </View>
+    </TouchableOpacity>;
+  };
+
   return <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
     <HeaderNavbar />
-    {loading ? <ActivityIndicator color="#F0B35A" style={styles.loader} /> : error ? <View style={styles.empty}><Text style={styles.error}>{error}</Text><TouchableOpacity style={styles.retry} onPress={loadData}><Text style={styles.retryText}>Reintentar</Text></TouchableOpacity></View> : <FlatList data={mesas} keyExtractor={(mesa) => String(mesa.id)} contentContainerStyle={styles.grid} renderItem={({ item: mesa }) => { const active = mesa.estado === true; const title = mesa.nombre || (mesa.tipo === 'barra' ? 'Barra' : `Mesa ${mesa.id}`); return <TouchableOpacity style={[styles.mesaCard, active && styles.activeCard]} onPress={() => openMesa(mesa)} activeOpacity={0.85}><View style={styles.cardHeader}><Text style={styles.cardTitle}>{title.toUpperCase()}</Text></View><View style={styles.imageContainer}><ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80' }} style={styles.foodImage} imageStyle={styles.foodImageStyle} /></View><View style={styles.cardFooter}><View style={[styles.status, active ? styles.statusActive : styles.statusFree]}><Text style={styles.statusText}>{active ? 'ACTIVA' : 'DISPONIBLE'}</Text></View>{active && <Text style={styles.elapsed}>{elapsed(mesa.hora_inicio)}</Text>}</View></TouchableOpacity>; }} ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyText}>No hay mesas registradas.</Text></View>} />}
+    {loading ? <ActivityIndicator color="#F0B35A" style={styles.loader} /> : error ? <View style={styles.empty}><Text style={styles.error}>{error}</Text><TouchableOpacity style={styles.retry} onPress={loadData}><Text style={styles.retryText}>Reintentar</Text></TouchableOpacity></View> : <FlatList
+      data={mesas}
+      keyExtractor={(mesa) => String(mesa.id)}
+      contentContainerStyle={styles.grid}
+      renderItem={({ item }) => renderMesaCard(item)}
+      ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyText}>No hay mesas registradas.</Text></View>}
+    />}
 
     <Modal visible={!!selectedMesa} animationType="slide" onRequestClose={() => setSelectedMesa(null)}><SafeAreaView style={styles.modal}>
       <View style={styles.modalHeader}><View><Text style={styles.modalKicker}>CUENTA</Text><Text style={styles.modalTitle}>{selectedMesa?.nombre || (selectedMesa?.tipo === 'barra' ? 'Barra' : `Mesa ${selectedMesa?.id}`)}</Text></View><Pressable onPress={() => { setSelectedMesa(null); setSelectedMovimiento(null); }}><X color="#F5EBDD" size={25} /></Pressable></View>
       <View style={styles.activeTime}><Clock3 size={15} color="#F0B35A" /><Text style={styles.activeTimeText}>{elapsed(selectedMesa?.hora_inicio)}</Text></View>
+      {selectedMesa?.tipo === 'barra' && <View style={styles.movementSection}>
+        <View style={styles.movementHeader}>
+          <Text style={styles.movementTitle}>Movimientos</Text>
+          <TouchableOpacity style={styles.newMovementButton} onPress={createBarMovement} disabled={saving}>
+            <Text style={styles.newMovementText}>Nuevo</Text>
+          </TouchableOpacity>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.movementList}>
+          {barMovements.map((movement) => {
+            const selected = selectedMovimiento?.id === movement.id;
+            return <TouchableOpacity
+              key={movement.id}
+              style={[styles.movementCard, selected && styles.movementCardSelected]}
+              onPress={() => selectBarMovement(movement)}
+              disabled={saving}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+            >
+              <Text style={styles.movementDate}>{formatMovementDate(movement.fecha_hora)}</Text>
+              <Text style={styles.movementAmount}>{money(getMovementTotal(movement))}</Text>
+            </TouchableOpacity>;
+          })}
+          {barMovements.length === 0 && <Text style={styles.noMovements}>No hay movimientos registrados.</Text>}
+        </ScrollView>
+      </View>}
       <ScrollView contentContainerStyle={styles.modalContent}>
-        {selectedCategory ? <View><Pressable style={styles.backButton} onPress={() => setSelectedCategory(null)}><ChevronLeft color="#F0B35A" size={18} /><Text style={styles.backText}>Categorías</Text></Pressable><Text style={styles.sectionTitle}>{selectedCategory.nombre}</Text>{productos.filter((product) => product.id_categoria === selectedCategory.id).map((product) => { const quantity = productQuantities[product.id] || 1; return <View key={product.id} style={styles.productRow}><View style={styles.productInfo}><Text style={styles.productName}>{product.nombre}</Text><Text style={styles.productDescription}>{product.descripcion || 'Producto disponible'}</Text><TouchableOpacity onPress={() => prepareProduct(product, quantity)} disabled={saving}><Text style={styles.configureHint}>+ Personalizar ingredientes / opciones</Text></TouchableOpacity><Text style={styles.price}>{money(product.precio || 0)}</Text></View><View style={styles.productActions}><View style={styles.quantityControl}><TouchableOpacity style={styles.quantityButton} onPress={() => setProductQuantities((current) => ({ ...current, [product.id]: Math.max(1, quantity - 1) }))} disabled={saving}><Minus size={16} color="#F5EBDD" /></TouchableOpacity><Text style={styles.quantityText}>{quantity}</Text><TouchableOpacity style={styles.quantityButton} onPress={() => setProductQuantities((current) => ({ ...current, [product.id]: quantity + 1 }))} disabled={saving}><Plus size={16} color="#F5EBDD" /></TouchableOpacity></View><TouchableOpacity style={styles.addProductButton} onPress={() => addProduct(product, quantity)} disabled={saving}><Text style={styles.addProductText}>Agregar</Text></TouchableOpacity></View></View>; })}</View> : <View><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Text style={styles.sectionTitle}>Agregar productos</Text>{selectedMesa?.tipo === 'barra' && <TouchableOpacity style={{ backgroundColor: '#604332', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 8, marginTop: 10 }} onPress={createBarMovement} disabled={saving}><Text style={{ color: '#F5EBDD', fontSize: 12, fontWeight: '700' }}>Nuevo movimiento</Text></TouchableOpacity>}</View><View style={styles.categoryGrid}>{categorias.map((category) => <TouchableOpacity key={category.id} style={styles.categoryButton} onPress={() => setSelectedCategory(category)}><Text style={styles.categoryText}>{category.nombre}</Text></TouchableOpacity>)}</View></View>}
+        {selectedCategory ? <View>
+          <Pressable style={styles.backButton} onPress={() => setSelectedCategory(null)}><ChevronLeft color="#F0B35A" size={18} /><Text style={styles.backText}>Categorías</Text></Pressable>
+          <Text style={styles.sectionTitle}>{selectedCategory.nombre}</Text>
+          {productos.filter((product) => product.id_categoria === selectedCategory.id).map((product) => {
+            const quantity = productQuantities[product.id] ?? getProductQuantityInMesa(product.id);
+            const showCustomization = Boolean(product.preparacion && productoIngredientes.some((relation) => relation.id_producto === product.id));
+            return <View key={product.id} style={styles.productRow}>
+              <View style={styles.productInfo}>
+                <Text style={styles.productName}>{product.nombre}</Text>
+                <Text style={styles.productDescription}>{product.descripcion || 'Producto disponible'}</Text>
+                {showCustomization && <TouchableOpacity onPress={() => prepareProduct(product, quantity)} disabled={saving}><Text style={styles.configureHint}>+ Personalizar ingredientes / opciones</Text></TouchableOpacity>}
+                <Text style={styles.price}>{money(product.precio || 0)}</Text>
+              </View>
+              <View style={styles.productActions}>
+                <View style={styles.quantityControl}>
+                  <TouchableOpacity style={styles.quantityButton} onPress={() => setProductQuantities((current) => ({ ...current, [product.id]: Math.max(0, (current[product.id] ?? quantity) - 1) }))} disabled={saving}><Minus size={16} color="#F5EBDD" /></TouchableOpacity>
+                  <Text style={styles.quantityText}>{quantity}</Text>
+                  <TouchableOpacity style={styles.quantityButton} onPress={() => setProductQuantities((current) => ({ ...current, [product.id]: (current[product.id] ?? quantity) + 1 }))} disabled={saving}><Plus size={16} color="#F5EBDD" /></TouchableOpacity>
+                </View>
+                <TouchableOpacity style={styles.addProductButton} onPress={() => addProduct(product, quantity)} disabled={saving}><Text style={styles.addProductText}>Guardar</Text></TouchableOpacity>
+              </View>
+            </View>;
+          })}
+        </View> : <View>
+          <Text style={styles.sectionTitle}>Agregar productos</Text>
+          <View style={styles.categoryGrid}>
+            {categorias.map((category) => <TouchableOpacity key={category.id} style={styles.categoryButton} onPress={() => setSelectedCategory(category)}><Text style={styles.categoryText}>{category.nombre}</Text></TouchableOpacity>)}
+          </View>
+        </View>}
         <Text style={styles.sectionTitle}>Detalle de la cuenta</Text><View style={styles.table}><View style={styles.tableHeader}><Text style={[styles.tableCell, styles.itemCell]}>Producto</Text><Text style={styles.tableCell}>Cant.</Text><Text style={styles.tableCell}>Total</Text></View>{lineas.length === 0 ? <Text style={styles.noItems}>Aún no hay productos registrados.</Text> : lineas.map((line) => { const product = productos.find((item) => item.id === line.id_producto); const lineTotal = (line.subtotal || 0) * (1 - line.descuento / 100); return <View style={styles.tableRow} key={line.id}><Text style={[styles.tableCell, styles.itemCell]} numberOfLines={2}>{product?.nombre || `Producto ${line.id_producto}`}</Text><Text style={styles.tableCell}>{line.cantidad || 0}</Text><View><Text style={styles.tableCell}>{money(lineTotal)}</Text><TextInput style={styles.discountInput} keyboardType="numeric" placeholder="Desc. %" placeholderTextColor="#998C80" value={discounts[line.id] || ''} onChangeText={(value) => setDiscounts((current) => ({ ...current, [line.id]: value }))} /></View></View>; })}</View>
         <View style={styles.totals}><Text style={styles.totalLine}>Subtotal <Text style={styles.amount}>{money(subtotal)}</Text></Text><View style={styles.editLine}><Text style={styles.totalLine}>Propina (10%)</Text><TextInput style={styles.moneyInput} keyboardType="numeric" value={String(propina)} onChangeText={(value) => setPropina(Number(value) || 0)} /><TouchableOpacity onPress={() => setPropina(0)}><Trash2 size={17} color="#D98672" /></TouchableOpacity></View><View style={styles.editLine}><Text style={styles.totalLine}>Domicilio</Text><TextInput style={styles.moneyInput} keyboardType="numeric" value={domicilio} onChangeText={setDomicilio} /></View><View style={styles.grandTotal}><Text style={styles.grandLabel}>TOTAL A PAGAR</Text><Text style={styles.grandAmount}>{money(total)}</Text></View></View>
       </ScrollView>
@@ -285,8 +468,20 @@ export default function MesaScreen() {
             <TouchableOpacity style={styles.closeButton} onPress={() => {
               if (!configProduct) return;
               addProduct(configProduct, configQuantity, configIngredients, configGroups, configOptions);
-            }} disabled={saving}><Text style={styles.closeText}>{saving ? 'Guardando...' : 'Agregar producto'}</Text></TouchableOpacity>
+            }} disabled={saving}><Text style={styles.closeText}>{saving ? 'Guardando...' : 'Guardar'}</Text></TouchableOpacity>
           </View>
+        </View>
+      </View>
+    </Modal>
+    <Modal visible={notice !== null} transparent animationType="fade" onRequestClose={() => setNotice(null)}>
+      <View style={styles.noticeBackdrop}>
+        <View style={styles.noticeCard}>
+          <View style={styles.noticeIcon}><TriangleAlert size={28} color="#F0B35A" /></View>
+          <Text style={styles.noticeTitle}>{notice?.title}</Text>
+          <Text style={styles.noticeText}>{notice?.message}</Text>
+          <Pressable style={styles.noticeButton} onPress={() => setNotice(null)}>
+            <Text style={styles.noticeButtonText}>Entendido</Text>
+          </Pressable>
         </View>
       </View>
     </Modal>
@@ -294,6 +489,24 @@ export default function MesaScreen() {
 }
 
 const styles = StyleSheet.create({
+  noticeBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.72)' },
+  noticeCard: { width: '88%', maxWidth: 500, backgroundColor: '#32281F', borderWidth: 1, borderColor: '#604D3A', borderRadius: 18, padding: 28, alignItems: 'center' },
+  noticeIcon: { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', marginBottom: 18, backgroundColor: '#604332' },
+  noticeTitle: { color: '#F5EBDD', fontSize: 23, fontWeight: '800', textAlign: 'center' },
+  noticeText: { color: '#C9B9A9', fontSize: 16, lineHeight: 23, textAlign: 'center', marginTop: 12 },
+  noticeButton: { width: '100%', height: 50, borderRadius: 8, backgroundColor: '#F0B35A', alignItems: 'center', justifyContent: 'center', marginTop: 25 },
+  noticeButtonText: { color: '#251D17', fontWeight: '800' },
+  movementSection: { paddingTop: 12, paddingBottom: 4 },
+  movementHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 20, marginBottom: 8 },
+  movementTitle: { color: '#F5EBDD', fontSize: 16, fontWeight: '700' },
+  newMovementButton: { backgroundColor: '#604332', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 8 },
+  newMovementText: { color: '#F5EBDD', fontSize: 12, fontWeight: '700' },
+  movementList: { paddingHorizontal: 20, gap: 10 },
+  movementCard: { width: 138, minHeight: 78, justifyContent: 'space-between', backgroundColor: '#3A3027', borderWidth: 1, borderColor: '#604D3A', borderRadius: 7, paddingHorizontal: 12, paddingVertical: 10 },
+  movementCardSelected: { borderColor: '#F0B35A', backgroundColor: '#604332' },
+  movementDate: { color: '#C9B9A9', fontSize: 12 },
+  movementAmount: { color: '#F0B35A', fontSize: 16, fontWeight: '800', marginTop: 10 },
+  noMovements: { color: '#B8A99A', fontSize: 13, paddingVertical: 12 },
   configOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.65)', justifyContent: 'center', padding: 18 },
   configModal: { maxHeight: '85%', backgroundColor: '#29231E', borderRadius: 10, borderWidth: 1, borderColor: '#604D3A', overflow: 'hidden' },
   configHeader: { padding: 18, flexDirection: 'row', alignItems: 'flex-start', borderBottomWidth: 1, borderBottomColor: '#45382E' },
@@ -328,4 +541,6 @@ const styles = StyleSheet.create({
   foodImage: { height: 200, width: '100%' },
   foodImageStyle: { borderRadius: 12 },
   cardFooter: { paddingHorizontal: 14, paddingBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardAmount: { color: '#F0B35A', fontSize: 16, fontWeight: '800' },
 });
+

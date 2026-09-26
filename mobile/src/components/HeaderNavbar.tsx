@@ -20,7 +20,7 @@ const menuItems: MenuItem[] = [
   { label: 'Caja', icon: WalletCards },
   { label: 'Categorías', icon: Tags, route: '/categorias' },
   { label: 'Mesa (página inicial)', icon: LayoutGrid, route: '/mesa' },
-  { label: 'Movimientos', icon: ArrowLeftRight },
+  { label: 'Movimientos', icon: ArrowLeftRight, route: '/movimientos' },
   { label: 'Productos', icon: Package, children: [
     { label: 'Productos', icon: Package, route: '/productos' },
     { label: 'Ingredientes', icon: Carrot, route: '/ingredientes' },

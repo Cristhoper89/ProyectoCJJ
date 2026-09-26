@@ -7,7 +7,7 @@ const menuItems = [
   { label: 'Caja', icon: WalletCards },
   { label: 'Categorías', icon: Tags },
   { label: 'Mesa (página inicial)', icon: LayoutGrid },
-  { label: 'Movimientos', icon: ArrowLeftRight },
+  { label: 'Movimientos', icon: ArrowLeftRight, route: '/movimientos' },
   { label: 'Productos', icon: Package },
   { label: 'Ingredientes', icon: Carrot },
   { label: 'Proveedores', icon: Truck },

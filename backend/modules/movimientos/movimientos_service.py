@@ -40,11 +40,28 @@ class MovimientoService:
         caja_id = movimiento_data.id_caja
         if caja_id is None:
             caja = (await self.db.execute(
-                text("SELECT id FROM caja ORDER BY id DESC LIMIT 1;")
+                text("""
+                    SELECT id
+                    FROM caja
+                    WHERE LOWER(TRIM(estado::text)) = 'abierta'
+                    ORDER BY id DESC
+                    LIMIT 1;
+                """)
             )).first()
             if not caja:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No hay una caja disponible.")
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No hay una caja abierta.")
             caja_id = caja.id
+        else:
+            caja = (await self.db.execute(
+                text("""
+                    SELECT id
+                    FROM caja
+                    WHERE id = :id AND LOWER(TRIM(estado::text)) = 'abierta';
+                """),
+                {"id": caja_id},
+            )).first()
+            if not caja:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La caja asociada debe estar abierta.")
 
         query = text("""
             INSERT INTO movimiento (estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, "fecha-hora")

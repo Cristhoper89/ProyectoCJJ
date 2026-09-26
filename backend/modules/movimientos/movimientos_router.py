@@ -41,7 +41,7 @@ async def update_existing_movimiento(
     Endpoint Protegido por Token y RBAC:
     - Admin y cajero: Modifica a cualquier movimiento sin restricciones.
     """
-    if current_user["role_name"] not in ["Administrador", "Cajero"]:
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MovimientoService(db)
     return await service.update_movimiento(movimiento_id, movimiento_data, current_user)

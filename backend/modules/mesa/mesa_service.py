@@ -124,17 +124,23 @@ class MesaService:
 
             if should_create_movement:
                 caja = (await self.db.execute(
-                    text("SELECT id FROM caja ORDER BY id DESC LIMIT 1;")
+                    text("""
+                        SELECT id
+                        FROM caja
+                        WHERE LOWER(TRIM(estado::text)) = 'abierta'
+                        ORDER BY id DESC
+                        LIMIT 1;
+                    """)
                 )).first()
                 if not caja:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="No hay una caja disponible para iniciar la mesa.",
+                        detail="No hay una caja abierta para iniciar la mesa.",
                     )
 
                 movimiento = (await self.db.execute(text("""
-                    INSERT INTO movimiento (estado, propina, domicilio, total, id_caja, metodo)
-                    VALUES (TRUE, 0, 0, 0, :id_caja, 'Efectivo')
+                    INSERT INTO movimiento (estado, propina, domicilio, total, id_caja, metodo, "fecha-hora")
+                    VALUES (TRUE, 0, 0, 0, :id_caja, 'Efectivo', CURRENT_TIMESTAMP)
                     RETURNING id;
                 """), {"id_caja": caja.id})).first()
                 movimiento_id = movimiento.id
