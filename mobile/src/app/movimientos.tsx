@@ -26,6 +26,7 @@ type Movimiento = {
   total?: number | string | null;
   id_mesa?: number | null;
   id_caja?: number | null;
+  caja_estado?: string | null;
   id_mesero?: string | null;
   metodo?: string | null;
   fecha_hora?: string | null;
@@ -154,7 +155,9 @@ export default function MovimientosScreen() {
   useEffect(() => { loadData(); }, []);
 
   const filteredMovimientos = useMemo(
-    () => movimientos.filter((movimiento) => rangeMatches(movimiento.fecha_hora ?? null, range)),
+    () => movimientos.filter((movimiento) => (
+      numberValue(movimiento.total) !== 0 && rangeMatches(movimiento.fecha_hora ?? null, range)
+    )),
     [movimientos, range],
   );
 
@@ -255,7 +258,7 @@ export default function MovimientosScreen() {
               <Text style={styles.detailTotalLabel}>Total general</Text>
               <Text style={styles.detailTotalValue}>{money(item.total)}</Text>
             </View>
-            {item.estado !== false && (
+            {item.estado !== false && item.caja_estado?.trim().toLowerCase() === 'abierta' && (
               <TouchableOpacity style={styles.deactivateButton} onPress={() => setPendingMovement(item)}>
                 <Text style={styles.deactivateButtonText}>Desactivar movimiento</Text>
               </TouchableOpacity>

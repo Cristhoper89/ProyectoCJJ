@@ -43,6 +43,9 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("UPDATE grupo_opcion SET estado = TRUE WHERE estado IS NULL;"))
             await conn.execute(text("UPDATE opcion SET estado = TRUE WHERE estado IS NULL;"))
             await conn.execute(text("UPDATE mesa SET nombre = CASE WHEN tipo = 'barra' THEN 'Barra' ELSE 'Mesa ' || id::text END WHERE nombre IS NULL;"))
+            await conn.execute(text("ALTER TABLE caja ADD COLUMN IF NOT EXISTS efectivo_contado NUMERIC(12,2);"))
+            await conn.execute(text("ALTER TABLE caja ADD COLUMN IF NOT EXISTS diferencia_caja NUMERIC(12,2);"))
+            await conn.execute(text("ALTER TABLE caja ADD COLUMN IF NOT EXISTS notas_cierre VARCHAR(500);"))
             await conn.execute(text("""
                 ALTER TABLE mesa_consumo
                 ADD COLUMN IF NOT EXISTS descuento numeric(10,2) DEFAULT 0.00;

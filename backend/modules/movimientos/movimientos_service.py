@@ -11,11 +11,12 @@ class MovimientoService:
     async def get_all_movimientos(self) -> list[dict]:
         logger.info("SQL Nativo: Consultando todos los movimientos.")
         query = text("""
-            SELECT m.id, m.estado, m.propina, m.domicilio, m.total, m.id_caja,
+                        SELECT m.id, m.estado, m.propina, m.domicilio, m.total, m.id_caja,
                    m.metodo, m.id_cliente, m.id_mesero, m."fecha-hora" AS fecha_hora,
-                   b.id_mesa
+                                     b.id_mesa, c.estado AS caja_estado
             FROM movimiento m
             LEFT JOIN barra b ON b.id_movimiento = m.id
+                        LEFT JOIN caja c ON c.id = m.id_caja
             ORDER BY m.id ASC;
         """)
         result = await self.db.execute(query)
@@ -146,18 +147,40 @@ class MovimientoService:
         if not update_fields:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se enviaron datos para actualizar.")
 
+        caja_filter = ""
+        if movimiento_update.estado is False:
+            params["caja_id_guard"] = movimiento_update.id_caja
+            caja_filter = """
+                AND EXISTS (
+                    SELECT 1 FROM caja c
+                    WHERE c.id = COALESCE(:caja_id_guard, movimiento.id_caja)
+                      AND LOWER(TRIM(c.estado::text)) = 'abierta'
+                )
+            """
+
         # Unificar campos en el string de SQL Nativo
         query_str = f"""
             UPDATE movimiento 
             SET {', '.join(update_fields)} 
-            WHERE id = :id 
+            WHERE id = :id {caja_filter}
             RETURNING id, estado, propina, domicilio, total, id_caja, metodo, id_cliente, id_mesero, "fecha-hora" AS fecha_hora;
         """
         
         try:
             result = await self.db.execute(text(query_str), params)
+            updated_movement = result.mappings().first()
+            if updated_movement is None:
+                await self.db.rollback()
+                if movimiento_update.estado is False:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="No se puede desactivar un movimiento cuya caja no está abierta.",
+                    )
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El movimiento a modificar no existe.")
             await self.db.commit()
-            return dict(result.mappings().first())
+            return dict(updated_movement)
+        except HTTPException:
+            raise
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Error crítico en actualización SQL: {str(e)}")

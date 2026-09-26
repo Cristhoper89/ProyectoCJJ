@@ -30,6 +30,7 @@ class MovimientoCreate(MovimientoBase):
 class MovimientoResponse(MovimientoBase):
     id: int
     id_mesa: Optional[int] = Field(None, gt=0, description="ID de la barra asociada")
+    caja_estado: Optional[str] = Field(None, description="Estado de la caja asociada")
 
     model_config = ConfigDict(from_attributes=True)
 

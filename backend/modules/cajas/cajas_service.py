@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from modules.cajas.cajas_schema import CajasCreate, CajasUpdate
+from modules.cajas.cajas_schema import CajasCreate, CajasCierreApertura, CajasUpdate
 
 from core.logger import logger
 
@@ -11,7 +11,7 @@ class CajasService:
 
     async def get_all_cajas(self) -> list[dict]:
         logger.info("SQL Nativo: Consultando todos las cajas.")
-        query = text("SELECT id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia, egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas, balance_inicial, balance_final, estado FROM caja ORDER BY id ASC;")
+        query = text("SELECT id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia, egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas, balance_inicial, balance_final, efectivo_contado, diferencia_caja, notas_cierre, estado FROM caja ORDER BY id ASC;")
         result = await self.db.execute(query)
         return [dict(row) for row in result.mappings().all()]
 
@@ -130,3 +130,118 @@ class CajasService:
             await self.db.rollback()
             logger.error(f"Error crítico al cambiar el estado de la caja: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
+
+    async def cerrar_y_abrir_caja(self, target_caja_id: int, data: CajasCierreApertura) -> dict:
+        try:
+            current_result = await self.db.execute(
+                text("""
+                    SELECT id, estado, balance_inicial, ingresos_efectivo, ingresos_tarjeta,
+                           ingresos_transferencia, egresos_efectivo, egresos_tarjeta,
+                           egresos_transferencia, total_propinas
+                    FROM caja WHERE id = :id FOR UPDATE;
+                """),
+                {"id": target_caja_id},
+            )
+            current_caja = current_result.mappings().first()
+            if current_caja is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La caja actual no existe.")
+            if str(current_caja["estado"]).strip().lower() != "abierta":
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La caja ya está cerrada.")
+
+            income_result = await self.db.execute(text("""
+                SELECT
+                    COALESCE(SUM(m.total), 0) AS total_ingresos,
+                    COALESCE(SUM(m.propina), 0) AS total_propinas,
+                    COUNT(*) AS ventas_count,
+                    COALESCE(SUM(CASE WHEN LOWER(TRIM(m.metodo::text)) = 'efectivo' THEN m.total ELSE 0 END), 0) AS ingresos_efectivo,
+                    COALESCE(SUM(CASE WHEN LOWER(TRIM(m.metodo::text)) = 'tarjeta' THEN m.total ELSE 0 END), 0) AS ingresos_tarjeta,
+                    COALESCE(SUM(CASE WHEN LOWER(TRIM(m.metodo::text)) = 'transferencia' THEN m.total ELSE 0 END), 0) AS ingresos_transferencia
+                FROM movimiento m
+                WHERE m.id_caja = :id_caja
+                  AND m.estado IS DISTINCT FROM FALSE
+                  AND COALESCE(m.total, 0) > 0;
+            """), {"id_caja": target_caja_id})
+            income = income_result.mappings().one()
+
+            expense_result = await self.db.execute(
+                text("SELECT COALESCE(SUM(valor), 0) FROM gasto WHERE id_caja = :id_caja;"),
+                {"id_caja": target_caja_id},
+            )
+            stored_expenses = sum((
+                current_caja["egresos_efectivo"] or 0,
+                current_caja["egresos_tarjeta"] or 0,
+                current_caja["egresos_transferencia"] or 0,
+            ))
+            total_expenses = max(expense_result.scalar_one(), stored_expenses)
+            has_sales = income["ventas_count"] > 0
+            income_values = {
+                "total_ingresos": income["total_ingresos"] if has_sales else sum((
+                    current_caja["ingresos_efectivo"] or 0,
+                    current_caja["ingresos_tarjeta"] or 0,
+                    current_caja["ingresos_transferencia"] or 0,
+                )),
+                "total_propinas": income["total_propinas"] if has_sales else current_caja["total_propinas"] or 0,
+                "ingresos_efectivo": income["ingresos_efectivo"] if has_sales else current_caja["ingresos_efectivo"] or 0,
+                "ingresos_tarjeta": income["ingresos_tarjeta"] if has_sales else current_caja["ingresos_tarjeta"] or 0,
+                "ingresos_transferencia": income["ingresos_transferencia"] if has_sales else current_caja["ingresos_transferencia"] or 0,
+            }
+            expected_balance = (
+                (current_caja["balance_inicial"] or 0)
+                + income_values["total_ingresos"]
+                - total_expenses
+                - income_values["total_propinas"]
+            )
+            difference = data.efectivo_contado - expected_balance
+
+            closed_result = await self.db.execute(text("""
+                UPDATE caja
+                SET estado = 'cerrada',
+                    ingresos_efectivo = :ingresos_efectivo,
+                    ingresos_tarjeta = :ingresos_tarjeta,
+                    ingresos_transferencia = :ingresos_transferencia,
+                    total_propinas = :total_propinas,
+                    balance_final = :balance_final,
+                    efectivo_contado = :efectivo_contado,
+                    diferencia_caja = :diferencia_caja,
+                    notas_cierre = :notas_cierre
+                WHERE id = :id
+                RETURNING id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia,
+                          egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas,
+                          balance_inicial, balance_final, efectivo_contado, diferencia_caja, notas_cierre, estado;
+            """), {
+                "id": target_caja_id,
+                "ingresos_efectivo": income_values["ingresos_efectivo"],
+                "ingresos_tarjeta": income_values["ingresos_tarjeta"],
+                "ingresos_transferencia": income_values["ingresos_transferencia"],
+                "total_propinas": income_values["total_propinas"],
+                "balance_final": expected_balance,
+                "efectivo_contado": data.efectivo_contado,
+                "diferencia_caja": difference,
+                "notas_cierre": data.notas_cierre,
+            })
+            closed_caja = dict(closed_result.mappings().one())
+
+            new_result = await self.db.execute(text("""
+                INSERT INTO caja (
+                    fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia,
+                    egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas,
+                    balance_inicial, balance_final, estado
+                ) VALUES (
+                    CURRENT_TIMESTAMP, 0, 0, 0, 0, 0, 0, 0,
+                    :balance_inicial, 0, 'abierta'
+                )
+                RETURNING id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia,
+                          egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas,
+                          balance_inicial, balance_final, efectivo_contado, diferencia_caja, notas_cierre, estado;
+            """), {"balance_inicial": data.balance_inicial})
+            new_caja = dict(new_result.mappings().one())
+
+            await self.db.commit()
+            return {"caja_cerrada": closed_caja, "caja_nueva": new_caja}
+        except HTTPException:
+            await self.db.rollback()
+            raise
+        except Exception as error:
+            await self.db.rollback()
+            logger.error(f"Error al cerrar y abrir cajas: {str(error)}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No fue posible completar el cierre y la apertura de caja.")

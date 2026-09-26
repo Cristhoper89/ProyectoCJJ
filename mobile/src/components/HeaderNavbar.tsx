@@ -17,7 +17,11 @@ type MenuItem = {
 
 const menuItems: MenuItem[] = [
   { label: 'Perfil', icon: User },
-  { label: 'Caja', icon: WalletCards },
+  { label: 'Caja', icon: WalletCards, children: [
+    { label: 'Historial de cajas', icon: WalletCards, route: '/cajas' },
+    { label: 'Caja actual', icon: WalletCards, route: '/caja-actual' },
+    { label: 'Cerrar y abrir caja', icon: WalletCards, route: '/cierre-caja' },
+  ] },
   { label: 'Categorías', icon: Tags, route: '/categorias' },
   { label: 'Mesa (página inicial)', icon: LayoutGrid, route: '/mesa' },
   { label: 'Movimientos', icon: ArrowLeftRight, route: '/movimientos' },
@@ -38,6 +42,7 @@ const menuItems: MenuItem[] = [
 export default function HeaderNavbar() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [cashExpanded, setCashExpanded] = useState(false);
   const [productsExpanded, setProductsExpanded] = useState(false);
   const [currentDate, setCurrentDate] = useState('');
 
@@ -65,12 +70,16 @@ export default function HeaderNavbar() {
     const IconComponent = item.icon;
     return (
       <Fragment>
-        <TouchableOpacity style={styles.menuItem} onPress={() => item.children ? setProductsExpanded((current) => !current) : navigate(item)}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => item.children ? (
+          item.label === 'Caja'
+            ? setCashExpanded((current) => !current)
+            : setProductsExpanded((current) => !current)
+        ) : navigate(item)}>
           <IconComponent size={22} color="#D8A85B" style={styles.icon} />
           <Text style={styles.menuText}>{item.label}</Text>
-          {item.children && <ChevronDown size={19} color="#D8A85B" style={productsExpanded && styles.chevronExpanded} />}
+          {item.children && <ChevronDown size={19} color="#D8A85B" style={(item.label === 'Caja' ? cashExpanded : productsExpanded) && styles.chevronExpanded} />}
         </TouchableOpacity>
-        {item.children && productsExpanded && item.children.map((child) => {
+        {item.children && (item.label === 'Caja' ? cashExpanded : productsExpanded) && item.children.map((child) => {
           const ChildIcon = child.icon;
           return <TouchableOpacity key={child.label} style={styles.subMenuItem} onPress={() => navigate(child)}>
             <ChildIcon size={19} color="#C9B9A9" style={styles.icon} />
