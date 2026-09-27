@@ -506,6 +506,52 @@ tbody tr:hover {
     background: white;
 }
 
+.ingredientes-container {
+    background: #2D2620;
+    border: 1px solid #45382E;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 18px;
+}
+
+.ingredientes-container[hidden] {
+    display: none;
+}
+
+.ingredientes-header strong {
+    display: block;
+    font-size: 13px;
+}
+
+.ingredientes-header span,
+.ingredientes-vacio {
+    display: block;
+    margin-top: 4px;
+    color: #B8B1A8;
+    font-size: 11px;
+}
+
+.ingredientes-lista {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.ingrediente-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: #F5F5F5;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.ingrediente-item input {
+    accent-color: #D8A85B;
+}
+
 
 /* ====================================================== */
 /* MENSAJE */
@@ -613,6 +659,10 @@ tbody tr:hover {
 /* ====================================================== */
 
 @media (max-width: 700px) {
+
+    .ingredientes-lista {
+        grid-template-columns: 1fr;
+    }
 
     .productos-page {
         padding: 20px;

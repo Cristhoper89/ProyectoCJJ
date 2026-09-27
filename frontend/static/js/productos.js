@@ -24,6 +24,8 @@ const cantidad = document.getElementById("cantidad");
 const precio = document.getElementById("precio");
 const categoria = document.getElementById("categoria");
 const preparacion = document.getElementById("preparacion");
+const ingredientesContainer = document.getElementById("ingredientesContainer");
+const ingredientesLista = document.getElementById("ingredientesLista");
 
 const modalTitle = document.getElementById("modalTitle");
 
@@ -46,6 +48,9 @@ const desactivarModalMessage = document.getElementById("desactivarModalMessage")
 let productos = [];
 
 let categorias = [];
+let ingredientes = [];
+let relacionesProductoIngrediente = [];
+let ingredientesSeleccionados = new Set();
 
 let productoSeleccionado = null;
 
@@ -148,6 +153,120 @@ async function cargarCategorias(){
         );
 
     }
+
+}
+
+async function cargarIngredientes(){
+
+    try{
+        const response = await fetch(`${API_URL}/ingredientes/`,{
+            method: "GET",
+            headers: getHeaders()
+        });
+        const data = await response.json();
+
+        if(!response.ok){
+            throw new Error(data.detail || "No fue posible cargar los ingredientes.");
+        }
+
+        ingredientes = data.filter(item => item.estado !== false);
+        renderizarIngredientes();
+    }
+    catch(error){
+        console.error(error);
+        ingredientes = [];
+        ingredientesLista.innerHTML = `<span class="ingredientes-vacio">No fue posible cargar los ingredientes.</span>`;
+    }
+
+}
+
+async function cargarRelacionesProductoIngrediente(){
+
+    try{
+        const response = await fetch(`${API_URL}/producto-ingredientes/`,{
+            method: "GET",
+            headers: getHeaders()
+        });
+        const data = await response.json();
+
+        if(!response.ok){
+            throw new Error(data.detail || "No fue posible cargar las relaciones de ingredientes.");
+        }
+
+        relacionesProductoIngrediente = data;
+    }
+    catch(error){
+        console.error(error);
+        relacionesProductoIngrediente = [];
+    }
+
+}
+
+function renderizarIngredientes(){
+
+    if(!ingredientesContainer || !preparacion.checked){
+        return;
+    }
+
+    if(ingredientes.length === 0){
+        ingredientesLista.innerHTML = `<span class="ingredientes-vacio">No hay ingredientes activos registrados.</span>`;
+        return;
+    }
+
+    ingredientesLista.innerHTML = ingredientes.map(ingrediente => `
+        <label class="ingrediente-item">
+            <input type="checkbox" value="${ingrediente.id}" ${ingredientesSeleccionados.has(ingrediente.id) ? "checked" : ""}>
+            <span>${ingrediente.nombre}</span>
+        </label>
+    `).join("");
+
+}
+
+function actualizarVisibilidadIngredientes(){
+
+    ingredientesContainer.hidden = !preparacion.checked;
+
+    if(preparacion.checked){
+        renderizarIngredientes();
+    }
+
+}
+
+async function sincronizarIngredientes(productoId){
+
+    const actuales = relacionesProductoIngrediente.filter(
+        relacion => relacion.id_producto === Number(productoId)
+    );
+    const deseados = preparacion.checked ? [...ingredientesSeleccionados] : [];
+
+    const eliminaciones = actuales
+        .filter(relacion => !deseados.includes(relacion.id_ingrediente))
+        .map(relacion => fetch(`${API_URL}/producto-ingredientes/${relacion.id}`,{
+            method: "DELETE",
+            headers: getHeaders()
+        }));
+    const creaciones = deseados
+        .filter(ingredienteId => !actuales.some(relacion => relacion.id_ingrediente === ingredienteId))
+        .map(ingredienteId => fetch(`${API_URL}/producto-ingredientes/`,{
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({ id_producto: Number(productoId), id_ingrediente: ingredienteId })
+        }));
+
+    const respuestas = await Promise.all([...eliminaciones, ...creaciones]);
+    const respuestaFallida = respuestas.find(response => !response.ok);
+
+    if(respuestaFallida){
+        const data = await respuestaFallida.json();
+        throw new Error(data.detail || "No fue posible guardar los ingredientes del producto.");
+    }
+
+    const nuevasRelaciones = await Promise.all(
+        creaciones.map(response => response.json())
+    );
+    relacionesProductoIngrediente = relacionesProductoIngrediente
+        .filter(relacion => relacion.id_producto !== Number(productoId) || deseados.includes(relacion.id_ingrediente));
+    relacionesProductoIngrediente.push(...nuevasRelaciones);
 
 }
 
@@ -421,10 +540,13 @@ function abrirModal(){
     productoForm.reset();
 
     productoId.value = "";
+    ingredientesSeleccionados = new Set();
 
     modalTitle.textContent = "Registrar producto";
 
     clearMessage();
+
+    actualizarVisibilidadIngredientes();
 
     productoModal.classList.add("active");
 
@@ -440,6 +562,7 @@ function cerrarProductoModal(){
     productoForm.reset();
 
     productoId.value = "";
+    ingredientesSeleccionados = new Set();
 
     clearMessage();
 
@@ -483,6 +606,11 @@ async function editarProducto(id){
     categoria.value = producto.id_categoria ?? "";
 
     preparacion.checked = producto.preparacion === true;
+    ingredientesSeleccionados = new Set(
+        relacionesProductoIngrediente
+            .filter(relacion => relacion.id_producto === producto.id)
+            .map(relacion => relacion.id_ingrediente)
+    );
 
 
     modalTitle.textContent = "Editar producto";
@@ -490,8 +618,36 @@ async function editarProducto(id){
     clearMessage();
 
     productoModal.classList.add("active");
+    actualizarVisibilidadIngredientes();
 
 }
+
+preparacion.addEventListener("change",()=>{
+
+    if(!preparacion.checked){
+        ingredientesSeleccionados = new Set();
+    }
+
+    actualizarVisibilidadIngredientes();
+
+});
+
+ingredientesLista.addEventListener("change",(event)=>{
+
+    if(!event.target.matches("input[type='checkbox']")){
+        return;
+    }
+
+    const ingredienteId = Number(event.target.value);
+
+    if(event.target.checked){
+        ingredientesSeleccionados.add(ingredienteId);
+    }
+    else{
+        ingredientesSeleccionados.delete(ingredienteId);
+    }
+
+});
 
 
 // ======================================================
@@ -677,6 +833,8 @@ productoForm.addEventListener("submit", async (e)=>{
             return;
         }
 
+        await sincronizarIngredientes(data.id);
+
 
         showMessage(
             id
@@ -820,6 +978,8 @@ confirmarDesactivar.addEventListener("click", async ()=>{
 // ======================================================
 
 cargarCategorias();
+cargarIngredientes();
+cargarRelacionesProductoIngrediente();
 
 cargarProductos();
 
