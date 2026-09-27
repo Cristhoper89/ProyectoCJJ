@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movimientos</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css">
+    <link rel="stylesheet" href="../static/css/modules/movimientos.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+
+        <main class="mov-page">
+            <header class="mov-header">
+                <div>
+                    <span class="eyebrow">Historial de caja</span>
+                    <h1>Movimientos</h1>
+                    <p>Consulta las ventas, gastos y el balance del rango seleccionado.</p>
+                </div>
+                <div class="mov-actions">
+                    <div class="mov-range" id="movRange" role="group" aria-label="Rango de fechas">
+                        <button class="mov-range-btn" type="button" data-range="today">Hoy</button>
+                        <button class="mov-range-btn" type="button" data-range="week">Esta semana</button>
+                        <button class="mov-range-btn" type="button" data-range="month">Este mes</button>
+                    </div>
+                    <button class="btn-secondary" id="btnRefrescar" type="button">
+                        <i data-lucide="refresh-cw"></i>
+                        Actualizar
+                    </button>
+                </div>
+            </header>
+
+            <section class="mov-summary" aria-label="Resumen del periodo">
+                <article class="mov-summary-card income">
+                    <div class="summary-icon"><i data-lucide="trending-up"></i></div>
+                    <div><span>Ingresos</span><strong id="totalIngresos">$0</strong></div>
+                </article>
+                <article class="mov-summary-card expense">
+                    <div class="summary-icon"><i data-lucide="trending-down"></i></div>
+                    <div><span>Gastos</span><strong id="totalGastos">$0</strong></div>
+                </article>
+                <article class="mov-summary-card balance">
+                    <div class="summary-icon"><i data-lucide="scale"></i></div>
+                    <div><span>Balance neto</span><strong id="balanceNeto">$0</strong></div>
+                </article>
+            </section>
+
+            <div class="mov-tabs" role="tablist" aria-label="Historial">
+                <button class="mov-tab is-active" id="tabVentas" type="button" role="tab" aria-selected="true" data-tab="ventas">
+                    <i data-lucide="receipt-text"></i>
+                    Venta / Facturas
+                </button>
+                <button class="mov-tab" id="tabGastos" type="button" role="tab" aria-selected="false" data-tab="gastos">
+                    <i data-lucide="trending-down"></i>
+                    Gastos
+                </button>
+            </div>
+
+            <section class="mov-list" id="movList" aria-live="polite"></section>
+
+            <p class="mov-message" id="movMessage" role="status"></p>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="desactivarModal" hidden>
+        <div class="confirm-modal">
+            <div class="confirm-icon"><i data-lucide="triangle-alert"></i></div>
+            <h2>Desactivar movimiento</h2>
+            <p id="desactivarTexto">¿Está seguro de que desea desactivar este movimiento?</p>
+            <div class="confirm-actions">
+                <button class="btn-secondary" id="cancelarDesactivar" type="button">Cancelar</button>
+                <button class="btn-danger" id="confirmarDesactivar" type="button">Desactivar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/js/menu.js?v=3"></script>
+    <script src="../static/js/movimientos.js?v=1"></script>
+</body>
+</html>

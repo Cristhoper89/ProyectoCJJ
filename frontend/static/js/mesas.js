@@ -1,5 +1,7 @@
 // ======================================================
 // MESAS
+// Lógica alineada con el módulo Mesas de la app móvil:
+// Mesa -> Movimiento -> Mesa Consumo
 // ======================================================
 
 const API_URL = "http://127.0.0.1:8000";
@@ -25,6 +27,10 @@ const pedidoEstadoBadge = document.getElementById("pedidoEstadoBadge");
 const pedidoTiempo = document.getElementById("pedidoTiempo");
 const cerrarPedido = document.getElementById("cerrarPedido");
 
+const pedidoMovimientos = document.getElementById("pedidoMovimientos");
+const pedidoMovimientosLista = document.getElementById("pedidoMovimientosLista");
+const btnNuevoMovimiento = document.getElementById("btnNuevoMovimiento");
+
 const categoriasChips = document.getElementById("categoriasChips");
 const productosGrid = document.getElementById("productosGrid");
 const pedidoLineas = document.getElementById("pedidoLineas");
@@ -37,6 +43,7 @@ const campoTotal = document.getElementById("campoTotal");
 
 const btnCancelarPedido = document.getElementById("btnCancelarPedido");
 const btnImprimirCuenta = document.getElementById("btnImprimirCuenta");
+const btnFinalizarCuenta = document.getElementById("btnFinalizarCuenta");
 
 const confirmarModal = document.getElementById("confirmarModal");
 const cancelarConfirmar = document.getElementById("cancelarConfirmar");
@@ -49,6 +56,18 @@ const comprobanteImpresion = document.getElementById("comprobanteImpresion");
 const btnImprimirCuentaFinal = document.getElementById("btnImprimirCuentaFinal");
 const btnCerrarCuenta = document.getElementById("btnCerrarCuenta");
 
+const configModal = document.getElementById("configModal");
+const configTitulo = document.getElementById("configTitulo");
+const configCuerpo = document.getElementById("configCuerpo");
+const cerrarConfig = document.getElementById("cerrarConfig");
+const cancelarConfig = document.getElementById("cancelarConfig");
+const btnGuardarConfig = document.getElementById("btnGuardarConfig");
+
+const avisoModal = document.getElementById("avisoModal");
+const avisoTitulo = document.getElementById("avisoTitulo");
+const avisoMensaje = document.getElementById("avisoMensaje");
+const cerrarAviso = document.getElementById("cerrarAviso");
+
 // ======================================================
 // VARIABLES
 // ======================================================
@@ -56,12 +75,23 @@ const btnCerrarCuenta = document.getElementById("btnCerrarCuenta");
 let mesas = [];
 let productos = [];
 let categorias = [];
+let ingredientes = [];
+let productoIngredientes = [];
 let consumos = [];
+let movimientos = [];
 let empresa = null;
 
 let mesaActual = null;
+let movimientoActual = null;
 let categoriaSeleccionada = null;
+let descuentos = {};
 let accionConfirmar = null;
+
+let configProducto = null;
+let configCantidad = 0;
+let configIngredientes = {};
+let configGrupos = [];
+let configOpciones = {};
 
 // ======================================================
 // TOKEN / HEADERS
@@ -117,11 +147,8 @@ function esc(texto) {
         .replace(/'/g, "&#39;");
 }
 
-function localDatetime() {
-    const d = new Date();
-    const pad = n => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
-           `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+function redondear(valor) {
+    return Math.round((Number(valor) || 0) * 100) / 100;
 }
 
 function formatearReloj(ms) {
@@ -134,11 +161,60 @@ function formatearReloj(ms) {
     return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
+function formatearFechaMovimiento(valor) {
+    if (!valor) { return "Sin hora"; }
+    const fecha = new Date(valor);
+    if (isNaN(fecha.getTime())) { return "Sin hora"; }
+    return fecha.toLocaleString("es-CO", {
+        day: "numeric",
+        month: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
+
 function obtenerTiempoTranscurrido(horaInicio) {
     if (!horaInicio) { return null; }
     const inicio = new Date(horaInicio).getTime();
     if (isNaN(inicio)) { return null; }
     return Date.now() - inicio;
+}
+
+function valorInput(elemento) {
+    const valor = parseFloat(elemento.value);
+    return isNaN(valor) || valor < 0 ? 0 : valor;
+}
+
+function esBarra(mesa) {
+    return mesa && mesa.tipo === "barra";
+}
+
+function nombreMesa(mesa) {
+    return mesa.nombre || (esBarra(mesa) ? "Barra" : `Mesa ${mesa.id}`);
+}
+
+function filtroMesas() {
+    return buscarMesa.value.trim().toLowerCase();
+}
+
+function mostrarAviso(titulo, mensaje) {
+    avisoTitulo.textContent = titulo;
+    avisoMensaje.textContent = mensaje;
+    avisoModal.classList.add("active");
+}
+
+function manejarError(error, porDefecto) {
+    const mensaje = (error && error.message) || porDefecto;
+    if (String(mensaje).toLowerCase().includes("caja abierta")) {
+        mostrarAviso("Caja cerrada", "Debes abrir una caja antes de registrar el movimiento.");
+        return;
+    }
+    alert(mensaje);
+}
+
+function guardarEstadoBotones(ocupado) {
+    [btnImprimirCuenta, btnFinalizarCuenta, btnCancelarPedido, btnNuevoMovimiento]
+        .forEach(boton => { if (boton) { boton.disabled = ocupado; } });
 }
 
 function actualizarTiempos() {
@@ -153,45 +229,125 @@ function actualizarTiempos() {
 }
 
 // ======================================================
+// RELACIÓN MESA -> MOVIMIENTO -> MESA CONSUMO
+// ======================================================
+
+// Una mesa normal usa directamente el movimiento asociado (mesa.id_mov).
+// Una barra usa el movimiento que se está atendiendo en este momento.
+function movimientoActivoId() {
+    if (!mesaActual) { return null; }
+    return esBarra(mesaActual)
+        ? (movimientoActual ? movimientoActual.id : null)
+        : mesaActual.id_mov;
+}
+
+function movimientosBarra(mesa) {
+    const objetivo = mesa || mesaActual;
+    if (!esBarra(objetivo)) { return []; }
+    return movimientos
+        .filter(movimiento => movimiento.id_mesa === objetivo.id)
+        .slice()
+        .reverse();
+}
+
+// Movimiento que representa la cuenta: el último de la barra o el de la mesa.
+function movimientoDeMesa(mesa) {
+    if (!mesa) { return null; }
+    if (esBarra(mesa)) {
+        const lista = movimientos.filter(movimiento => movimiento.id_mesa === mesa.id);
+        return lista[lista.length - 1] || null;
+    }
+    return movimientos.find(movimiento => movimiento.id === mesa.id_mov) || null;
+}
+
+// El movimiento que se está editando en este momento (tipos de barra en vivo).
+function movimientoEsActivo(movimiento) {
+    if (!movimiento || !mesaActual) { return false; }
+    if (esBarra(mesaActual)) {
+        return !!movimientoActual && movimientoActual.id === movimiento.id;
+    }
+    return mesaActual.id_mov === movimiento.id;
+}
+
+function lineasDeMovimiento(idMov) {
+    if (!idMov) { return []; }
+    return consumos
+        .filter(consumo => consumo.id_mov === idMov && Number(consumo.subtotal) > 0)
+        .sort((a, b) => a.id - b.id);
+}
+
+function lineasMesaActual() {
+    return lineasDeMovimiento(movimientoActivoId());
+}
+
+function totalMovimiento(movimiento) {
+    if (!movimiento) { return 0; }
+
+    const lineas = lineasDeMovimiento(movimiento.id);
+    const subtotal = lineas.length > 0
+        ? lineas.reduce((suma, linea) => suma + (Number(linea.subtotal) || 0) * (1 - porcentajeLinea(linea) / 100), 0)
+        : Math.max(0,
+            (Number(movimiento.total) || 0) -
+            (Number(movimiento.propina) || 0) -
+            (Number(movimiento.domicilio) || 0)
+        );
+
+    const seleccionado = movimientoEsActivo(movimiento);
+
+    return subtotal
+        + (seleccionado ? valorInput(campoPropina) : Number(movimiento.propina) || 0)
+        + (seleccionado ? valorInput(campoDomicilio) : Number(movimiento.domicilio) || 0);
+}
+
+function totalMesa(mesa) {
+    if (esBarra(mesa)) {
+        return movimientos
+            .filter(movimiento => movimiento.id_mesa === mesa.id)
+            .reduce((suma, movimiento) => suma + totalMovimiento(movimiento), 0);
+    }
+    const movimiento = movimientos.find(item => item.id === mesa.id_mov);
+    return movimiento ? totalMovimiento(movimiento) : 0;
+}
+
+function tieneConsumos(mesa) {
+    if (esBarra(mesa)) {
+        return movimientos.some(movimiento => movimiento.id_mesa === mesa.id && lineasDeMovimiento(movimiento.id).length > 0);
+    }
+    return lineasDeMovimiento(mesa.id_mov).length > 0;
+}
+
+function cantidadProductoEnMesa(idProducto) {
+    return lineasMesaActual()
+        .filter(linea => linea.id_producto === idProducto)
+        .reduce((suma, linea) => suma + (Number(linea.cantidad) || 0), 0);
+}
+
+// ======================================================
+// DESCUENTOS, PROPINA, DOMICILIO Y TOTALES
+// ======================================================
+
+function porcentajeLinea(linea) {
+    return Math.min(100, Math.max(0, Number(descuentos[linea.id]) || 0));
+}
+
+function totalLinea(linea) {
+    return (Number(linea.subtotal) || 0) * (1 - porcentajeLinea(linea) / 100);
+}
+
+function calcularSubtotal() {
+    return lineasMesaActual().reduce((suma, linea) => suma + totalLinea(linea), 0);
+}
+
+function calcularTotal() {
+    return redondear(calcularSubtotal() + valorInput(campoPropina) + valorInput(campoDomicilio));
+}
+
+// ======================================================
 // CARGAR DATOS
 // ======================================================
 
-async function cargarMesas() {
-    mesasTable.innerHTML = `
-        <div class="mesa-loading">
-            <i data-lucide="loader-circle"></i>
-            <span>Cargando mesas...</span>
-        </div>
-    `;
-
-    try {
-        const data = await api("/mesas/");
-        mesas = data;
-        mostrarMesas(buscarMesa.value.trim().toLowerCase());
-        lucide.createIcons();
-    } catch (error) {
-        console.error(error);
-        mesasTable.innerHTML = `
-            <div class="mesa-loading">
-                <i data-lucide="alert-triangle"></i>
-                <span>No fue posible conectar con el servidor.</span>
-            </div>
-        `;
-        lucide.createIcons();
-    }
-}
-
-async function cargarCatalogos() {
-    const [prods, cats] = await Promise.all([
-        api("/productos/"),
-        api("/categorias/")
-    ]);
-    productos = prods;
-    categorias = cats;
-}
-
-async function cargarConsumos() {
-    consumos = await api("/mesasC/");
+function resultado(pedido, porDefecto) {
+    return pedido.status === "fulfilled" ? pedido.value : porDefecto;
 }
 
 async function cargarEmpresa() {
@@ -204,12 +360,46 @@ async function cargarEmpresa() {
 }
 
 async function cargarTodo() {
-    await Promise.all([
-        cargarCatalogos(),
-        cargarConsumos(),
-        cargarEmpresa()
+    const pedidos = await Promise.allSettled([
+        api("/mesas/"),
+        api("/categorias/"),
+        api("/productos/"),
+        api("/ingredientes/"),
+        api("/producto-ingredientes/"),
+        api("/mesasC/"),
+        api("/movimientos/")
     ]);
-    await cargarMesas();
+
+    const [mesasPedido, categoriasPedido, productosPedido, ingredientesPedido, productoIngredientesPedido, consumosPedido, movimientosPedido] = pedidos;
+
+    mesas = resultado(mesasPedido, []);
+    categorias = resultado(categoriasPedido, []).filter(categoria => categoria.estado !== false);
+    productos = resultado(productosPedido, []).filter(producto => producto.estado !== false);
+    ingredientes = resultado(ingredientesPedido, []).filter(ingrediente => ingrediente.estado !== false);
+    productoIngredientes = resultado(productoIngredientesPedido, []);
+    consumos = resultado(consumosPedido, []);
+    movimientos = resultado(movimientosPedido, []);
+
+    if (mesasPedido.status === "rejected") {
+        mesasTable.innerHTML = `
+            <div class="mesa-loading">
+                <i data-lucide="alert-triangle"></i>
+                <span>No fue posible conectar con el servidor.</span>
+            </div>
+        `;
+    } else {
+        mostrarMesas(filtroMesas());
+    }
+
+    const fallo = pedidos.find(pedido => pedido.status === "rejected");
+    if (fallo) {
+        mostrarAviso(
+            "No se pudo cargar todo",
+            (fallo.reason && fallo.reason.message) || "Intenta nuevamente."
+        );
+    }
+
+    await cargarEmpresa();
 }
 
 // ======================================================
@@ -221,8 +411,7 @@ function mostrarMesas(filtro = "") {
 
     const lista = filtro
         ? mesas.filter(mesa => {
-            const nombre = String(mesa.nombre || mesa.id);
-            const texto = nombre + " " + (mesa.tipo ? "mesa" : "barra");
+            const texto = nombreMesa(mesa) + " " + (esBarra(mesa) ? "barra" : "mesa");
             return texto.toLowerCase().includes(filtro);
         })
         : mesas;
@@ -240,26 +429,24 @@ function mostrarMesas(filtro = "") {
 
     lista.forEach(mesa => {
         const tarjeta = document.createElement("div");
-        tarjeta.className = `mesa-card${mesa.estado === true ? " ocupada" : ""}`;
-
-        const nombreMesa = esc(mesa.nombre || `Mesa ${mesa.id}`);
         const ocupada = mesa.estado === true;
-        const tieneConsumo = consumos.some(c => c.id_mesa === mesa.id);
+        const barra = esBarra(mesa);
         const ms = obtenerTiempoTranscurrido(mesa.hora_inicio);
 
+        tarjeta.className = `mesa-card${ocupada ? " ocupada" : ""}`;
         tarjeta.innerHTML = `
 
             <div class="mesa-card-img ${ocupada ? "ocupada" : "disponible"}">
-                <span class="mesa-card-emoji">${mesa.tipo ? "🍔" : "🍺"}</span>
+                <span class="mesa-card-emoji">${barra ? "🍺" : "🍔"}</span>
                 <span class="estado-mesa-badge tipo-badge">
-                    ${mesa.tipo ? "Mesa" : "Barra"}
+                    ${barra ? "Barra" : "Mesa"}
                 </span>
             </div>
 
             <div class="mesa-card-body">
 
                 <div class="mesa-card-cabecera">
-                    <strong class="mesa-card-nombre">${nombreMesa}</strong>
+                    <strong class="mesa-card-nombre">${esc(nombreMesa(mesa))}</strong>
                     <span class="estado-mesa-badge ${ocupada ? "ocupada" : "disponible"}">
                         ${ocupada ? "Ocupada" : "Disponible"}
                     </span>
@@ -280,7 +467,7 @@ function mostrarMesas(filtro = "") {
                 </div>
 
                 <div class="mesa-card-total">
-                    ${formatearPrecio(mesa.total)}
+                    ${formatearPrecio(totalMesa(mesa))}
                 </div>
 
                 <div class="actions">
@@ -295,7 +482,7 @@ function mostrarMesas(filtro = "") {
                         <i data-lucide="utensils-crossed"></i>
                     </button>
 
-                    ${tieneConsumo ? `
+                    ${tieneConsumos(mesa) ? `
                         <button
                             type="button"
                             class="action-button success"
@@ -336,7 +523,7 @@ function mostrarMesas(filtro = "") {
 
 function abrirMesaModal() {
     mesaForm.reset();
-    tipoMesa.value = "true";
+    tipoMesa.value = "mesa";
     mesaMessage.textContent = "";
     mesaMessage.className = "mesa-message";
     mesaModal.classList.add("active");
@@ -359,13 +546,13 @@ mesaForm.addEventListener("submit", async event => {
     try {
         await api("/mesas/", "POST", {
             estado: false,
-            tipo: tipoMesa.value === "true"
+            tipo: tipoMesa.value === "barra" ? "barra" : "mesa"
         });
 
         mesaMessage.textContent = "Mesa registrada correctamente.";
         mesaMessage.className = "mesa-message success";
 
-        await cargarMesas();
+        await cargarTodo();
 
         setTimeout(cerrarMesaModalFn, 900);
     } catch (error) {
@@ -383,13 +570,13 @@ mesaForm.addEventListener("submit", async event => {
 // ======================================================
 
 function productosActivos() {
-    return productos.filter(p => p.estado !== false);
+    return productos.filter(producto => producto.estado !== false);
 }
 
 function categoriasConProductos() {
     const prods = productosActivos();
-    const ids = new Set(prods.map(p => p.id_categoria));
-    return categorias.filter(c => c.estado !== false && ids.has(c.id));
+    const ids = new Set(prods.map(producto => producto.id_categoria));
+    return categorias.filter(categoria => ids.has(categoria.id));
 }
 
 function renderChips() {
@@ -437,7 +624,7 @@ function renderProductos() {
 
     const lista = categoriaSeleccionada === null
         ? productosActivos()
-        : productosActivos().filter(p => p.id_categoria === categoriaSeleccionada);
+        : productosActivos().filter(producto => producto.id_categoria === categoriaSeleccionada);
 
     if (lista.length === 0) {
         productosGrid.innerHTML = `
@@ -451,7 +638,7 @@ function renderProductos() {
         tarjeta.type = "button";
         tarjeta.className = "producto-tarjeta";
         tarjeta.innerHTML = `
-            <strong>${producto.nombre}</strong>
+            <strong>${esc(producto.nombre)}</strong>
             <span>${formatearPrecio(producto.precio)}</span>
             ${producto.cantidad > 0 ? `<small>Disponible: ${producto.cantidad}</small>` : "<small>Sin stock</small>"}
             <i data-lucide="plus-circle"></i>
@@ -467,50 +654,125 @@ function renderProductos() {
 // PEDIDO
 // ======================================================
 
-async function abrirPedido(mesaId) {
-    const mesa = mesas.find(m => m.id === Number(mesaId));
+function abrirPedido(mesaId) {
+    const mesa = mesas.find(item => item.id === Number(mesaId));
     if (!mesa) { return; }
 
     mesaActual = mesa;
     categoriaSeleccionada = null;
 
-    pedidoMesaNombre.textContent = `${mesa.tipo ? "Mesa" : "Barra"} ${mesa.id}`;
+    // En la barra se atiende el último movimiento; la mesa normal usa el suyo.
+    movimientoActual = esBarra(mesa) ? movimientoDeMesa(mesa) : null;
+
+    const referencia = movimientoActual || movimientoDeMesa(mesa);
+    campoPropina.value = Number(referencia && referencia.propina) || 0;
+    campoDomicilio.value = Number(referencia && referencia.domicilio) || 0;
+
+    pedidoMesaNombre.textContent = nombreMesa(mesa);
     pedidoEstadoBadge.className = "estado-mesa-badge " + (mesa.estado ? "ocupada" : "disponible");
     pedidoEstadoBadge.textContent = mesa.estado ? "Ocupada" : "Disponible";
-
-    campoPropina.value = mesa.propina || 0;
-    campoDomicilio.value = mesa.domicilio || 0;
 
     pedidoModal.classList.add("active");
     renderChips();
     renderProductos();
-    await refrescarResumen();
+    refrescarResumen();
     actualizarTiempos();
 }
 
 function cerrarPedidoFn() {
     pedidoModal.classList.remove("active");
     mesaActual = null;
+    movimientoActual = null;
+    descuentos = {};
+    cerrarConfigModal();
 }
 
-function lineasMesaActual() {
-    if (!mesaActual) { return []; }
-    return consumos.filter(c => c.id_mesa === mesaActual.id)
-                  .sort((a, b) => a.id - b.id);
+// ======================================================
+// MOVIMIENTOS DE LA BARRA
+// ======================================================
+
+function renderMovimientosBarra() {
+    if (!pedidoMovimientos) { return; }
+
+    const visible = !!mesaActual && esBarra(mesaActual);
+    pedidoMovimientos.hidden = !visible;
+    if (!visible) { return; }
+
+    pedidoMovimientosLista.innerHTML = "";
+
+    const lista = movimientosBarra();
+
+    if (lista.length === 0) {
+        pedidoMovimientosLista.innerHTML = `
+            <span class="loading-chip">No hay movimientos registrados.</span>
+        `;
+        return;
+    }
+
+    lista.forEach(movimiento => {
+        const tarjeta = document.createElement("button");
+        const seleccionada = movimientoActual && movimientoActual.id === movimiento.id;
+        tarjeta.type = "button";
+        tarjeta.className = "movimiento-card" + (seleccionada ? " seleccionada" : "");
+        tarjeta.innerHTML = `
+            <span>${esc(formatearFechaMovimiento(movimiento.fecha_hora))}</span>
+            <strong>${formatearPrecio(totalMovimiento(movimiento))}</strong>
+        `;
+        tarjeta.addEventListener("click", () => seleccionarMovimiento(movimiento));
+        pedidoMovimientosLista.appendChild(tarjeta);
+    });
 }
 
-function calcularSubtotal() {
-    return lineasMesaActual().reduce((suma, linea) => suma + Number(linea.subtotal || 0), 0);
+function seleccionarMovimiento(movimiento) {
+    movimientoActual = movimiento;
+    campoPropina.value = Number(movimiento.propina) || 0;
+    campoDomicilio.value = Number(movimiento.domicilio) || 0;
+    refrescarResumen();
+    mostrarMesas(filtroMesas());
 }
 
-function valorInput(elemento) {
-    const valor = parseFloat(elemento.value);
-    return isNaN(valor) || valor < 0 ? 0 : valor;
+async function crearMovimientoBarra() {
+    if (!mesaActual || !esBarra(mesaActual)) { return; }
+
+    guardarEstadoBotones(true);
+
+    try {
+        if (mesaActual.estado !== true) {
+            const mesa = await api(`/mesas/${mesaActual.id}/estado?new_state=true`, "PATCH");
+            mesaActual = mesa;
+            mesas = mesas.map(item => item.id === mesa.id ? { ...item, ...mesa } : item);
+            pedidoEstadoBadge.className = "estado-mesa-badge ocupada";
+            pedidoEstadoBadge.textContent = "Ocupada";
+        }
+
+        const movimiento = await api("/movimientos/", "POST", {
+            estado: true,
+            propina: 0,
+            domicilio: 0,
+            total: 0,
+            metodo: "Efectivo",
+            id_mesa: mesaActual.id,
+            fecha_hora: new Date().toISOString()
+        });
+
+        movimientos = [...movimientos, movimiento];
+        movimientoActual = movimiento;
+        campoPropina.value = 0;
+        campoDomicilio.value = 0;
+
+        renderMovimientosBarra();
+        refrescarResumen();
+        mostrarMesas(filtroMesas());
+    } catch (error) {
+        manejarError(error, "No se pudo crear el movimiento de la barra.");
+    } finally {
+        guardarEstadoBotones(false);
+    }
 }
 
-function calcularTotal() {
-    return Math.round((calcularSubtotal() + valorInput(campoPropina) + valorInput(campoDomicilio)) * 100) / 100;
-}
+// ======================================================
+// LÍNEAS DEL PEDIDO
+// ======================================================
 
 function renderLineas() {
     pedidoLineas.innerHTML = "";
@@ -525,24 +787,28 @@ function renderLineas() {
     }
 
     lineas.forEach(linea => {
-        const producto = productos.find(p => p.id === linea.id_producto);
-        const precioMax = Number(linea.precio_unitario) * Number(linea.cantidad);
+        const producto = productos.find(item => item.id === linea.id_producto);
+        const porcentaje = porcentajeLinea(linea);
+        const configurable = !!producto && !!producto.preparacion;
 
         const fila = document.createElement("div");
         fila.className = "pedido-linea";
+        fila.setAttribute("data-linea", linea.id);
         fila.innerHTML = `
             <div class="linea-nombre">
-                <strong>${producto ? producto.nombre : `Producto ${linea.id_producto}`}</strong>
+                <strong>${producto ? esc(producto.nombre) : `Producto ${linea.id_producto}`}</strong>
                 <span>${formatearPrecio(linea.precio_unitario)} x ${linea.cantidad}</span>
             </div>
 
+            ${linea.notas ? `<div class="linea-notas">${esc(linea.notas)}</div>` : ""}
+
             <div class="linea-acciones">
                 <div class="stepper">
-                    <button type="button" class="step-btn" data-accion="menos" data-id="${linea.id}">
+                    <button type="button" class="step-btn" data-accion="menos" data-id="${linea.id}" title="Quitar uno">
                         <i data-lucide="minus"></i>
                     </button>
                     <span>${linea.cantidad}</span>
-                    <button type="button" class="step-btn" data-accion="mas" data-id="${linea.id}">
+                    <button type="button" class="step-btn" data-accion="mas" data-id="${linea.id}" title="Agregar uno">
                         <i data-lucide="plus"></i>
                     </button>
                 </div>
@@ -552,20 +818,25 @@ function renderLineas() {
                         type="number"
                         class="descuento-input"
                         data-id="${linea.id}"
-                        data-max="${precioMax.toFixed(2)}"
                         min="0"
-                        max="${precioMax.toFixed(2)}"
-                        step="0.01"
-                        placeholder="Descuento $"
-                        value="${Number(linea.descuento || 0).toFixed(2)}"
+                        max="100"
+                        step="1"
+                        placeholder="Desc. %"
+                        value="${porcentaje > 0 ? porcentaje : ""}"
                     >
                 </div>
 
                 <strong class="linea-subtotal">
-                    ${formatearPrecio(linea.subtotal)}
+                    ${formatearPrecio(totalLinea(linea))}
                 </strong>
 
-                <button type="button" class="action-button danger" data-accion="eliminar" data-id="${linea.id}">
+                ${configurable ? `
+                    <button type="button" class="linea-config-btn" data-accion="configurar" data-id="${linea.id}">
+                        Configurar
+                    </button>
+                ` : ""}
+
+                <button type="button" class="action-button danger" data-accion="eliminar" data-id="${linea.id}" title="Eliminar">
                     <i data-lucide="trash-2"></i>
                 </button>
             </div>
@@ -576,87 +847,276 @@ function renderLineas() {
     lucide.createIcons();
 }
 
-async function refrescarResumen() {
+function refrescarResumen() {
     renderLineas();
     campoSubtotal.textContent = formatearPrecio(calcularSubtotal());
     campoTotal.textContent = formatearPrecio(calcularTotal());
+    renderMovimientosBarra();
 }
 
-async function persistirMesa() {
+// ======================================================
+// AGREGAR / MODIFICAR / ELIMINAR PRODUCTOS
+// ======================================================
+
+function notasDeConfiguracion(configuracion) {
+    if (!configuracion) { return ""; }
+    return (configuracion.grupos || [])
+        .map(grupo => {
+            const opcionId = (configuracion.opciones || {})[grupo.id];
+            const opcion = (grupo.opciones || []).find(item => item.id === opcionId);
+            return opcion ? `${grupo.nombre}: ${opcion.nombre}` : null;
+        })
+        .filter(Boolean)
+        .join("; ");
+}
+
+function accionesDeIngredientes(producto, configuracion) {
+    if (!producto.preparacion) { return []; }
+
+    const seleccion = configuracion && configuracion.ingredientes
+        ? configuracion.ingredientes
+        : Object.fromEntries(
+            productoIngredientes
+                .filter(relacion => relacion.id_producto === producto.id)
+                .map(relacion => [relacion.id_ingrediente, true])
+        );
+
+    return Object.entries(seleccion).map(([idIngrediente, incluido]) => ({
+        id_ingrediente: Number(idIngrediente),
+        accion: incluido ? "mantener" : "quitar"
+    }));
+}
+
+async function registrarProducto(producto, cantidad, configuracion = null) {
     if (!mesaActual) { return; }
 
-    const lineas = lineasMesaActual();
+    const nuevaCantidad = Math.max(0, Math.floor(cantidad));
+    guardarEstadoBotones(true);
 
     try {
-        if (lineas.length > 0) {
-            const datos = {
-                estado: true,
-                hora_inicio: mesaActual.hora_inicio || localDatetime(),
-                total: calcularTotal(),
-                propina: valorInput(campoPropina),
-                domicilio: valorInput(campoDomicilio)
-            };
-            const actualizada = await api(`/mesas/${mesaActual.id}`, "PUT", datos);
-            mesaActual.hora_inicio = actualizada.hora_inicio || mesaActual.hora_inicio;
-            mesaActual.estado = true;
-        } else {
-            await api(`/mesas/${mesaActual.id}`, "PUT", {
-                estado: false,
-                total: 0,
-                propina: 0,
-                domicilio: 0
-            });
-            await api(`/mesas/${mesaActual.id}/cerrar`, "PATCH", null);
-            mesaActual.estado = false;
-            mesaActual.hora_inicio = null;
+        let mesa = mesaActual;
+        let movimiento = movimientoActual;
+
+        // La mesa debe estar activa: el backend crea el movimiento asociado.
+        if (mesa.estado !== true) {
+            mesa = await api(`/mesas/${mesa.id}/estado?new_state=true`, "PATCH");
+            mesaActual = mesa;
+            mesas = mesas.map(item => item.id === mesa.id ? { ...item, ...mesa } : item);
+            pedidoEstadoBadge.className = "estado-mesa-badge ocupada";
+            pedidoEstadoBadge.textContent = "Ocupada";
+            if (esBarra(mesa)) {
+                movimientos = await api("/movimientos/");
+                const lista = movimientos.filter(item => item.id_mesa === mesa.id);
+                movimiento = lista[lista.length - 1] || null;
+                movimientoActual = movimiento;
+            }
         }
+
+        if (esBarra(mesa) && !movimiento) {
+            throw new Error("La barra no tiene un movimiento activo.");
+        }
+
+        const idMov = esBarra(mesa) ? movimiento.id : mesa.id_mov;
+        if (!idMov) {
+            throw new Error("La mesa no tiene un movimiento activo.");
+        }
+
+        const existentes = lineasDeMovimiento(idMov).filter(linea => linea.id_producto === producto.id);
+        const notas = notasDeConfiguracion(configuracion);
+
+        if (nuevaCantidad === 0) {
+            for (const linea of existentes) {
+                await api(`/mesasC/${linea.id}`, "DELETE");
+            }
+            consumos = consumos.filter(linea => !existentes.some(item => item.id === linea.id));
+        } else if (existentes.length > 0) {
+            const objetivo = existentes[0];
+            const totalPrecio = Number(producto.precio || 0) * nuevaCantidad;
+
+            await api(`/mesasC/${objetivo.id}`, "PUT", {
+                cantidad: nuevaCantidad,
+                subtotal: totalPrecio,
+                notas: notas || objetivo.notas || null
+            });
+
+            const sobrantes = existentes.slice(1);
+            for (const extra of sobrantes) {
+                await api(`/mesasC/${extra.id}`, "DELETE");
+            }
+
+            consumos = consumos
+                .filter(linea => !sobrantes.some(item => item.id === linea.id))
+                .map(linea => linea.id === objetivo.id
+                    ? { ...linea, cantidad: nuevaCantidad, subtotal: totalPrecio, notas: notas || linea.notas || null }
+                    : linea);
+        } else {
+            const nuevo = await api("/mesasC/", "POST", {
+                id_producto: producto.id,
+                id_mov: idMov,
+                cantidad: nuevaCantidad,
+                notas: notas || null,
+                ingredientes: accionesDeIngredientes(producto, configuracion)
+            });
+            consumos = [...consumos, nuevo];
+        }
+
+        cerrarConfigModal();
+        refrescarResumen();
+        mostrarMesas(filtroMesas());
+        actualizarTiempos();
     } catch (error) {
-        console.error("Error al persistir la mesa:", error);
+        console.error(error);
+        manejarError(error, "No se pudo registrar el producto.");
+    } finally {
+        guardarEstadoBotones(false);
     }
 }
 
 async function agregarProducto(producto) {
     if (!mesaActual) { return; }
+    await registrarProducto(producto, cantidadProductoEnMesa(producto.id) + 1);
+}
 
-    const teniaLineas = lineasMesaActual().length > 0;
+// ======================================================
+// CONFIGURAR PRODUCTO (INGREDIENTES Y OPCIONES)
+// ======================================================
 
-    // Si la mesa estaba inactiva pero conservaba consumos de un pedido cerrado,
-    // se limpian para comenzar un nuevo pedido.
-    if (!mesaActual.estado && teniaLineas) {
-        await api(`/mesasC/mesa/${mesaActual.id}/todo`, "DELETE", null);
-        await cargarConsumos();
-        campoPropina.value = 0;
-        campoDomicilio.value = 0;
-        mesaActual.hora_inicio = null;
+function opcionesDesdeNotas(notas) {
+    const seleccion = {};
+    if (!notas || !configGrupos.length) { return seleccion; }
+
+    String(notas).split(";").forEach(parte => {
+        const segmentos = parte.split(":").map(texto => (texto || "").trim());
+        if (segmentos.length < 2) { return; }
+        const grupo = configGrupos.find(item => item.nombre === segmentos[0]);
+        if (!grupo) { return; }
+        const opcion = (grupo.opciones || []).find(item => item.nombre === segmentos[1]);
+        if (opcion) { seleccion[grupo.id] = opcion.id; }
+    });
+
+    return seleccion;
+}
+
+function renderConfigCuerpo() {
+    if (!configProducto) { return; }
+
+    const partes = [];
+    const relaciones = productoIngredientes.filter(relacion => relacion.id_producto === configProducto.id);
+
+    if (configProducto.preparacion && relaciones.length > 0) {
+        partes.push(`
+            <div>
+                <h3 class="config-seccion-titulo">Ingredientes principales</h3>
+                <div class="config-lista">
+                    ${relaciones.map(relacion => {
+                        const ingrediente = ingredientes.find(item => item.id === relacion.id_ingrediente);
+                        if (!ingrediente) { return ""; }
+                        const marcado = configIngredientes[ingrediente.id] !== false;
+                        return `
+                            <button type="button" class="config-item${marcado ? " seleccionado" : ""}" data-ingrediente="${ingrediente.id}">
+                                <span class="config-marca">${marcado ? "&#10003;" : ""}</span>
+                                <span>${esc(ingrediente.nombre)}</span>
+                            </button>
+                        `;
+                    }).join("")}
+                </div>
+            </div>
+        `);
     }
 
-    const eraVacia = lineasMesaActual().length === 0;
+    configGrupos.forEach(grupo => {
+        partes.push(`
+            <div>
+                <h3 class="config-seccion-titulo">Seleccionar ${esc(grupo.nombre)}</h3>
+                <div class="config-lista">
+                    ${(grupo.opciones || []).map(opcion => {
+                        const marcado = configOpciones[grupo.id] === opcion.id;
+                        return `
+                            <button type="button" class="config-item${marcado ? " seleccionado" : ""}" data-grupo="${grupo.id}" data-opcion="${opcion.id}">
+                                <span class="config-marca">${marcado ? "&#10003;" : ""}</span>
+                                <span>${esc(opcion.nombre)}</span>
+                            </button>
+                        `;
+                    }).join("")}
+                </div>
+            </div>
+        `);
+    });
+
+    if (partes.length === 0) {
+        partes.push(`<span class="loading-chip">Este producto no tiene ingredientes ni opciones configurados.</span>`);
+    }
+
+    configCuerpo.innerHTML = partes.join("");
+}
+
+async function abrirConfigModal(linea) {
+    const producto = productos.find(item => item.id === linea.id_producto);
+    if (!producto) { return; }
 
     try {
-        await api("/mesasC/", "POST", {
-            id_producto: producto.id,
-            id_mesa: mesaActual.id,
-            cantidad: 1
-        });
+        const grupos = await api(`/productos/${producto.id}/grupos-opciones/`);
 
-        await cargarConsumos();
-        await refrescarResumen();
+        configProducto = producto;
+        configCantidad = Number(linea.cantidad) || 0;
+        configGrupos = Array.isArray(grupos) ? grupos : [];
+        configIngredientes = Object.fromEntries(
+            productoIngredientes
+                .filter(relacion => relacion.id_producto === producto.id)
+                .map(relacion => [relacion.id_ingrediente, true])
+        );
+        configOpciones = opcionesDesdeNotas(linea.notas);
 
-        // Propina por defecto (10%) al registrar el primer producto
-        if (eraVacia && valorInput(campoPropina) === 0) {
-            campoPropina.value = Math.round(calcularSubtotal() * 0.10 * 100) / 100;
-            await refrescarResumen();
-        }
-
-        await persistirMesa();
-        pedidoEstadoBadge.className = "estado-mesa-badge ocupada";
-        pedidoEstadoBadge.textContent = "Ocupada";
-        actualizarTiempos();
+        configTitulo.textContent = `Configurar: ${producto.nombre}`;
+        renderConfigCuerpo();
+        configModal.classList.add("active");
     } catch (error) {
-        console.error(error);
-        alert(error.message || "No fue posible registrar el producto.");
+        manejarError(error, "No se pudo cargar la configuración del producto.");
     }
 }
+
+function cerrarConfigModal() {
+    if (configModal) { configModal.classList.remove("active"); }
+    configProducto = null;
+    configGrupos = [];
+    configOpciones = {};
+}
+
+configCuerpo.addEventListener("click", event => {
+    const ingrediente = event.target.closest("[data-ingrediente]");
+    if (ingrediente) {
+        const id = Number(ingrediente.getAttribute("data-ingrediente"));
+        configIngredientes = { ...configIngredientes, [id]: configIngredientes[id] === false };
+        renderConfigCuerpo();
+        return;
+    }
+
+    const opcion = event.target.closest("[data-opcion]");
+    if (opcion) {
+        const grupo = Number(opcion.getAttribute("data-grupo"));
+        const id = Number(opcion.getAttribute("data-opcion"));
+        configOpciones = { ...configOpciones, [grupo]: id };
+        renderConfigCuerpo();
+    }
+});
+
+btnGuardarConfig.addEventListener("click", async () => {
+    if (!configProducto) { return; }
+    const producto = configProducto;
+    const cantidad = configCantidad;
+    const configuracion = {
+        ingredientes: configIngredientes,
+        grupos: configGrupos,
+        opciones: configOpciones
+    };
+    await registrarProducto(producto, cantidad, configuracion);
+});
+
+cerrarConfig.addEventListener("click", cerrarConfigModal);
+cancelarConfig.addEventListener("click", cerrarConfigModal);
+configModal.addEventListener("click", event => {
+    if (event.target === configModal) { cerrarConfigModal(); }
+});
 
 // ======================================================
 // ACCIONES SOBRE LÍNEAS
@@ -668,73 +1128,53 @@ pedidoLineas.addEventListener("click", async event => {
 
     const id = Number(boton.getAttribute("data-id"));
     const accion = boton.getAttribute("data-accion");
-    const linea = consumos.find(c => c.id === id);
+    const linea = consumos.find(consumo => consumo.id === id);
     if (!linea) { return; }
+
+    if (accion === "configurar") {
+        await abrirConfigModal(linea);
+        return;
+    }
+
+    const producto = productos.find(item => item.id === linea.id_producto);
+    if (!producto) { return; }
 
     boton.disabled = true;
 
-    try {
-        if (accion === "mas") {
-            await api(`/mesasC/${id}`, "PUT", {
-                id_mesa: linea.id_mesa,
-                cantidad: Number(linea.cantidad) + 1
-            });
-        } else if (accion === "menos") {
-            const nueva = Number(linea.cantidad) - 1;
-            if (nueva <= 0) {
-                await api(`/mesasC/${id}`, "DELETE", null);
-            } else {
-                await api(`/mesasC/${id}`, "PUT", {
-                    id_mesa: linea.id_mesa,
-                    cantidad: nueva
-                });
-            }
-        } else if (accion === "eliminar") {
-            await api(`/mesasC/${id}`, "DELETE", null);
-        }
+    const cantidadActual = Number(linea.cantidad) || 0;
+    const cantidad = accion === "mas"
+        ? cantidadActual + 1
+        : accion === "menos"
+            ? cantidadActual - 1
+            : 0;
 
-        await cargarConsumos();
-        await refrescarResumen();
-        await persistirMesa();
-        actualizarTiempos();
-    } catch (error) {
-        console.error(error);
-        alert(error.message || "No fue posible modificar el producto.");
-    } finally {
-        boton.disabled = false;
-    }
+    await registrarProducto(producto, cantidad);
 });
 
-pedidoLineas.addEventListener("change", async event => {
+// ======================================================
+// DESCUENTOS
+// ======================================================
+
+pedidoLineas.addEventListener("input", event => {
     const input = event.target.closest(".descuento-input");
     if (!input) { return; }
 
     const id = Number(input.getAttribute("data-id"));
-    const linea = consumos.find(c => c.id === id);
-    if (!linea) { return; }
-
     let valor = parseFloat(input.value);
     if (isNaN(valor) || valor < 0) { valor = 0; }
+    if (valor > 100) { valor = 100; }
 
-    const maximo = parseFloat(input.getAttribute("data-max") || 0);
-    if (valor > maximo) { valor = maximo; }
+    descuentos = { ...descuentos, [id]: valor };
 
-    input.value = valor.toFixed(2);
-
-    try {
-        await api(`/mesasC/${id}`, "PUT", {
-            id_mesa: linea.id_mesa,
-            cantidad: linea.cantidad,
-            descuento: valor
-        });
-
-        await cargarConsumos();
-        await refrescarResumen();
-        await persistirMesa();
-    } catch (error) {
-        console.error(error);
-        alert(error.message || "No fue posible aplicar el descuento.");
+    const linea = lineasMesaActual().find(item => item.id === id);
+    const fila = pedidoLineas.querySelector(`.pedido-linea[data-linea="${id}"] .linea-subtotal`);
+    if (linea && fila) {
+        fila.textContent = formatearPrecio(totalLinea(linea));
     }
+
+    campoSubtotal.textContent = formatearPrecio(calcularSubtotal());
+    campoTotal.textContent = formatearPrecio(calcularTotal());
+    renderMovimientosBarra();
 });
 
 // ======================================================
@@ -743,36 +1183,46 @@ pedidoLineas.addEventListener("change", async event => {
 
 btnQuitarPropina.addEventListener("click", () => {
     campoPropina.value = 0;
-    refrescarTotalesYGuardar();
+    refrescarResumen();
+    mostrarMesas(filtroMesas());
 });
 
-campoPropina.addEventListener("change", refrescarTotalesYGuardar);
 campoPropina.addEventListener("input", () => {
     campoTotal.textContent = formatearPrecio(calcularTotal());
 });
 
-campoDomicilio.addEventListener("change", refrescarTotalesYGuardar);
+campoPropina.addEventListener("change", () => {
+    refrescarResumen();
+    mostrarMesas(filtroMesas());
+});
+
 campoDomicilio.addEventListener("input", () => {
     campoTotal.textContent = formatearPrecio(calcularTotal());
 });
 
-async function refrescarTotalesYGuardar() {
-    await refrescarResumen();
-    await persistirMesa();
-}
+campoDomicilio.addEventListener("change", () => {
+    refrescarResumen();
+    mostrarMesas(filtroMesas());
+});
 
 // ======================================================
 // CANCELAR PEDIDO
 // ======================================================
 
-btnCancelarPedido.addEventListener("click", () => {
-    if (!mesaActual) { return; }
+function pedirConfirmacionCancelar(mesa) {
+    mesaActual = mesa;
+    movimientoActual = esBarra(mesa) ? movimientoDeMesa(mesa) : null;
     accionConfirmar = "cancelar";
     confirmarTitulo.textContent = "Cancelar pedido";
     confirmarMensaje.textContent =
-        `¿Está seguro de que desea cancelar el pedido de la ${mesaActual.tipo ? "mesa" : "barra"} ${mesaActual.id}? Todos los productos registrados serán eliminados.`;
-    document.getElementById("confirmarAccion").textContent = "Sí, cancelar";
+        `¿Está seguro de que desea cancelar el pedido de ${nombreMesa(mesa)}? Todos los productos registrados serán eliminados.`;
+    confirmarAccion.textContent = "Sí, cancelar";
     confirmarModal.classList.add("active");
+}
+
+btnCancelarPedido.addEventListener("click", () => {
+    if (!mesaActual) { return; }
+    pedirConfirmacionCancelar(mesaActual);
 });
 
 cancelarConfirmar.addEventListener("click", () => {
@@ -787,27 +1237,72 @@ confirmarAccion.addEventListener("click", async () => {
     boton.disabled = true;
 
     try {
-        await api(`/mesasC/mesa/${mesaActual.id}/todo`, "DELETE", null);
-        await api(`/mesas/${mesaActual.id}`, "PUT", {
-            estado: false,
-            total: 0,
-            propina: 0,
-            domicilio: 0
-        });
-        await api(`/mesas/${mesaActual.id}/cerrar`, "PATCH", null);
+        // Cerrar la cuenta anula los consumos, sus ingredientes y los movimientos.
+        await api(`/mesas/${mesaActual.id}/cerrar`, "PATCH");
 
         confirmarModal.classList.remove("active");
         accionConfirmar = null;
 
-        const mesaCerrada = mesaActual.id;
         cerrarPedidoFn();
         await cargarTodo();
     } catch (error) {
         console.error(error);
-        alert(error.message || "No fue posible cancelar el pedido.");
+        manejarError(error, "No se pudo cancelar el pedido.");
     } finally {
         boton.disabled = false;
-        document.getElementById("confirmarAccion").textContent = "Sí, cancelar";
+        confirmarAccion.textContent = "Sí, cancelar";
+    }
+});
+
+// ======================================================
+// FINALIZAR CUENTA
+// ======================================================
+
+btnFinalizarCuenta.addEventListener("click", async () => {
+    if (!mesaActual) { return; }
+
+    guardarEstadoBotones(true);
+
+    try {
+        // Los descuentos se aplican sobre el subtotal de cada línea.
+        for (const linea of lineasMesaActual()) {
+            const porcentaje = porcentajeLinea(linea);
+            const cantidad = Number(linea.cantidad) || 0;
+            const unidad = Number(linea.precio_unitario) || 0;
+            if (porcentaje <= 0 || cantidad <= 0 || unidad <= 0) { continue; }
+            const descuento = redondear(unidad * porcentaje / 100);
+            if (descuento > 0) {
+                await api(`/mesasC/${linea.id}`, "PUT", { descuento });
+            }
+        }
+
+        const total = calcularTotal();
+        const propina = valorInput(campoPropina);
+        const domicilio = valorInput(campoDomicilio);
+
+        if (esBarra(mesaActual) && movimientoActual) {
+            await api(`/movimientos/${movimientoActual.id}`, "PUT", {
+                total,
+                propina,
+                domicilio,
+                metodo: "Efectivo"
+            });
+        }
+
+        await api(`/mesas/${mesaActual.id}/finalizar`, "POST", {
+            total,
+            propina,
+            domicilio,
+            metodo: "Efectivo"
+        });
+
+        cerrarPedidoFn();
+        await cargarTodo();
+    } catch (error) {
+        console.error(error);
+        manejarError(error, "No se pudo finalizar la cuenta.");
+    } finally {
+        guardarEstadoBotones(false);
     }
 });
 
@@ -825,29 +1320,30 @@ async function construirComprobante() {
     const hora = ahora.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
 
     const filas = lineas.map(linea => {
-        const producto = productos.find(p => p.id === linea.id_producto);
-        const descuento = Number(linea.descuento || 0);
+        const producto = productos.find(item => item.id === linea.id_producto);
+        const porcentaje = porcentajeLinea(linea);
+        const descuento = (Number(linea.subtotal) || 0) - totalLinea(linea);
         return `
             <tr>
-                <td>${producto ? producto.nombre : `Producto ${linea.id_producto}`}</td>
+                <td>${producto ? esc(producto.nombre) : `Producto ${linea.id_producto}`}${linea.notas ? `<br><small>${esc(linea.notas)}</small>` : ""}</td>
                 <td class="texto-centro">${linea.cantidad}</td>
                 <td class="texto-derecha">${formatearPrecio(linea.precio_unitario)}</td>
-                <td class="texto-derecha">${descuento > 0 ? formatearPrecio(descuento) : "—"}</td>
-                <td class="texto-derecha">${formatearPrecio(linea.subtotal)}</td>
+                <td class="texto-derecha">${porcentaje > 0 ? `${formatearPrecio(descuento)}` : "—"}</td>
+                <td class="texto-derecha">${formatearPrecio(totalLinea(linea))}</td>
             </tr>
         `;
     }).join("");
 
     comprobanteImpresion.innerHTML = `
         <div class="comprobante-cabecera">
-            <h2>${empresa && empresa.nombre ? empresa.nombre : "RESTAURANTE"}</h2>
-            ${empresa && empresa.direccion ? `<p>${empresa.direccion}</p>` : ""}
-            ${empresa && empresa.telefono ? `<p>Tel: ${empresa.telefono}</p>` : ""}
-            ${empresa && empresa.NIT ? `<p>NIT: ${empresa.NIT}</p>` : ""}
+            <h2>${empresa && empresa.nombre ? esc(empresa.nombre) : "RESTAURANTE"}</h2>
+            ${empresa && empresa.direccion ? `<p>${esc(empresa.direccion)}</p>` : ""}
+            ${empresa && empresa.telefono ? `<p>Tel: ${esc(empresa.telefono)}</p>` : ""}
+            ${empresa && empresa.NIT ? `<p>NIT: ${esc(empresa.NIT)}</p>` : ""}
         </div>
 
         <div class="comprobante-datos">
-            <p><strong>${mesaActual.tipo ? "MESA" : "BARRA"} #${mesaActual.id}</strong></p>
+            <p><strong>${esc(nombreMesa(mesaActual))}</strong></p>
             <p>Fecha: ${fecha} — ${hora}</p>
         </div>
 
@@ -879,51 +1375,38 @@ async function construirComprobante() {
     `;
 }
 
-btnImprimirCuenta.addEventListener("click", async () => {
+async function imprimirCuenta() {
     if (!mesaActual) { return; }
 
-    const lineas = lineasMesaActual();
-    if (lineas.length === 0) {
-        alert("No hay productos registrados en esta mesa.");
+    if (lineasMesaActual().length === 0) {
+        alert("No hay productos registrados en esta cuenta.");
         return;
     }
 
-    const boton = btnImprimirCuenta;
-    boton.disabled = true;
-
     try {
-        // Al imprimir, la mesa pasa a estado terminada
-        await api(`/mesas/${mesaActual.id}/cerrar`, "PATCH", null);
-        mesaActual.estado = false;
-        mesaActual.hora_inicio = null;
-
-        await cargarConsumos();
-        await refrescarResumen();
         await construirComprobante();
         cuentaModal.classList.add("active");
     } catch (error) {
         console.error(error);
-        alert(error.message || "No fue posible generar la cuenta.");
-    } finally {
-        boton.disabled = false;
+        manejarError(error, "No se posible generar la cuenta.");
     }
-});
+}
+
+btnImprimirCuenta.addEventListener("click", imprimirCuenta);
 
 btnImprimirCuentaFinal.addEventListener("click", () => {
     window.print();
 });
 
-btnCerrarCuenta.addEventListener("click", async () => {
+btnCerrarCuenta.addEventListener("click", () => {
     cuentaModal.classList.remove("active");
-    cerrarPedidoFn();
-    await cargarTodo();
+    mostrarMesas(filtroMesas());
 });
 
-window.onafterprint = async () => {
+window.onafterprint = () => {
     if (cuentaModal.classList.contains("active")) {
         cuentaModal.classList.remove("active");
-        cerrarPedidoFn();
-        await cargarTodo();
+        mostrarMesas(filtroMesas());
     }
 };
 
@@ -932,11 +1415,11 @@ window.onafterprint = async () => {
 // ======================================================
 
 buscarMesa.addEventListener("input", () => {
-    mostrarMesas(buscarMesa.value.trim().toLowerCase());
+    mostrarMesas(filtroMesas());
 });
 
 // ======================================================
-// ACCIONES DE LA TABLA
+// ACCIONES DE LA TARJETA
 // ======================================================
 
 mesasTable.addEventListener("click", async event => {
@@ -945,42 +1428,20 @@ mesasTable.addEventListener("click", async event => {
 
     const accion = boton.getAttribute("data-accion");
     const id = Number(boton.getAttribute("data-id"));
+    const mesa = mesas.find(item => item.id === id);
+    if (!mesa) { return; }
 
     if (accion === "pedido") {
-        await abrirPedido(id);
+        abrirPedido(id);
     } else if (accion === "cuenta") {
-        const mesa = mesas.find(m => m.id === id);
-        if (mesa) {
-            mesaActual = mesa;
-            campoPropina.value = mesa.propina || 0;
-            campoDomicilio.value = mesa.domicilio || 0;
-            const lineas = consumos.filter(c => c.id_mesa === id);
-            if (lineas.length === 0) {
-                alert("No hay productos registrados en esta mesa.");
-                mesaActual = null;
-                return;
-            }
-            try {
-                await api(`/mesas/${id}/cerrar`, "PATCH", null);
-                await cargarConsumos();
-                await construirComprobante();
-                cuentaModal.classList.add("active");
-            } catch (error) {
-                console.error(error);
-                alert(error.message || "No fue posible generar la cuenta.");
-            }
-        }
+        mesaActual = mesa;
+        movimientoActual = esBarra(mesa) ? movimientoDeMesa(mesa) : null;
+        const referencia = movimientoActual || movimientoDeMesa(mesa);
+        campoPropina.value = Number(referencia && referencia.propina) || 0;
+        campoDomicilio.value = Number(referencia && referencia.domicilio) || 0;
+        await imprimirCuenta();
     } else if (accion === "cancelar") {
-        const mesa = mesas.find(m => m.id === id);
-        if (mesa) {
-            mesaActual = mesa;
-            accionConfirmar = "cancelar";
-            confirmarTitulo.textContent = "Cancelar pedido";
-            confirmarMensaje.textContent =
-                `¿Está seguro de que desea cancelar el pedido de la ${mesa.tipo ? "mesa" : "barra"} ${mesa.id}? Todos los productos registrados serán eliminados.`;
-            document.getElementById("confirmarAccion").textContent = "Sí, cancelar";
-            confirmarModal.classList.add("active");
-        }
+        pedirConfirmacionCancelar(mesa);
     }
 });
 
@@ -989,7 +1450,7 @@ mesasTable.addEventListener("click", async event => {
 // ======================================================
 
 pedidoModal.addEventListener("click", event => {
-    if (event.target === pedidoModal) { cerrarPedidoFn(); }
+    if (event.target === pedidoModal) { cerrarPedidoFn(); mostrarMesas(filtroMesas()); }
 });
 
 cuentaModal.addEventListener("click", event => {
@@ -998,6 +1459,10 @@ cuentaModal.addEventListener("click", event => {
 
 confirmarModal.addEventListener("click", event => {
     if (event.target === confirmarModal) { cancelarConfirmar.click(); }
+});
+
+avisoModal.addEventListener("click", event => {
+    if (event.target === avisoModal) { cerrarAviso.click(); }
 });
 
 mesaModal.addEventListener("click", event => {
@@ -1011,7 +1476,9 @@ mesaModal.addEventListener("click", event => {
 btnRegistrarMesa.addEventListener("click", abrirMesaModal);
 cerrarMesaModal.addEventListener("click", cerrarMesaModalFn);
 cancelarMesaModal.addEventListener("click", cerrarMesaModalFn);
-cerrarPedido.addEventListener("click", cerrarPedidoFn);
+cerrarPedido.addEventListener("click", () => { cerrarPedidoFn(); mostrarMesas(filtroMesas()); });
+btnNuevoMovimiento.addEventListener("click", crearMovimientoBarra);
+cerrarAviso.addEventListener("click", () => { avisoModal.classList.remove("active"); });
 
 setInterval(actualizarTiempos, 1000);
 cargarTodo();

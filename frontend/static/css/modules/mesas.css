@@ -819,6 +819,7 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0;
+    flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
 
@@ -836,7 +837,7 @@ body {
     flex-direction: column;
     gap: 16px;
     min-width: 0;
-    max-height: calc(90vh - 73px);
+    min-height: 0;
     overflow-y: auto;
 
 }
@@ -954,7 +955,7 @@ body {
     flex-direction: column;
     gap: 14px;
     min-width: 0;
-    max-height: calc(90vh - 73px);
+    min-height: 0;
     overflow-y: auto;
 
 }
@@ -1240,9 +1241,228 @@ body {
 }
 
 .pedido-acciones .btn-secondary,
+.pedido-acciones .btn-primary,
 .pedido-acciones .btn-imprimir {
 
     flex: 1;
+
+}
+
+/* ====================================================== */
+/* MOVIMIENTOS DE LA BARRA */
+/* ====================================================== */
+
+.pedido-movimientos {
+
+    padding: 14px 24px;
+    border-bottom: 1px solid #45382E;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+}
+
+.pedido-movimientos[hidden] {
+
+    display: none;
+
+}
+
+.pedido-movimientos-cabecera {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+}
+
+.pedido-movimientos-cabecera strong {
+
+    font-size: 14px;
+
+}
+
+.pedido-movimientos-lista {
+
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+
+}
+
+.movimiento-card {
+
+    flex: 0 0 auto;
+    min-width: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #45382E;
+    border-radius: 8px;
+    background: #2D2620;
+    color: #F5F5F5;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+
+}
+
+.movimiento-card:hover {
+
+    border-color: #D8A85B;
+
+}
+
+.movimiento-card.seleccionada {
+
+    border-color: #D8A85B;
+    background: #3A3028;
+
+}
+
+.movimiento-card span {
+
+    color: #B8B1A8;
+    font-size: 12px;
+
+}
+
+.movimiento-card strong {
+
+    color: #D8A85B;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+
+}
+
+/* ====================================================== */
+/* CONFIGURAR PRODUCTO */
+/* ====================================================== */
+
+.linea-config-btn {
+
+    border: 1px solid #45382E;
+    border-radius: 6px;
+    background: transparent;
+    color: #D8A85B;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+
+}
+
+.linea-config-btn:hover {
+
+    border-color: #D8A85B;
+    background: rgba(216, 168, 91, .12);
+
+}
+
+.linea-notas {
+
+    color: #9C9287;
+    font-size: 11px;
+
+}
+
+.config-modal {
+
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    background: #32281F;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+    box-shadow: 0px 12px 35px rgba(0, 0, 0, .4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+}
+
+.config-cuerpo {
+
+    padding: 0 24px 4px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+
+}
+
+.config-seccion-titulo {
+
+    margin: 0 0 10px;
+    font-size: 14px;
+
+}
+
+.config-lista {
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+}
+
+.config-item {
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px;
+    border: 1px solid #45382E;
+    border-radius: 8px;
+    background: #2D2620;
+    color: #F5F5F5;
+    font-family: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+
+}
+
+.config-item:hover {
+
+    border-color: #D8A85B;
+
+}
+
+.config-item.seleccionado {
+
+    border-color: #D8A85B;
+    background: #3A3028;
+
+}
+
+.config-marca {
+
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    display: grid;
+    place-items: center;
+    border: 2px solid #4A3D31;
+    border-radius: 50%;
+    color: #1D1A17;
+    font-size: 11px;
+    font-weight: 700;
+
+}
+
+.config-item.seleccionado .config-marca {
+
+    background: #D8A85B;
+    border-color: #D8A85B;
 
 }
 

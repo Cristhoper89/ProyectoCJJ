@@ -145,6 +145,10 @@ async def ver_caja():
 async def ver_mesas():
     return FileResponse(FRONTEND_DIR / "templates" / "mesas.html")
 
+@app.get("/movimientos")
+async def ver_movimientos():
+    return FileResponse(FRONTEND_DIR / "templates" / "movimientos.html")
+
 @app.get("/usuarios")
 async def ver_usuarios():
     return FileResponse(FRONTEND_DIR / "templates" / "usuarios.html")

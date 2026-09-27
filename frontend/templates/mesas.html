@@ -10,7 +10,8 @@
 
     <link rel="stylesheet" href="../static/css/base/variables.css?v=1">
     <link rel="stylesheet" href="../static/css/base/global.css?v=1">
-    <link rel="stylesheet" href="../static/css/modules/mesas.css?v=5">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=1">
+    <link rel="stylesheet" href="../static/css/modules/mesas.css?v=6">
 
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -20,7 +21,11 @@
 
 <body>
 
-<main class="mesas-page">
+<div class="dashboard-shell">
+
+    <div id="menu-container"></div>
+
+    <main class="mesas-page">
 
     <!-- ====================================================== -->
     <!-- ENCABEZADO -->
@@ -90,7 +95,9 @@
 
     </section>
 
-</main>
+    </main>
+
+</div>
 
 
 <!-- ====================================================== -->
@@ -141,11 +148,11 @@
 
                 <select id="tipoMesa">
 
-                    <option value="true">
+                    <option value="mesa">
                         Mesa
                     </option>
 
-                    <option value="false">
+                    <option value="barra">
                         Barra
                     </option>
 
@@ -234,6 +241,40 @@
                 <i data-lucide="x"></i>
 
             </button>
+
+        </div>
+
+
+        <!-- ============================================== -->
+        <!-- MOVIMIENTOS DE LA BARRA -->
+        <!-- ============================================== -->
+
+        <div
+            class="pedido-movimientos"
+            id="pedidoMovimientos"
+            hidden
+        >
+
+            <div class="pedido-movimientos-cabecera">
+
+                <strong>Movimientos</strong>
+
+                <button
+                    type="button"
+                    class="chip-categoria"
+                    id="btnNuevoMovimiento"
+                >
+
+                    Nuevo
+
+                </button>
+
+            </div>
+
+            <div
+                class="pedido-movimientos-lista"
+                id="pedidoMovimientosLista"
+            ></div>
 
         </div>
 
@@ -394,6 +435,18 @@
 
                     </button>
 
+                    <button
+                        type="button"
+                        class="btn-primary"
+                        id="btnFinalizarCuenta"
+                    >
+
+                        <i data-lucide="circle-check"></i>
+
+                        Finalizar cuenta
+
+                    </button>
+
                 </div>
 
             </div>
@@ -503,13 +556,120 @@
 </div>
 
 
-<script src="../static/js/mesas.js?v=5"></script>
+<!-- ====================================================== -->
+<!-- MODAL CONFIGURAR PRODUCTO -->
+<!-- ====================================================== -->
+
+<div
+    class="modal-overlay"
+    id="configModal"
+>
+
+    <div class="config-modal">
+
+        <div class="modal-header">
+
+            <div>
+
+                <h2 id="configTitulo">
+                    Configurar producto
+                </h2>
+
+                <p>
+                    Seleccione los ingredientes y las opciones del producto.
+                </p>
+
+            </div>
+
+            <button
+                type="button"
+                class="modal-close"
+                id="cerrarConfig"
+            >
+
+                <i data-lucide="x"></i>
+
+            </button>
+
+        </div>
+
+
+        <div
+            class="config-cuerpo"
+            id="configCuerpo"
+        ></div>
+
+
+        <div class="modal-actions">
+
+            <button
+                type="button"
+                class="btn-secondary"
+                id="cancelarConfig"
+            >
+                Cancelar
+            </button>
+
+            <button
+                type="button"
+                class="btn-primary"
+                id="btnGuardarConfig"
+            >
+                Guardar
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ====================================================== -->
+<!-- MODAL AVISO (CAJA CERRADA) -->
+<!-- ====================================================== -->
+
+<div
+    class="modal-overlay"
+    id="avisoModal"
+>
+
+    <div class="confirm-modal">
+
+        <div class="confirm-icon">
+            <i data-lucide="triangle-alert"></i>
+        </div>
+
+        <h2 id="avisoTitulo">
+            Caja cerrada
+        </h2>
+
+        <p id="avisoMensaje"></p>
+
+        <div class="confirm-actions">
+
+            <button
+                type="button"
+                class="btn-primary"
+                id="cerrarAviso"
+            >
+                Entendido
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="../static/js/mesas.js?v=6"></script>
 
 <script>
-
     lucide.createIcons();
-
 </script>
+
+<script src="../static/js/menu.js?v=3"></script>
 
 </body>
 
