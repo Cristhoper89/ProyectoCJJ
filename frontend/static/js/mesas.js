@@ -4,7 +4,14 @@
 // Mesa -> Movimiento -> Mesa Consumo
 // ======================================================
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = window.location.protocol === "https:" ? window.location.origin : "https://backend-6ad6b6fa.fastapicloud.dev";
+const API_URL_STORAGE_KEY = "api_base_url";
+
+if (localStorage.getItem(API_URL_STORAGE_KEY) !== API_URL) {
+    localStorage.removeItem("access_token");
+    localStorage.setItem(API_URL_STORAGE_KEY, API_URL);
+    window.location.replace("/");
+}
 
 // ======================================================
 // ELEMENTOS
@@ -379,6 +386,24 @@ async function cargarTodo() {
     productoIngredientes = resultado(productoIngredientesPedido, []);
     consumos = resultado(consumosPedido, []);
     movimientos = resultado(movimientosPedido, []);
+
+    if (mesaActual && pedidoModal.classList.contains("active")) {
+        mesaActual = mesas.find(mesa => mesa.id === mesaActual.id) || mesaActual;
+        if (esBarra(mesaActual)) {
+            const movimientoId = movimientoActual && movimientoActual.id;
+            movimientoActual = movimientos.find(movimiento => movimiento.id === movimientoId) || movimientoDeMesa(mesaActual);
+        }
+        const referencia = movimientoActual || movimientoDeMesa(mesaActual);
+        campoPropina.value = Number(referencia && referencia.propina) || 0;
+        campoDomicilio.value = Number(referencia && referencia.domicilio) || 0;
+        pedidoMesaNombre.textContent = nombreMesa(mesaActual);
+        pedidoEstadoBadge.className = "estado-mesa-badge " + (mesaActual.estado ? "ocupada" : "disponible");
+        pedidoEstadoBadge.textContent = mesaActual.estado ? "Ocupada" : "Disponible";
+        renderChips();
+        renderProductos();
+        refrescarResumen();
+        actualizarTiempos();
+    }
 
     if (mesasPedido.status === "rejected") {
         mesasTable.innerHTML = `
@@ -1482,3 +1507,36 @@ cerrarAviso.addEventListener("click", () => { avisoModal.classList.remove("activ
 
 setInterval(actualizarTiempos, 1000);
 cargarTodo();
+
+let mesaSocketRetryTimer = null;
+let mesaSocketRetryDelay = 1000;
+let mesaRefreshTimer = null;
+
+function conectarWebSocketMesas() {
+    const token = getToken();
+    if (!token) { return; }
+
+    const socket = new WebSocket(`${API_URL.replace(/^http/, "ws")}/ws/mesas`);
+    socket.addEventListener("open", () => socket.send(JSON.stringify({ token })));
+    socket.addEventListener("message", event => {
+        let message;
+        try {
+            message = JSON.parse(event.data);
+        } catch (error) {
+            return;
+        }
+        if (message.type !== "ready" && message.type !== "mesa.updated") { return; }
+        if (message.type === "ready") { mesaSocketRetryDelay = 1000; }
+        clearTimeout(mesaRefreshTimer);
+        mesaRefreshTimer = setTimeout(cargarTodo, 150);
+    });
+    socket.addEventListener("close", event => {
+        if (event.code === 1008) { return; }
+        clearTimeout(mesaSocketRetryTimer);
+        mesaSocketRetryTimer = setTimeout(conectarWebSocketMesas, mesaSocketRetryDelay);
+        mesaSocketRetryDelay = Math.min(mesaSocketRetryDelay * 2, 15000);
+    });
+    socket.addEventListener("error", () => socket.close());
+}
+
+conectarWebSocketMesas();

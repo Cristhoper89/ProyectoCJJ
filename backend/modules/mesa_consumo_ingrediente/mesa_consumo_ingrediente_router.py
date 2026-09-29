@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
 from core.security import get_current_user
+from core.mesa_realtime import notify_mesa_change
 from modules.mesa_consumo_ingrediente.mesa_consumo_ingrediente_schema import (
     MesaConsumoIngredienteCreate,
     MesaConsumoIngredienteResponse,
@@ -28,16 +29,21 @@ async def list_relations(db: AsyncSession = Depends(get_db), current_user: dict 
 @router.post("/", response_model=MesaConsumoIngredienteResponse, status_code=status.HTTP_201_CREATED)
 async def create_relation(data: MesaConsumoIngredienteCreate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     require_staff(current_user)
-    return await MesaConsumoIngredienteService(db).create(data)
+    relation = await MesaConsumoIngredienteService(db).create(data)
+    await notify_mesa_change(db)
+    return relation
 
 
 @router.put("/{item_id}", response_model=MesaConsumoIngredienteResponse)
 async def update_relation(item_id: int, data: MesaConsumoIngredienteUpdate, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     require_staff(current_user)
-    return await MesaConsumoIngredienteService(db).update(item_id, data)
+    relation = await MesaConsumoIngredienteService(db).update(item_id, data)
+    await notify_mesa_change(db)
+    return relation
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_relation(item_id: int, db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     require_staff(current_user)
     await MesaConsumoIngredienteService(db).delete(item_id)
+    await notify_mesa_change(db)

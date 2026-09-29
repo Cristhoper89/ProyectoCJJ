@@ -4,7 +4,7 @@ import * as Print from 'expo-print';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Clock3, Minus, Plus, Printer, Trash2, TriangleAlert, X } from 'lucide-react-native';
 import HeaderNavbar from '../components/HeaderNavbar';
-import { apiRequest, getAccessToken } from '../constants/api';
+import { API_URL, apiRequest, getAccessToken } from '../constants/api';
 
 type Mesa = { id: number; nombre?: string | null; estado?: boolean; tipo?: 'barra' | 'mesa' | null; hora_inicio?: string | null; id_mov?: number | null };
 type Categoria = { id: number; nombre: string; estado?: boolean };
@@ -81,6 +81,8 @@ export default function MesaScreen() {
       setProductoIngredientes(productIngredientData);
       setConsumos(consumptionData);
       setMovimientos(movimientoData);
+      setSelectedMesa((current) => current ? mesaData.find((mesa) => mesa.id === current.id) || current : current);
+      setSelectedMovimiento((current) => current ? movimientoData.find((movement) => movement.id === current.id) || current : current);
 
       const failed = [mesaResult, categoryResult, productResult, ingredientResult, productIngredientResult, consumptionResult, movimientoResult].filter((result) => result.status === 'rejected');
       if (failed.length > 0) {
@@ -95,6 +97,47 @@ export default function MesaScreen() {
   };
 
   useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    let stopped = false;
+    let socket: WebSocket | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let retryDelay = 1000;
+
+    const connect = () => {
+      const token = getAccessToken();
+      if (stopped) return;
+      if (!token) {
+        retryTimer = setTimeout(connect, retryDelay);
+        return;
+      }
+
+      socket = new WebSocket(`${API_URL.replace(/^http/, 'ws')}/ws/mesas`);
+      socket.onopen = () => socket?.send(JSON.stringify({ token }));
+      socket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data as string);
+          if (message.type === 'ready' || message.type === 'mesa.updated') loadData();
+          if (message.type === 'ready') retryDelay = 1000;
+        } catch {
+          // Ignore non-JSON socket messages.
+        }
+      };
+      socket.onclose = (event) => {
+        if (stopped) return;
+        if (event.code === 1008) return;
+        retryTimer = setTimeout(connect, retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 15000);
+      };
+      socket.onerror = () => socket?.close();
+    };
+
+    connect();
+    return () => {
+      stopped = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      socket?.close();
+    };
+  }, []);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(timer);

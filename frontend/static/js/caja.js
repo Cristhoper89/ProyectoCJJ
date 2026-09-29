@@ -1,4 +1,4 @@
-const CAJA_API_URL = "http://127.0.0.1:8000";
+const CAJA_API_URL = window.location.protocol === "https:" ? window.location.origin : "https://backend-6ad6b6fa.fastapicloud.dev";
 let cajaActual = null;
 
 const money = value => new Intl.NumberFormat("es-CO", {

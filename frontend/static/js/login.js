@@ -2,7 +2,13 @@
 // LOGIN
 // ======================================================
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = window.location.protocol === "https:" ? window.location.origin : "https://backend-6ad6b6fa.fastapicloud.dev";
+const API_URL_STORAGE_KEY = "api_base_url";
+
+if (localStorage.getItem(API_URL_STORAGE_KEY) !== API_URL) {
+    localStorage.removeItem("access_token");
+    localStorage.setItem(API_URL_STORAGE_KEY, API_URL);
+}
 
 // ======================================================
 // ELEMENTOS

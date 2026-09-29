@@ -99,6 +99,7 @@ dependencies = [
     { name = "pyjwt" },
     { name = "python-dotenv" },
     { name = "sqlalchemy" },
+    { name = "websockets" },
 ]
 
 [package.metadata]
@@ -110,6 +111,7 @@ requires-dist = [
     { name = "pyjwt", specifier = ">=2.8.0" },
     { name = "python-dotenv", specifier = "==1.0.1" },
     { name = "sqlalchemy", specifier = ">=2.0.28" },
+    { name = "websockets", specifier = ">=15.0" },
 ]
 
 [[package]]

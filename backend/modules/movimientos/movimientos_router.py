@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
 from core.security import get_current_user  # Nueva importación
+from core.mesa_realtime import notify_mesa_change
 from modules.movimientos.movimientos_schema import MovimientoCreate, MovimientoResponse, MovimientoUpdate
 from modules.movimientos.movimientos_service import MovimientoService
 
@@ -28,7 +29,9 @@ async def add_movimiento(
     if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MovimientoService(db)
-    return await service.create_movimiento(movimiento_in)
+    movimiento = await service.create_movimiento(movimiento_in)
+    await notify_mesa_change(db)
+    return movimiento
 
 @router.put("/{movimiento_id}", response_model=MovimientoResponse, status_code=status.HTTP_200_OK)
 async def update_existing_movimiento(
@@ -44,4 +47,6 @@ async def update_existing_movimiento(
     if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MovimientoService(db)
-    return await service.update_movimiento(movimiento_id, movimiento_data, current_user)
+    movimiento = await service.update_movimiento(movimiento_id, movimiento_data, current_user)
+    await notify_mesa_change(db)
+    return movimiento

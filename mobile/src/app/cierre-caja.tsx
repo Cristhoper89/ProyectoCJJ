@@ -14,7 +14,6 @@ export default function CierreCajaScreen() {
   const [gastos, setGastos] = useState<Awaited<ReturnType<typeof loadCajaData>>['gastos']>([]);
   const [cashCount, setCashCount] = useState('');
   const [nextOpening, setNextOpening] = useState('');
-  const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -52,7 +51,7 @@ export default function CierreCajaScreen() {
       if (caja) {
         await apiRequest(`/cajas/${caja.id}/cierre-apertura`, {
           method: 'POST',
-          body: JSON.stringify({ efectivo_contado: countedAmount, balance_inicial: openingBalance, notas_cierre: notes.trim() || null }),
+          body: JSON.stringify({ efectivo_contado: countedAmount, balance_inicial: openingBalance }),
         });
       } else {
         await apiRequest('/cajas/', {
@@ -105,8 +104,6 @@ export default function CierreCajaScreen() {
                 <Text style={styles.differenceLabel}>{cashCount.length === 0 ? 'Diferencia pendiente' : difference === 0 ? 'Caja cuadrada' : difference > 0 ? 'Sobrante' : 'Faltante'}</Text>
                 <Text style={styles.differenceValue}>{cashCount.length === 0 ? 'Ingresa el conteo físico' : `${difference < 0 ? '− ' : difference > 0 ? '+ ' : ''}${money(Math.abs(difference))}`}</Text>
               </View>
-              <Text style={styles.label}>Notas de cierre <Text style={styles.optional}>(opcional)</Text></Text>
-              <TextInput value={notes} onChangeText={setNotes} placeholder="Observaciones del turno" placeholderTextColor="#998C80" style={[styles.textInput, styles.notesInput]} multiline maxLength={500} />
             </> : <View style={styles.firstOpenNotice}><Plus size={18} color="#E4B45F" /><Text style={styles.firstOpenText}>No hay una caja abierta. Asigna la base inicial para iniciar el primer turno.</Text></View>}
 
             <View style={[styles.stepHeading, styles.openStepHeading]}><View style={styles.stepNumber}><Text style={styles.stepNumberText}>{caja ? '2' : '1'}</Text></View><View><Text style={styles.stepKicker}>NUEVO TURNO</Text><Text style={styles.stepTitle}>Abrir nueva caja</Text></View></View>
@@ -156,9 +153,6 @@ const styles = StyleSheet.create({
   shortageDifference: { backgroundColor: '#3A2422' },
   differenceLabel: { color: '#F5EBDD', fontSize: 12, fontWeight: '700' },
   differenceValue: { color: '#F5F5F5', fontSize: 13, fontWeight: '800', flexShrink: 1, textAlign: 'right' },
-  optional: { color: '#B8B1A8', fontWeight: '500' },
-  textInput: { minHeight: 48, borderWidth: 1, borderColor: '#604D3A', borderRadius: 7, color: '#F5EBDD', backgroundColor: '#32281F', paddingHorizontal: 12, paddingVertical: 10, fontSize: 13 },
-  notesInput: { minHeight: 76, textAlignVertical: 'top', marginBottom: 17 },
   openStepHeading: { marginTop: 13 },
   firstOpenNotice: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: '#32281F', borderWidth: 1, borderColor: '#45382E', padding: 13, borderRadius: 7, marginBottom: 18 },
   firstOpenText: { flex: 1, color: '#C9B9A9', lineHeight: 19, fontSize: 12 },

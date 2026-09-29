@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
 from core.security import get_current_user  # Nueva importación
+from core.mesa_realtime import notify_mesa_change
 
 from modules.mesa_consumo.mesa_consumo_schema import MesaResponse, MesaUpdate, MesaCreate, PreparadoUpdate
 from modules.mesa_consumo.mesa_consumo_service import MesaCService
@@ -29,7 +30,9 @@ async def add_mesaC(
     if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MesaCService(db)
-    return await service.create_mesaC(mesa_in)
+    consumo = await service.create_mesaC(mesa_in)
+    await notify_mesa_change(db)
+    return consumo
 
 @router.put("/{mesa_id}", response_model=MesaResponse, status_code=status.HTTP_200_OK)
 async def update_existing_mesaC(
@@ -45,7 +48,9 @@ async def update_existing_mesaC(
     if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MesaCService(db)
-    return await service.update_mesaC(mesa_id, mesa_data, current_user)
+    consumo = await service.update_mesaC(mesa_id, mesa_data, current_user)
+    await notify_mesa_change(db)
+    return consumo
 
 @router.delete("/{mesa_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_existing_mesaC(
@@ -61,6 +66,7 @@ async def delete_existing_mesaC(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MesaCService(db)
     await service.delete_mesaC(mesa_id, current_user)
+    await notify_mesa_change(db)
 
 @router.delete("/mesa/{mesa_id}/todo", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_all_consumos_mesa(
@@ -76,6 +82,7 @@ async def delete_all_consumos_mesa(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MesaCService(db)
     await service.delete_consumos_mesa(mesa_id, current_user)
+    await notify_mesa_change(db)
 
 @router.patch("/{mesa_id}/preparado", response_model=MesaResponse, status_code=status.HTTP_200_OK)
 async def update_preparado_status(
@@ -91,4 +98,6 @@ async def update_preparado_status(
     if current_user["role_name"] not in ["Cocina"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MesaCService(db)
-    return await service.cambiar_estado_preparado(mesa_id, preparado_data.preparado)
+    consumo = await service.cambiar_estado_preparado(mesa_id, preparado_data.preparado)
+    await notify_mesa_change(db)
+    return consumo

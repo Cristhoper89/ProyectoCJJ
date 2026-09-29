@@ -2,7 +2,7 @@
 // OLVIDO DE CONTRASEÑA
 // ======================================================
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = window.location.protocol === "https:" ? window.location.origin : "https://backend-6ad6b6fa.fastapicloud.dev";
 
 // ======================================================
 // ELEMENTOS

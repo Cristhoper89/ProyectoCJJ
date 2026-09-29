@@ -1,7 +1,9 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy import text
@@ -24,6 +26,7 @@ from modules.ingredientes.ingredientes_router import router as ingredientes_rout
 from modules.producto_ingredientes.producto_ingredientes_router import router as producto_ingredientes_router
 from modules.mesa_consumo_ingrediente.mesa_consumo_ingrediente_router import router as mesa_consumo_ingrediente_router
 from modules.opciones.opciones_router import router as opciones_router
+from core.mesa_realtime import listen_for_mesa_events, router as mesa_realtime_router
 from core.logger import logger
 from sqlalchemy import text
 
@@ -58,9 +61,13 @@ async def lifespan(app: FastAPI):
     logger.info("  Documentación interactiva: http://127.0.0.1:8000/docs")
     logger.info("==========================================================")
 
+    listener_task = asyncio.create_task(listen_for_mesa_events())
     try:
         yield
     finally:
+        listener_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await listener_task
         await engine.dispose()
         logger.info("Cerrando recursos de la API de forma segura.")
 
@@ -69,6 +76,14 @@ app = FastAPI(
     version="3.1.0",
     description="Estructura limpia basada en dominios directo en raíz sin Passlib",
     lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Inyección directa de rutas modulares verificadas sin prefijos redundantes
@@ -88,6 +103,7 @@ app.include_router(ingredientes_router)
 app.include_router(producto_ingredientes_router)
 app.include_router(mesa_consumo_ingrediente_router)
 app.include_router(opciones_router)
+app.include_router(mesa_realtime_router)
 
 # ==============================
 # FRONTEND
