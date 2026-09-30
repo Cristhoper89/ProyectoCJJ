@@ -26,6 +26,7 @@ from modules.ingredientes.ingredientes_router import router as ingredientes_rout
 from modules.producto_ingredientes.producto_ingredientes_router import router as producto_ingredientes_router
 from modules.mesa_consumo_ingrediente.mesa_consumo_ingrediente_router import router as mesa_consumo_ingrediente_router
 from modules.opciones.opciones_router import router as opciones_router
+from modules.pedido.pedido_router import router as pedido_router
 from core.mesa_realtime import listen_for_mesa_events, router as mesa_realtime_router
 from core.logger import logger
 from sqlalchemy import text
@@ -53,6 +54,16 @@ async def lifespan(app: FastAPI):
                 ALTER TABLE mesa_consumo
                 ADD COLUMN IF NOT EXISTS descuento numeric(10,2) DEFAULT 0.00;
             """))
+            await conn.execute(text("ALTER TABLE mesa_consumo ADD COLUMN IF NOT EXISTS fecha_creacion TIMESTAMPTZ;"))
+            await conn.execute(text("""
+                UPDATE mesa_consumo mc
+                SET fecha_creacion = COALESCE(m."fecha-hora", CURRENT_TIMESTAMP)
+                FROM movimiento m
+                WHERE mc.fecha_creacion IS NULL AND m.id = mc.id_mov;
+            """))
+            await conn.execute(text("UPDATE mesa_consumo SET fecha_creacion = CURRENT_TIMESTAMP WHERE fecha_creacion IS NULL;"))
+            await conn.execute(text("ALTER TABLE mesa_consumo ALTER COLUMN fecha_creacion SET DEFAULT CURRENT_TIMESTAMP;"))
+            await conn.execute(text("ALTER TABLE mesa_consumo ALTER COLUMN fecha_creacion SET NOT NULL;"))
     except Exception as e:
         logger.error(f"Migraciones de inicio omitidas: {str(e)}")
 
@@ -103,6 +114,7 @@ app.include_router(ingredientes_router)
 app.include_router(producto_ingredientes_router)
 app.include_router(mesa_consumo_ingrediente_router)
 app.include_router(opciones_router)
+app.include_router(pedido_router)
 app.include_router(mesa_realtime_router)
 
 # ==============================

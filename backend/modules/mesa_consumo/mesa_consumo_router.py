@@ -95,7 +95,7 @@ async def update_preparado_status(
     Endpoint Protegido por Token y RBAC:
     - Cocina puede marcar productos como preparados.
     """
-    if current_user["role_name"] not in ["Cocina"]:
+    if current_user["role_name"] not in ["Administrador", "Cocina"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = MesaCService(db)
     consumo = await service.cambiar_estado_preparado(mesa_id, preparado_data.preparado)

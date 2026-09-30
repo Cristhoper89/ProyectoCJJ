@@ -739,5 +739,5 @@ https://backend-6ad6b6fa.fastapicloud.dev/docs
 
 movil/
 npx expo run:android
-
+npm run start -- --lan
 ./gradlew assembleRelease

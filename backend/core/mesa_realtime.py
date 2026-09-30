@@ -98,7 +98,7 @@ async def mesa_websocket(websocket: WebSocket) -> None:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = payload.get("user_id")
         expires_at = payload.get("exp")
-        if not isinstance(user_id, str) or not user_id or not isinstance(expires_at, (int, float)):
+        if isinstance(user_id, bool) or not isinstance(user_id, (str, int)) or not str(user_id) or not isinstance(expires_at, (int, float)):
             await websocket.close(code=1008)
             return
 
