@@ -43,7 +43,7 @@ class MesaCService:
         precio_unitario = float(producto.precio)
         descuento = round(float(mesaC_data.descuento or 0), 2)
         subtotal = self._calc_subtotal(precio_unitario, cantidad, descuento)
-        preparado = not bool(producto.preparacion)
+        preparado = False if producto.preparacion else None
 
         query = text(f"""
             INSERT INTO mesa_consumo (
