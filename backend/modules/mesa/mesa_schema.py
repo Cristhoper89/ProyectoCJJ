@@ -37,3 +37,4 @@ class MesaFinalize(BaseModel):
     total: float = Field(..., ge=0)
     metodo: str = Field("Efectivo")
     id_caja: Optional[int] = Field(None, gt=0)
+    id_movimiento: Optional[int] = Field(None, gt=0)

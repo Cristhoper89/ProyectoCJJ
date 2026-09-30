@@ -346,10 +346,18 @@ export default function MesaScreen() {
         if (adjustedSubtotal !== line.subtotal) await apiRequest(`/mesasC/${line.id}`, { method: 'PUT', body: JSON.stringify({ subtotal: adjustedSubtotal }) });
       }
       if (close) {
-        if (selectedMesa.tipo === 'barra' && selectedMovimiento) {
-          await apiRequest(`/movimientos/${selectedMovimiento.id}`, { method: 'PUT', body: JSON.stringify({ total, propina, domicilio: Number(domicilio) || 0, metodo: 'Efectivo' }) });
-        }
-        await apiRequest(`/mesas/${selectedMesa.id}/finalizar`, { method: 'POST', body: JSON.stringify({ total, propina, domicilio: Number(domicilio) || 0, metodo: 'Efectivo' }) });
+        await apiRequest(`/mesas/${selectedMesa.id}/finalizar`, {
+          method: 'POST',
+          body: JSON.stringify({
+            total,
+            propina,
+            domicilio: Number(domicilio) || 0,
+            metodo: 'Efectivo',
+            ...(selectedMesa.tipo === 'barra' && selectedMovimiento
+              ? { id_movimiento: selectedMovimiento.id }
+              : {}),
+          }),
+        });
         setSelectedMesa(null); setSelectedMovimiento(null);
       }
       await loadData();

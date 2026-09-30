@@ -285,6 +285,79 @@ class MesaService:
                 if movimiento is None:
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El movimiento de la mesa no existe.")
             else:
+                movement_ids = (await self.db.execute(
+                    text("SELECT id_movimiento FROM barra WHERE id_mesa = :mesa_id FOR UPDATE;"),
+                    {"mesa_id": mesa_id},
+                )).scalars().all()
+
+                if data.id_movimiento is not None:
+                    if data.id_movimiento not in movement_ids:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="El movimiento no pertenece a esta barra.",
+                        )
+
+                    update_fields = [
+                        "estado = TRUE",
+                        "propina = :propina",
+                        "domicilio = :domicilio",
+                        "total = :total",
+                        "metodo = :metodo",
+                    ]
+                    params = {
+                        "id": data.id_movimiento,
+                        "propina": data.propina,
+                        "domicilio": data.domicilio,
+                        "total": data.total,
+                        "metodo": data.metodo,
+                    }
+                    if data.id_caja is not None:
+                        update_fields.append("id_caja = :id_caja")
+                        params["id_caja"] = data.id_caja
+
+                    await self.db.execute(text(f"""
+                        UPDATE movimiento
+                        SET {', '.join(update_fields)}
+                        WHERE id = :id;
+                    """), params)
+
+                other_movement_ids = [
+                    movement_id
+                    for movement_id in movement_ids
+                    if movement_id != data.id_movimiento
+                ]
+                if other_movement_ids:
+                    await self.db.execute(text("""
+                        UPDATE movimiento m
+                        SET estado = TRUE,
+                            total = COALESCE((
+                                SELECT SUM(mc.subtotal)
+                                FROM mesa_consumo mc
+                                WHERE mc.id_mov = m.id
+                            ), 0) + COALESCE(m.propina, 0) + COALESCE(m.domicilio, 0)
+                        WHERE m.id = ANY(:movement_ids)
+                          AND EXISTS (
+                              SELECT 1 FROM mesa_consumo mc
+                              WHERE mc.id_mov = m.id
+                          );
+                    """), {"movement_ids": other_movement_ids})
+
+                empty_movement_ids = (await self.db.execute(text("""
+                    DELETE FROM barra b
+                    WHERE b.id_mesa = :mesa_id
+                      AND NOT EXISTS (
+                          SELECT 1 FROM mesa_consumo mc
+                          WHERE mc.id_mov = b.id_movimiento
+                      )
+                    RETURNING b.id_movimiento;
+                """), {"mesa_id": mesa_id})).scalars().all()
+
+                if empty_movement_ids:
+                    await self.db.execute(
+                        text("DELETE FROM movimiento WHERE id = ANY(:movement_ids);"),
+                        {"movement_ids": empty_movement_ids},
+                    )
+
                 await self.db.execute(
                     text("DELETE FROM barra WHERE id_mesa = :mesa_id;"),
                     {"mesa_id": mesa_id},
