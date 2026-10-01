@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.frontend import template_response
 from core.database import get_db
 from core.security import get_current_user
 from modules.ingredientes.ingredientes_schema import (
@@ -16,6 +17,12 @@ from modules.ingredientes.ingredientes_service import GastoService, IngredienteS
 
 
 router = APIRouter(tags=["Ingredientes y gastos"])
+frontend_router = APIRouter()
+
+
+@frontend_router.get("/ingredientes", include_in_schema=False)
+async def ingredientes_page():
+    return template_response("ingredientes.html")
 
 
 def require_staff(current_user: dict) -> None:

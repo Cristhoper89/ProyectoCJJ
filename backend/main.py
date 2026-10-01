@@ -1,37 +1,38 @@
 import asyncio
+import cloudinary
+import cloudinary.uploader
+
+
 from contextlib import asynccontextmanager, suppress
-from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from sqlalchemy import text
 
 from core.database import engine
+from core.frontend import FRONTEND_DIR
 
 from modules.metodos_pagos.metodo_pago_router import router as metodo_pago_router
-from modules.categorias.categorias_router import router as categorias_router
+from modules.categorias.categorias_router import frontend_router as categorias_frontend_router, router as categorias_router
 from modules.roles.role_router import router as role_router
-from modules.users.user_router import router as user_router
-from modules.auth.auth_router import router as auth_router
-from modules.productos.productos_router import router as productos_router
-from modules.cajas.cajas_router import router as cajas_router
-from modules.mesa.mesa_router import router as mesa_router
+from modules.users.user_router import frontend_router as users_frontend_router, router as user_router
+from modules.auth.auth_router import frontend_router as auth_frontend_router, router as auth_router
+from modules.productos.productos_router import frontend_router as productos_frontend_router, router as productos_router
+from modules.cajas.cajas_router import frontend_router as cajas_frontend_router, router as cajas_router
+from modules.mesa.mesa_router import frontend_router as mesas_frontend_router, router as mesa_router
 from modules.mesa_consumo.mesa_consumo_router import router as mesa_consumo_router
 from modules.proveedores.proveedores_router import router as prooveedores_router
-from modules.empresa.empresa_router import router as empresa_router
-from modules.movimientos.movimientos_router import router as movimientos_router
-from modules.ingredientes.ingredientes_router import router as ingredientes_router
+from modules.empresa.empresa_router import frontend_router as empresa_frontend_router, router as empresa_router
+from modules.movimientos.movimientos_router import frontend_router as movimientos_frontend_router, router as movimientos_router
+from modules.ingredientes.ingredientes_router import frontend_router as ingredientes_frontend_router, router as ingredientes_router
 from modules.producto_ingredientes.producto_ingredientes_router import router as producto_ingredientes_router
 from modules.mesa_consumo_ingrediente.mesa_consumo_ingrediente_router import router as mesa_consumo_ingrediente_router
-from modules.opciones.opciones_router import router as opciones_router
-from modules.pedido.pedido_router import router as pedido_router
+from modules.opciones.opciones_router import frontend_router as opciones_frontend_router, router as opciones_router
+from modules.pedido.pedido_router import frontend_router as pedido_frontend_router, router as pedido_router
 from core.mesa_realtime import listen_for_mesa_events, router as mesa_realtime_router
 from core.logger import logger
-from sqlalchemy import text
-
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+from cloudinary.utils import cloudinary_url
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -116,6 +117,22 @@ app.include_router(mesa_consumo_ingrediente_router)
 app.include_router(opciones_router)
 app.include_router(pedido_router)
 app.include_router(mesa_realtime_router)
+app.include_router(auth_frontend_router)
+
+
+
+
+
+app.include_router(users_frontend_router)
+app.include_router(categorias_frontend_router)
+app.include_router(productos_frontend_router)
+app.include_router(cajas_frontend_router)
+app.include_router(mesas_frontend_router)
+app.include_router(movimientos_frontend_router)
+app.include_router(ingredientes_frontend_router)
+app.include_router(opciones_frontend_router)
+app.include_router(pedido_frontend_router)
+app.include_router(empresa_frontend_router)
 
 # ==============================
 # FRONTEND
@@ -128,67 +145,25 @@ if FRONTEND_DIR.is_dir():
         name="static"
     )
 
-@app.get("/")
-async def login():
-
-    return FileResponse(FRONTEND_DIR / "templates" / "login.html")
-
-@app.get("/desbloquear")
-async def desbloquear():
-
-    return FileResponse(FRONTEND_DIR / "templates" / "desbloquear_cuenta.html")
 
 
-@app.get("/recuperar")
-async def recuperar():
+# Configuration       
+cloudinary.config( 
+    cloud_name = "erqxtjqx", 
+    api_key = "544669296561498", 
+    api_secret = "TSyfX9BR4CrDBM1ChAstjxMGnW4", # Click 'View API Keys' above to copy your API secret
+    secure=True
+)
 
-    return FileResponse(FRONTEND_DIR / "templates" / "olvido_contrasena.html")
+# Upload an image
+upload_result = cloudinary.uploader.upload("https://res.cloudinary.com/demo/image/upload/getting-started/shoes.jpg",
+                                           public_id="shoes")
+print(upload_result["secure_url"])
 
-@app.get("/templates/dashboard")
-@app.get("/dashboard")
-async def ver_dashboard():
-    return FileResponse("../frontend/templates/dashboard.html")
+# Optimize delivery by resizing and applying auto-format and auto-quality
+optimize_url, _ = cloudinary_url("shoes", fetch_format="auto", quality="auto")
+print(optimize_url)
 
-@app.get("/productos")
-async def ver_productos():
-    return FileResponse(FRONTEND_DIR / "templates" / "productos.html")
-
-@app.get("/opciones-productos")
-async def ver_opciones_productos():
-    return FileResponse(FRONTEND_DIR / "templates" / "opciones_productos.html")
-
-@app.get("/ingredientes")
-async def ver_ingredientes():
-    return FileResponse(FRONTEND_DIR / "templates" / "ingredientes.html")
-#johan
-@app.get("/categorias")
-async def ver_categorias():
-    return FileResponse(FRONTEND_DIR / "templates" / "categorias.html")
-
-@app.get("/caja")
-async def ver_caja():
-    return FileResponse(FRONTEND_DIR / "templates" / "caja.html")
-
-@app.get("/mesas")
-async def ver_mesas():
-    return FileResponse(FRONTEND_DIR / "templates" / "mesas.html")
-
-@app.get("/movimientos")
-async def ver_movimientos():
-    return FileResponse(FRONTEND_DIR / "templates" / "movimientos.html")
-
-@app.get("/usuarios")
-async def ver_usuarios():
-    return FileResponse(FRONTEND_DIR / "templates" / "usuarios.html")
-
-@app.get("/reportes")
-async def ver_reportes():
-    return FileResponse(FRONTEND_DIR / "templates" / "reportes.html")
-
-@app.get("/pedidos")
-async def ver_pedidos():
-    return FileResponse(FRONTEND_DIR / "templates" / "pedidos.html")
-
-@app.get("/configuracion")
-async def ver_configuracion():
-    return FileResponse(FRONTEND_DIR / "templates" / "configuracion.html")
+# Transform the image: auto-crop to square aspect_ratio
+auto_crop_url, _ = cloudinary_url("shoes", width=500, height=500, crop="auto", gravity="auto")
+print(auto_crop_url)

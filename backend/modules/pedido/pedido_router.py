@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.frontend import template_response
 from core.database import get_db
 from core.mesa_realtime import notify_mesa_change
 from core.security import get_current_user
@@ -8,6 +9,12 @@ from modules.pedido.pedido_schema import PedidoPreparadoUpdate, PedidoResponse
 from modules.pedido.pedido_service import PedidoService
 
 router = APIRouter(prefix="/pedido", tags=["Pedidos de cocina"])
+frontend_router = APIRouter()
+
+
+@frontend_router.get("/pedidos", include_in_schema=False)
+async def pedidos_page():
+    return template_response("pedidos.html")
 
 
 def require_kitchen(user: dict) -> None:

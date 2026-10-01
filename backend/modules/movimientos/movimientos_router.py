@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from core.frontend import template_response
 from core.database import get_db
 from core.security import get_current_user  # Nueva importación
 from core.mesa_realtime import notify_mesa_change
@@ -7,6 +8,17 @@ from modules.movimientos.movimientos_schema import MovimientoCreate, MovimientoR
 from modules.movimientos.movimientos_service import MovimientoService
 
 router = APIRouter(prefix="/movimientos", tags=["movimientos"])
+frontend_router = APIRouter()
+
+
+@frontend_router.get("/movimientos", include_in_schema=False)
+async def movimientos_page():
+    return template_response("movimientos.html")
+
+
+@frontend_router.get("/reportes", include_in_schema=False)
+async def reportes_page():
+    return template_response("reportes.html")
 
 @router.get("/", response_model=list[MovimientoResponse], status_code=status.HTTP_200_OK)
 async def read_movimientos(

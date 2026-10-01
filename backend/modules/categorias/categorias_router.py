@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from core.frontend import template_response
 from core.database import get_db
 from core.security import get_current_user  # Nueva importación
 from modules.categorias.categorias_schema import (
@@ -10,6 +11,12 @@ from modules.categorias.categorias_schema import (
 from modules.categorias.categorias_service import CategoriaService
 
 router = APIRouter(prefix="/categorias", tags=["Categorías"])
+frontend_router = APIRouter()
+
+
+@frontend_router.get("/categorias", include_in_schema=False)
+async def categorias_page():
+    return template_response("categorias.html")
 
 @router.get("/", response_model=list[CategoriaResponse], status_code=status.HTTP_200_OK)
 async def read_categorias(

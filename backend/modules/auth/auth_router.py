@@ -6,6 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from zoneinfo import ZoneInfo
 
+from core.frontend import template_response
 from modules.auth.mailer_schema import (
     ForgotPasswordRequest,
     SendUnlockCodeRequest,
@@ -27,6 +28,28 @@ from modules.auth.auth_service import AuthService
 
 # Crear las rutas del módulo de autenticación
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
+frontend_router = APIRouter()
+
+
+@frontend_router.get("/", include_in_schema=False)
+async def login_page():
+    return template_response("login.html")
+
+
+@frontend_router.get("/desbloquear", include_in_schema=False)
+async def unlock_page():
+    return template_response("desbloquear_cuenta.html")
+
+
+@frontend_router.get("/recuperar", include_in_schema=False)
+async def recover_page():
+    return template_response("olvido_contrasena.html")
+
+
+@frontend_router.get("/templates/dashboard", include_in_schema=False)
+@frontend_router.get("/dashboard", include_in_schema=False)
+async def dashboard_page():
+    return template_response("dashboard.html")
 
 
 # Obtener el perfil del usuario autenticado

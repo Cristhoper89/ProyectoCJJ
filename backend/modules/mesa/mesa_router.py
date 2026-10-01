@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from core.frontend import template_response
 from core.database import get_db
 from core.security import get_current_user
 from core.mesa_realtime import notify_mesa_change
@@ -8,6 +9,12 @@ from modules.mesa.mesa_schema import MesaResponse, MesaUpdate, MesaCreate, MesaF
 from modules.mesa.mesa_service import MesaService
 
 router = APIRouter(prefix="/mesas", tags=["Mesas"])
+frontend_router = APIRouter()
+
+
+@frontend_router.get("/mesas", include_in_schema=False)
+async def mesas_page():
+    return template_response("mesas.html")
 
 @router.get("/", response_model=list[MesaResponse], status_code=status.HTTP_200_OK)
 async def read_mesas(
