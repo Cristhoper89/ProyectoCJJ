@@ -59,6 +59,7 @@ class ProductoCreate(ProductoBase):
 class ProductoResponse(ProductoBase):
 
     id: int
+    imagen_url: Optional[str] = None
 
     model_config = ConfigDict(
         from_attributes=True
@@ -104,6 +105,16 @@ class ProductoUpdate(BaseModel):
     estado: Optional[bool] = Field(
         None
     )
+
+
+class ProductoImagenResponse(BaseModel):
+
+    id: int
+    producto_id: int
+    url: str
+    public_id: str
+    es_principal: bool
+    orden: int
 
 
 # ======================================================

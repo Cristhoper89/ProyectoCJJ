@@ -1,6 +1,5 @@
 import asyncio
 import cloudinary
-import cloudinary.uploader
 
 
 from contextlib import asynccontextmanager, suppress
@@ -32,7 +31,6 @@ from modules.opciones.opciones_router import frontend_router as opciones_fronten
 from modules.pedido.pedido_router import frontend_router as pedido_frontend_router, router as pedido_router
 from core.mesa_realtime import listen_for_mesa_events, router as mesa_realtime_router
 from core.logger import logger
-from cloudinary.utils import cloudinary_url
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -154,16 +152,3 @@ cloudinary.config(
     api_secret = "TSyfX9BR4CrDBM1ChAstjxMGnW4", # Click 'View API Keys' above to copy your API secret
     secure=True
 )
-
-# Upload an image
-upload_result = cloudinary.uploader.upload("https://res.cloudinary.com/demo/image/upload/getting-started/shoes.jpg",
-                                           public_id="shoes")
-print(upload_result["secure_url"])
-
-# Optimize delivery by resizing and applying auto-format and auto-quality
-optimize_url, _ = cloudinary_url("shoes", fetch_format="auto", quality="auto")
-print(optimize_url)
-
-# Transform the image: auto-crop to square aspect_ratio
-auto_crop_url, _ = cloudinary_url("shoes", width=500, height=500, crop="auto", gravity="auto")
-print(auto_crop_url)

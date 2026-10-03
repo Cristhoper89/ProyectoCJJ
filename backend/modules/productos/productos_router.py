@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.frontend import template_response
@@ -7,6 +7,7 @@ from core.security import get_current_user
 
 from modules.productos.productos_schema import (
     ProductoCreate,
+    ProductoImagenResponse,
     ProductoResponse,
     ProductoUpdate
 )
@@ -109,6 +110,146 @@ async def update_existing_producto(
         producto_data,
         current_user
     )
+
+
+@router.get(
+    "/{producto_id}/imagen",
+    response_model=ProductoImagenResponse | None,
+    status_code=status.HTTP_200_OK
+)
+async def get_producto_image(
+    producto_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado. Rol insuficiente."
+        )
+
+    service = ProductoService(db)
+    return await service.get_producto_image(producto_id)
+
+
+@router.get(
+    "/{producto_id}/imagenes",
+    response_model=list[ProductoImagenResponse],
+    status_code=status.HTTP_200_OK
+)
+async def get_producto_images(
+    producto_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado. Rol insuficiente."
+        )
+
+    service = ProductoService(db)
+    return await service.get_producto_images(producto_id)
+
+
+@router.post(
+    "/{producto_id}/imagen",
+    response_model=ProductoImagenResponse,
+    status_code=status.HTTP_201_CREATED
+)
+async def upload_producto_image(
+    producto_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+
+    if current_user["role_name"] not in ["Administrador", "Cajero"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado. Rol insuficiente."
+        )
+
+    image_data = await read_image_file(file)
+    service = ProductoService(db)
+    saved_images = await service.save_producto_images(
+        producto_id,
+        [(image_data, file.filename or "imagen")]
+    )
+    return saved_images[0]
+
+
+@router.post(
+    "/{producto_id}/imagenes",
+    response_model=list[ProductoImagenResponse],
+    status_code=status.HTTP_201_CREATED
+)
+async def upload_producto_images(
+    producto_id: int,
+    files: list[UploadFile] = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+
+    if current_user["role_name"] not in ["Administrador", "Cajero"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado. Rol insuficiente."
+        )
+
+    images = [
+        (await read_image_file(file), file.filename or "imagen")
+        for file in files
+    ]
+    service = ProductoService(db)
+    return await service.save_producto_images(producto_id, images)
+
+
+@router.patch(
+    "/{producto_id}/imagenes/{imagen_id}/principal",
+    response_model=ProductoImagenResponse,
+    status_code=status.HTTP_200_OK
+)
+async def set_producto_main_image(
+    producto_id: int,
+    imagen_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+
+    if current_user["role_name"] not in ["Administrador", "Cajero"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado. Rol insuficiente."
+        )
+
+    service = ProductoService(db)
+    return await service.set_producto_main_image(producto_id, imagen_id)
+
+
+async def read_image_file(file: UploadFile) -> bytes:
+
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Todos los archivos deben ser imágenes."
+        )
+
+    image_data = await file.read(10 * 1024 * 1024 + 1)
+    if not image_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La imagen está vacía."
+        )
+    if len(image_data) > 10 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Cada imagen no puede superar los 10 MB."
+        )
+
+    return image_data
 
 
 # ======================================================

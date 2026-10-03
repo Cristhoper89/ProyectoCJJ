@@ -1,3 +1,7 @@
+import asyncio
+from io import BytesIO
+
+import cloudinary.uploader
 from fastapi import HTTPException, status
 
 from sqlalchemy import text
@@ -31,16 +35,23 @@ class ProductoService:
 
         query = text("""
             SELECT
-                id,
-                nombre,
-                descripcion,
-                cantidad,
-                precio,
-                id_categoria,
-                preparacion,
-                estado
-            FROM productos
-            ORDER BY id ASC;
+                p.id,
+                p.nombre,
+                p.descripcion,
+                p.cantidad,
+                p.precio,
+                p.id_categoria,
+                p.preparacion,
+                p.estado,
+                (
+                    SELECT pi.url
+                    FROM producto_imagenes pi
+                    WHERE pi.producto_id = p.id AND pi.es_principal = TRUE
+                    ORDER BY pi.orden ASC, pi.id ASC
+                    LIMIT 1
+                ) AS imagen_url
+            FROM productos p
+            ORDER BY p.id ASC;
         """)
 
 
@@ -51,6 +62,208 @@ class ProductoService:
             dict(row)
             for row in result.mappings().all()
         ]
+
+
+    async def get_producto_image(self, producto_id: int) -> dict | None:
+
+        result = await self.db.execute(
+            text("""
+                SELECT
+                    id,
+                    producto_id,
+                    url,
+                    public_id,
+                    es_principal,
+                    orden
+                FROM producto_imagenes
+                WHERE producto_id = :producto_id
+                ORDER BY es_principal DESC, orden ASC, id ASC
+                LIMIT 1;
+            """),
+            {"producto_id": producto_id}
+        )
+        image = result.mappings().first()
+        return dict(image) if image else None
+
+
+    async def get_producto_images(self, producto_id: int) -> list[dict]:
+
+        result = await self.db.execute(
+            text("""
+                SELECT id, producto_id, url, public_id, es_principal, orden
+                FROM producto_imagenes
+                WHERE producto_id = :producto_id
+                ORDER BY es_principal DESC, orden ASC, id ASC;
+            """),
+            {"producto_id": producto_id}
+        )
+        return [dict(row) for row in result.mappings().all()]
+
+
+    async def save_producto_images(
+        self,
+        producto_id: int,
+        images: list[tuple[bytes, str]]
+    ) -> list[dict]:
+
+        product = await self.db.execute(
+            text("SELECT id FROM productos WHERE id = :id FOR UPDATE;"),
+            {"id": producto_id}
+        )
+        if not product.first():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="El producto no existe."
+            )
+
+        principal_result = await self.db.execute(
+            text("""
+                SELECT id
+                FROM producto_imagenes
+                WHERE producto_id = :producto_id AND es_principal = TRUE;
+            """),
+            {"producto_id": producto_id}
+        )
+        has_principal = principal_result.first() is not None
+        order_result = await self.db.execute(
+            text("""
+                SELECT COALESCE(MAX(orden), -1) + 1
+                FROM producto_imagenes
+                WHERE producto_id = :producto_id;
+            """),
+            {"producto_id": producto_id}
+        )
+        next_order = order_result.scalar_one()
+        uploaded_images: list[dict] = []
+
+        try:
+            for index, (image_data, _) in enumerate(images):
+                upload_result = await asyncio.to_thread(
+                    cloudinary.uploader.upload,
+                    BytesIO(image_data),
+                    folder="productos",
+                    resource_type="image"
+                )
+                image_url = upload_result.get("secure_url")
+                public_id = upload_result.get("public_id")
+                if not image_url or not public_id:
+                    raise ValueError("Cloudinary no devolvió la URL o el identificador de la imagen.")
+                uploaded_images.append({
+                    "url": image_url,
+                    "public_id": public_id,
+                    "orden": next_order + index,
+                    "es_principal": not has_principal and index == 0,
+                })
+        except Exception as error:
+            await self.db.rollback()
+            for uploaded_image in uploaded_images:
+                try:
+                    await asyncio.to_thread(
+                        cloudinary.uploader.destroy,
+                        uploaded_image["public_id"],
+                        resource_type="image"
+                    )
+                except Exception as cleanup_error:
+                    logger.error(f"No se pudo limpiar la imagen {uploaded_image['public_id']} de Cloudinary: {cleanup_error}")
+            logger.error(f"Error al subir imagen del producto {producto_id} a Cloudinary: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="No fue posible subir la imagen a Cloudinary."
+            ) from error
+
+        try:
+            for uploaded_image in uploaded_images:
+                result = await self.db.execute(
+                    text("""
+                        INSERT INTO producto_imagenes (
+                            producto_id,
+                            url,
+                            public_id,
+                            es_principal,
+                            orden
+                        )
+                        VALUES (
+                            :producto_id,
+                            :url,
+                            :public_id,
+                            :es_principal,
+                            :orden
+                        )
+                        RETURNING id, producto_id, url, public_id, es_principal, orden;
+                    """),
+                    {
+                        "producto_id": producto_id,
+                        **uploaded_image,
+                    }
+                )
+                uploaded_image.update(dict(result.mappings().one()))
+            await self.db.commit()
+        except Exception as error:
+            await self.db.rollback()
+            for uploaded_image in uploaded_images:
+                try:
+                    await asyncio.to_thread(
+                        cloudinary.uploader.destroy,
+                        uploaded_image["public_id"],
+                        resource_type="image"
+                    )
+                except Exception as cleanup_error:
+                    logger.error(f"No se pudo limpiar la imagen {uploaded_image['public_id']} de Cloudinary: {cleanup_error}")
+            logger.error(f"Error al guardar imagen del producto {producto_id}: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="No fue posible guardar la imagen del producto."
+            ) from error
+
+        return uploaded_images
+
+
+    async def set_producto_main_image(
+        self,
+        producto_id: int,
+        image_id: int
+    ) -> dict:
+
+        image_result = await self.db.execute(
+            text("""
+                SELECT id
+                FROM producto_imagenes
+                WHERE id = :image_id AND producto_id = :producto_id;
+            """),
+            {"image_id": image_id, "producto_id": producto_id}
+        )
+        if not image_result.first():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="La imagen no pertenece a este producto."
+            )
+
+        try:
+            await self.db.execute(
+                text("""
+                    UPDATE producto_imagenes
+                    SET es_principal = (id = :image_id)
+                    WHERE producto_id = :producto_id;
+                """),
+                {"image_id": image_id, "producto_id": producto_id}
+            )
+            result = await self.db.execute(
+                text("""
+                    SELECT id, producto_id, url, public_id, es_principal, orden
+                    FROM producto_imagenes
+                    WHERE id = :image_id;
+                """),
+                {"image_id": image_id}
+            )
+            await self.db.commit()
+            return dict(result.mappings().one())
+        except Exception as error:
+            await self.db.rollback()
+            logger.error(f"Error al marcar imagen principal del producto {producto_id}: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="No fue posible cambiar la imagen principal."
+            ) from error
 
 
     # ======================================================

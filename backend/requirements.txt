@@ -6,3 +6,4 @@ python-dotenv==1.0.1
 bcrypt>=4.1.0
 pyjwt>=2.8.0
 websockets>=15.0
+cloudinary>=1.44.0
