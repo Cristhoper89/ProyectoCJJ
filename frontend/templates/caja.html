@@ -18,8 +18,8 @@
             <header class="caja-header">
                 <div>
                     <span class="eyebrow">Control financiero</span>
-                    <h1>Caja</h1>
-                    <p>Consulta los ingresos, gastos y balance de la jornada.</p>
+                    <h1>Caja actual</h1>
+                    <p>Revisa el turno activo, registra el arqueo y consulta el historial de cajas.</p>
                 </div>
                 <div class="caja-actions">
                     <span class="caja-status" id="cajaStatus">Sin caja activa</span>
@@ -37,15 +37,15 @@
             <section class="caja-summary" aria-label="Resumen de caja">
                 <article class="caja-summary-card income">
                     <div class="summary-icon"><i data-lucide="trending-up"></i></div>
-                    <div><span>Ingresos</span><strong id="totalIngresos">$0</strong></div>
+                    <div><span>Ingresos del turno</span><strong id="totalIngresos">$0</strong></div>
                 </article>
                 <article class="caja-summary-card expense">
                     <div class="summary-icon"><i data-lucide="trending-down"></i></div>
-                    <div><span>Gastos</span><strong id="totalGastos">$0</strong></div>
+                    <div><span>Gastos del turno</span><strong id="totalGastos">$0</strong></div>
                 </article>
                 <article class="caja-summary-card balance">
                     <div class="summary-icon"><i data-lucide="scale"></i></div>
-                    <div><span>Balance final</span><strong id="balanceFinal">$0</strong></div>
+                    <div><span id="balanceLabel">Balance estimado</span><strong id="balanceFinal">$0</strong></div>
                 </article>
             </section>
 
@@ -59,17 +59,19 @@
                         <div class="method-row"><span><i data-lucide="banknote"></i>Efectivo</span><strong id="ingresoEfectivo">$0</strong></div>
                         <div class="method-row"><span><i data-lucide="arrow-left-right"></i>Transferencia</span><strong id="ingresoTransferencia">$0</strong></div>
                         <div class="method-row"><span><i data-lucide="credit-card"></i>Tarjeta</span><strong id="ingresoTarjeta">$0</strong></div>
+                        <div class="method-row"><span><i data-lucide="circle-ellipsis"></i>Otros métodos</span><strong id="ingresoOtros">$0</strong></div>
                     </div>
                 </article>
 
                 <article class="caja-panel">
                     <div class="panel-heading">
-                        <div><span class="eyebrow">Descuentos</span><h2>Gastos y propinas</h2></div>
+                        <div><span class="eyebrow">Turno</span><h2>Gastos y propinas</h2></div>
                         <i data-lucide="receipt-text"></i>
                     </div>
                     <div class="detail-list">
+                        <div><span>Balance inicial</span><strong id="balanceInicial">$0</strong></div>
                         <div><span>Gastos registrados</span><strong id="detalleGastos">$0</strong></div>
-                        <div><span>Propinas descontadas</span><strong id="detallePropinas">$0</strong></div>
+                        <div><span>Propinas separadas</span><strong id="detallePropinas">$0</strong></div>
                         <div class="detail-total"><span>Total descontado</span><strong id="totalDescontado">$0</strong></div>
                     </div>
                 </article>
@@ -77,13 +79,13 @@
 
             <section class="caja-panel caja-history">
                 <div class="panel-heading">
-                    <div><span class="eyebrow">Historial</span><h2>Últimos cierres de caja</h2></div>
+                    <div><span class="eyebrow">Historial</span><h2>Cajas registradas</h2></div>
                     <i data-lucide="history"></i>
                 </div>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>Fecha</th><th>Ingresos</th><th>Gastos</th><th>Propinas</th><th>Balance</th><th>Estado</th></tr></thead>
-                        <tbody id="cajasTable"><tr><td colspan="6" class="loading">Cargando cajas...</td></tr></tbody>
+                        <thead><tr><th>Caja</th><th>Fecha</th><th>Inicial</th><th>Ingresos</th><th>Gastos</th><th>Propinas</th><th>Final</th><th>Estado</th></tr></thead>
+                        <tbody id="cajasTable"><tr><td colspan="8" class="loading">Cargando cajas...</td></tr></tbody>
                     </table>
                 </div>
             </section>
@@ -92,19 +94,31 @@
         </main>
     </div>
 
-    <div class="modal-overlay" id="cerrarCajaModal" hidden>
-        <div class="confirm-modal">
-            <div class="confirm-icon"><i data-lucide="lock-keyhole"></i></div>
-            <h2>Cerrar caja</h2>
-            <p>Al cerrar la caja ya no se considerará activa para nuevos movimientos.</p>
+    <div class="modal-overlay" id="cajaModal" hidden>
+        <form class="confirm-modal caja-modal" id="cajaForm" role="dialog" aria-modal="true" aria-labelledby="cajaModalTitle" novalidate>
+            <div class="confirm-icon"><i data-lucide="landmark"></i></div>
+            <h2 id="cajaModalTitle">Apertura de caja</h2>
+            <p id="cajaModalDescription">Ingresa el balance inicial para comenzar el turno.</p>
+            <div id="cajaModalFields"></div>
+            <p class="caja-modal-error" id="cajaModalError" role="alert"></p>
             <div class="confirm-actions">
-                <button class="btn-secondary" id="cancelarCierre" type="button">Cancelar</button>
-                <button class="btn-danger" id="confirmarCierre" type="button">Confirmar cierre</button>
+                <button class="btn-secondary" id="cancelarCaja" type="button">Cancelar</button>
+                <button class="btn-primary" id="confirmarCaja" type="submit">Abrir caja</button>
             </div>
-        </div>
+        </form>
+    </div>
+
+    <div class="modal-overlay" id="detalleCajaModal" hidden>
+        <section class="confirm-modal caja-detail-modal" role="dialog" aria-modal="true" aria-labelledby="detalleCajaTitle">
+            <button class="caja-detail-close" id="cerrarDetalleCaja" type="button" aria-label="Cerrar detalle"><i data-lucide="x"></i></button>
+            <span class="eyebrow">Detalle del turno</span>
+            <h2 id="detalleCajaTitle">Caja</h2>
+            <div class="caja-detail-summary" id="detalleCajaSummary"></div>
+            <div class="caja-detail-list" id="detalleCajaList"></div>
+        </section>
     </div>
 
     <script src="../static/js/menu.js?v=3"></script>
-    <script src="../static/js/caja.js"></script>
+    <script src="../static/js/caja.js?v=2"></script>
 </body>
 </html>
