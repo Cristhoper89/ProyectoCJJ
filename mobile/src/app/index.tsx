@@ -162,6 +162,13 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => router.push('/carta' as any)}
+          >
+            <Text style={styles.menuButtonText}>Ver la carta</Text>
+          </TouchableOpacity>
+
           {/* Mensajes de Alerta */}
           {message.text ? (
             <View style={[
@@ -281,6 +288,20 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  menuButton: {
+    minHeight: 48,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#D8A85B',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuButtonText: {
+    color: '#D8A85B',
+    fontSize: 15,
+    fontWeight: '700',
   },
   messageBox: {
     padding: 12,

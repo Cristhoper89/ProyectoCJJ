@@ -35,7 +35,7 @@ const menuItems: MenuItem[] = [
   { label: 'Clientes', icon: ContactRound },
   { label: 'Estadística', icon: ChartNoAxesCombined },
   { label: 'Pedidos', icon: ClipboardList, route: '/pedidos' },
-  { label: 'Carta', icon: BookOpen },
+  { label: 'Carta', icon: BookOpen, route: '/carta' },
   { label: 'Configuración', icon: Settings },
 ];
 

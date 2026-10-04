@@ -29,6 +29,7 @@ from modules.producto_ingredientes.producto_ingredientes_router import router as
 from modules.mesa_consumo_ingrediente.mesa_consumo_ingrediente_router import router as mesa_consumo_ingrediente_router
 from modules.opciones.opciones_router import frontend_router as opciones_frontend_router, router as opciones_router
 from modules.pedido.pedido_router import frontend_router as pedido_frontend_router, router as pedido_router
+from modules.carta.carta_router import router as carta_router
 from core.mesa_realtime import listen_for_mesa_events, router as mesa_realtime_router
 from core.logger import logger
 
@@ -114,6 +115,7 @@ app.include_router(producto_ingredientes_router)
 app.include_router(mesa_consumo_ingrediente_router)
 app.include_router(opciones_router)
 app.include_router(pedido_router)
+app.include_router(carta_router)
 app.include_router(mesa_realtime_router)
 app.include_router(auth_frontend_router)
 
