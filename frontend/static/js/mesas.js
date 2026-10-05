@@ -366,26 +366,71 @@ async function cargarEmpresa() {
     }
 }
 
-async function cargarTodo() {
-    const pedidos = await Promise.allSettled([
-        api("/mesas/"),
-        api("/categorias/"),
-        api("/productos/"),
-        api("/ingredientes/"),
-        api("/producto-ingredientes/"),
-        api("/mesasC/"),
-        api("/movimientos/")
-    ]);
+let cargaEnCurso = null;
+let recargaPendiente = false;
 
-    const [mesasPedido, categoriasPedido, productosPedido, ingredientesPedido, productoIngredientesPedido, consumosPedido, movimientosPedido] = pedidos;
+// La base de datos es remota: cada endpoint tarda ~1s. Los catalogos
+// (categorias, productos, ingredientes) casi nunca cambian, asi que en una
+// actualizacion en vivo solo se recargan mesas, consumos y movimientos.
+function cargarTodo(opciones = {}) {
+    if (cargaEnCurso) {
+        recargaPendiente = true;
+        return cargaEnCurso;
+    }
 
-    mesas = resultado(mesasPedido, []);
-    categorias = resultado(categoriasPedido, []).filter(categoria => categoria.estado !== false);
-    productos = resultado(productosPedido, []).filter(producto => producto.estado !== false);
-    ingredientes = resultado(ingredientesPedido, []).filter(ingrediente => ingrediente.estado !== false);
-    productoIngredientes = resultado(productoIngredientesPedido, []);
-    consumos = resultado(consumosPedido, []);
-    movimientos = resultado(movimientosPedido, []);
+    cargaEnCurso = ejecutarCarga(opciones.soloEstado === true).finally(() => {
+        cargaEnCurso = null;
+        if (recargaPendiente) {
+            recargaPendiente = false;
+            cargarTodo();
+        }
+    });
+
+    return cargaEnCurso;
+}
+
+async function ejecutarCarga(soloEstado) {
+    const endpoint = soloEstado
+        ? {
+            mesas: api("/mesas/"),
+            consumos: api("/mesasC/"),
+            movimientos: api("/movimientos/")
+        }
+        : {
+            mesas: api("/mesas/"),
+            categorias: api("/categorias/"),
+            productos: api("/productos/"),
+            ingredientes: api("/ingredientes/"),
+            productoIngredientes: api("/producto-ingredientes/"),
+            consumos: api("/mesasC/"),
+            movimientos: api("/movimientos/")
+        };
+
+    const claves = Object.keys(endpoint);
+    const resultados = await Promise.allSettled(Object.values(endpoint));
+    const pedidos = {};
+    claves.forEach((clave, indice) => { pedidos[clave] = resultados[indice]; });
+
+    const mesasPedido = pedidos.mesas;
+    const consumosPedido = pedidos.consumos;
+    const movimientosPedido = pedidos.movimientos;
+
+    mesas = resultado(mesasPedido, mesas);
+    consumos = resultado(consumosPedido, consumos);
+    movimientos = resultado(movimientosPedido, movimientos);
+
+    if (pedidos.categorias) {
+        categorias = resultado(pedidos.categorias, categorias).filter(categoria => categoria.estado !== false);
+    }
+    if (pedidos.productos) {
+        productos = resultado(pedidos.productos, productos).filter(producto => producto.estado !== false);
+    }
+    if (pedidos.ingredientes) {
+        ingredientes = resultado(pedidos.ingredientes, ingredientes).filter(ingrediente => ingrediente.estado !== false);
+    }
+    if (pedidos.productoIngredientes) {
+        productoIngredientes = resultado(pedidos.productoIngredientes, productoIngredientes);
+    }
 
     if (mesaActual && pedidoModal.classList.contains("active")) {
         mesaActual = mesas.find(mesa => mesa.id === mesaActual.id) || mesaActual;
@@ -820,9 +865,15 @@ function renderLineas() {
         fila.className = "pedido-linea";
         fila.setAttribute("data-linea", linea.id);
         fila.innerHTML = `
-            <div class="linea-nombre">
-                <strong>${producto ? esc(producto.nombre) : `Producto ${linea.id_producto}`}</strong>
-                <span>${formatearPrecio(linea.precio_unitario)} x ${linea.cantidad}</span>
+            <div class="linea-cabecera">
+                <div class="linea-nombre">
+                    <strong>${producto ? esc(producto.nombre) : `Producto ${linea.id_producto}`}</strong>
+                    <span>${formatearPrecio(linea.precio_unitario)} x ${linea.cantidad}</span>
+                </div>
+
+                <strong class="linea-subtotal">
+                    ${formatearPrecio(totalLinea(linea))}
+                </strong>
             </div>
 
             ${linea.notas ? `<div class="linea-notas">${esc(linea.notas)}</div>` : ""}
@@ -846,17 +897,14 @@ function renderLineas() {
                         min="0"
                         max="100"
                         step="1"
-                        placeholder="Desc. %"
+                        placeholder="0"
                         value="${porcentaje > 0 ? porcentaje : ""}"
                     >
                 </div>
 
-                <strong class="linea-subtotal">
-                    ${formatearPrecio(totalLinea(linea))}
-                </strong>
-
                 ${configurable ? `
                     <button type="button" class="linea-config-btn" data-accion="configurar" data-id="${linea.id}">
+                        <i data-lucide="sliders-horizontal"></i>
                         Configurar
                     </button>
                 ` : ""}
@@ -958,11 +1006,17 @@ async function registrarProducto(producto, cantidad, configuracion = null) {
             const objetivo = existentes[0];
             const totalPrecio = Number(producto.precio || 0) * nuevaCantidad;
 
-            await api(`/mesasC/${objetivo.id}`, "PUT", {
+            const cuerpo = {
                 cantidad: nuevaCantidad,
                 subtotal: totalPrecio,
                 notas: notas || objetivo.notas || null
-            });
+            };
+            // Solo enviar ingredientes si el usuario abrió "Configurar".
+            // Si no se envía, el backend conserva los ya registrados.
+            if (configuracion) {
+                cuerpo.ingredientes = accionesDeIngredientes(producto, configuracion);
+            }
+            await api(`/mesasC/${objetivo.id}`, "PUT", cuerpo);
 
             const sobrantes = existentes.slice(1);
             for (const extra of sobrantes) {
@@ -1528,7 +1582,7 @@ function conectarWebSocketMesas() {
         if (message.type !== "ready" && message.type !== "mesa.updated") { return; }
         if (message.type === "ready") { mesaSocketRetryDelay = 1000; }
         clearTimeout(mesaRefreshTimer);
-        mesaRefreshTimer = setTimeout(cargarTodo, 150);
+        mesaRefreshTimer = setTimeout(() => cargarTodo({ soloEstado: true }), 400);
     });
     socket.addEventListener("close", event => {
         if (event.code === 1008) { return; }

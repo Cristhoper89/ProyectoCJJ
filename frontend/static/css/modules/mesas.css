@@ -537,6 +537,9 @@ body {
     display: none;
     align-items: center;
     justify-content: center;
+    /* Sin esto el modal se pegaba a los bordes en pantallas angostas. */
+    padding: 20px;
+    overflow-y: auto;
     background: rgba(0, 0, 0, .65);
     z-index: 1000;
 
@@ -759,7 +762,7 @@ body {
 .pedido-modal {
 
     width: 100%;
-    max-width: 1080px;
+    max-width: 1280px;
     max-height: 90vh;
     background: #32281F;
     border: 1px solid #45382E;
@@ -817,7 +820,10 @@ body {
 .pedido-cuerpo {
 
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* El panel de productos absorbe el espacio extra; el resumen tiene un ancho
+       minimo garantizado porque sus filas de control necesitan mas ancho que
+       la grilla de productos. minmax(0, ...) evita que el grid desborde. */
+    grid-template-columns: minmax(0, 1fr) minmax(500px, 580px);
     gap: 0;
     flex: 1 1 auto;
     min-height: 0;
@@ -883,8 +889,8 @@ body {
 .productos-grid {
 
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 14px;
 
 }
 
@@ -894,11 +900,11 @@ body {
     border: 1px solid #45382E;
     background: #2D2620;
     border-radius: 12px;
-    padding: 14px;
+    padding: 16px;
     text-align: left;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     cursor: pointer;
     transition: 200ms ease-in-out;
     font-family: inherit;
@@ -914,8 +920,14 @@ body {
 
 .producto-tarjeta strong {
 
-    font-size: 14px;
+    font-size: 16px;
+    line-height: 1.3;
     color: #F5F5F5;
+    /* Limita a 2 lineas para que las tarjetas no queden de alturas distintas. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 
 }
 
@@ -923,14 +935,14 @@ body {
 
     color: #D8A85B;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 16px;
 
 }
 
 .producto-tarjeta small {
 
     color: #9C9287;
-    font-size: 12px;
+    font-size: 13px;
 
 }
 
@@ -956,14 +968,22 @@ body {
     gap: 14px;
     min-width: 0;
     min-height: 0;
-    overflow-y: auto;
+    /* El scroll esta en .pedido-lineas, no aqui: asi los totales y los
+       botones de accion quedan fijos y solo se desplaza la lista. */
+    overflow: hidden;
+
+}
+
+.resumen-titulo {
+
+    flex: 0 0 auto;
 
 }
 
 .resumen-titulo h3 {
 
     margin: 0;
-    font-size: 16px;
+    font-size: 18px;
 
 }
 
@@ -972,7 +992,16 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    /* Es el unico contenedor que hace scroll del panel de resumen.
+       flex-basis 0 + min-height 0 permiten que encoja dentro del modal
+       en vez de empujar los totales fuera de la vista. */
+    flex: 1 1 0;
     min-height: 60px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Reserva el espacio de la barra de scroll para que las tarjetas
+       no salten horizontalmente al aparecerla. */
+    scrollbar-gutter: stable;
 
 }
 
@@ -988,34 +1017,65 @@ body {
 .pedido-linea {
 
     border: 1px solid #45382E;
-    border-radius: 12px;
+    border-radius: 14px;
     background: #2D2620;
-    padding: 12px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
+
+}
+
+/* Cabecera: nombre a la izquierda, importe a la derecha.
+   El subtotal salio de .linea-acciones porque ahi la fila de controles
+   no cabia y cada boton caia a su propia linea. */
+.linea-cabecera {
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
 
 }
 
 .linea-nombre {
 
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 10px;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
 
 }
 
 .linea-nombre strong {
 
-    font-size: 14px;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.25;
+    /* Permite que nombres largos bajen de linea en vez de estirar la tarjeta. */
+    min-width: 0;
+    overflow-wrap: anywhere;
 
 }
 
 .linea-nombre span {
 
     color: #B8B1A8;
-    font-size: 12px;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+
+}
+
+.linea-subtotal {
+
+    flex: 0 0 auto;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #D8A85B;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 
 }
 
@@ -1023,7 +1083,11 @@ body {
 
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #3A3028;
 
 }
 
@@ -1034,30 +1098,32 @@ body {
     gap: 4px;
     background: #3A3028;
     border: 1px solid #45382E;
-    border-radius: 8px;
-    padding: 2px;
+    border-radius: 12px;
+    padding: 5px;
+    flex: 0 0 auto;
 
 }
 
 .stepper span {
 
-    min-width: 28px;
+    min-width: 46px;
     text-align: center;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
 
 }
 
 .step-btn {
 
-    width: 28px;
-    height: 28px;
+    width: 46px;
+    height: 46px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
-    border-radius: 6px;
-    background: transparent;
+    border-radius: 10px;
+    background: #2D2620;
     color: #F5F5F5;
     cursor: pointer;
     transition: 200ms ease-in-out;
@@ -1066,34 +1132,74 @@ body {
 
 .step-btn:hover {
 
-    background: #45382E;
-    color: #D8A85B;
+    background: #D8A85B;
+    color: #1D1A17;
 
 }
 
 .step-btn svg {
 
-    width: 14px;
+    width: 22px;
+    height: 22px;
+
+}
+
+/* .action-button es compartida con las tarjetas de la grilla de mesas (34px).
+   Dentro de la fila de pedido va mas grande para igualar el resto de controles. */
+.linea-acciones .action-button {
+
+    width: 50px;
+    height: 50px;
+    flex: 0 0 auto;
+    border-radius: 12px;
+
+}
+
+.linea-acciones .action-button svg {
+
+    width: 22px;
+    height: 22px;
 
 }
 
 .linea-descuento {
 
-    flex: 1;
+    /* min-width: 0 es la clave: sin esto el <input> se niega a encogerse
+       por debajo de su ancho intrinseco (~150px por size=20) y desborda. */
+    flex: 1 1 130px;
+    min-width: 0;
+    position: relative;
+
+}
+
+/* Sufijo "%" dibujado por CSS para no sumar otro input. */
+.linea-descuento::after {
+
+    content: "%";
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9C9287;
+    font-size: 16px;
+    font-weight: 600;
+    pointer-events: none;
 
 }
 
 .descuento-input {
 
     width: 100%;
+    min-width: 0;
     box-sizing: border-box;
-    padding: 9px 10px;
-    border-radius: 8px;
+    /* padding-right deja el hueco del sufijo "%". */
+    padding: 13px 38px 13px 16px;
+    border-radius: 10px;
     border: 1px solid #4A3D31;
     background: #1D1A17;
     color: #F5F5F5;
     font-family: inherit;
-    font-size: 13px;
+    font-size: 17px;
     outline: none;
 
 }
@@ -1110,14 +1216,6 @@ body {
 
 }
 
-.linea-subtotal {
-
-    min-width: 80px;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-
-}
-
 /* ====================================================== */
 /* TOTALES */
 /* ====================================================== */
@@ -1129,6 +1227,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    flex: 0 0 auto;
 
 }
 
@@ -1138,7 +1237,7 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    font-size: 14px;
+    font-size: 16px;
 
 }
 
@@ -1164,15 +1263,15 @@ body {
 
 .total-editable input {
 
-    width: 130px;
+    width: 150px;
     box-sizing: border-box;
-    padding: 8px 10px;
-    border-radius: 8px;
+    padding: 12px 14px;
+    border-radius: 10px;
     border: 1px solid #4A3D31;
     background: #1D1A17;
     color: #F5F5F5;
     font-family: inherit;
-    font-size: 13px;
+    font-size: 16px;
     text-align: right;
     outline: none;
 
@@ -1186,13 +1285,13 @@ body {
 
 .total-editable-control button {
 
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 1px solid #4A3D31;
-    border-radius: 8px;
+    border-radius: 10px;
     background: #2D2620;
     color: #B8B1A8;
     cursor: pointer;
@@ -1209,22 +1308,22 @@ body {
 
 .total-editable-control button svg {
 
-    width: 14px;
+    width: 16px;
 
 }
 
 .total-grande {
 
     border-top: 1px solid #45382E;
-    padding-top: 14px;
-    font-size: 18px;
+    padding-top: 16px;
+    font-size: 20px;
 
 }
 
 .total-grande strong {
 
     color: #D8A85B;
-    font-size: 22px;
+    font-size: 28px;
 
 }
 
@@ -1237,6 +1336,8 @@ body {
     display: flex;
     gap: 10px;
     margin-top: 6px;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
 
 }
 
@@ -1244,7 +1345,8 @@ body {
 .pedido-acciones .btn-primary,
 .pedido-acciones .btn-imprimir {
 
-    flex: 1;
+    flex: 1 1 130px;
+    min-width: 0;
 
 }
 
@@ -1259,6 +1361,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    flex: 0 0 auto;
+    min-height: 0;
 
 }
 
@@ -1348,14 +1452,24 @@ body {
 .linea-config-btn {
 
     border: 1px solid #45382E;
-    border-radius: 6px;
+    border-radius: 10px;
     background: transparent;
     color: #D8A85B;
     font-family: inherit;
-    font-size: 12px;
-    padding: 4px 8px;
+    font-size: 15px;
+    padding: 13px 18px;
     cursor: pointer;
     transition: 200ms ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+
+}
+
+.linea-config-btn svg {
+
+    width: 16px;
 
 }
 
@@ -1369,7 +1483,8 @@ body {
 .linea-notas {
 
     color: #9C9287;
-    font-size: 11px;
+    font-size: 13px;
+    line-height: 1.5;
 
 }
 
@@ -1644,7 +1759,7 @@ body {
 
     .pedido-cuerpo {
 
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         overflow-y: auto;
 
     }
@@ -1655,6 +1770,16 @@ body {
         max-height: none;
         overflow-y: visible;
         border-right: none;
+
+    }
+
+    /* En una sola columna el scroll es del cuerpo completo, asi que la lista
+       deja de ser un contenedor de scroll propio (evita scroll anidado). */
+    .pedido-lineas {
+
+        flex: 0 0 auto;
+        overflow-y: visible;
+        scrollbar-gutter: auto;
 
     }
 

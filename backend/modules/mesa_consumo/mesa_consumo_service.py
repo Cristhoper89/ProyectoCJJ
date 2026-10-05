@@ -144,17 +144,41 @@ class MesaCService:
         update_fields.append("subtotal = :subtotal")
         params["subtotal"] = self._calc_subtotal(base_precio, new_cantidad, new_descuento)
 
-        query_str = f"""
+        query_str = text(f"""
             UPDATE mesa_consumo
             SET {', '.join(update_fields)}
             WHERE id = :id
             RETURNING {MESA_CONSUMO_COLUMNS};
-        """
+        """)
 
         try:
-            result = await self.db.execute(text(query_str), params)
+            result = await self.db.execute(query_str, params)
+            consumo = result.mappings().first()
+
+            if mesa_update.ingredientes is not None:
+                await self.db.execute(
+                    text("DELETE FROM mesa_consumo_ingredientes WHERE id_mesa_consumo = :id;"),
+                    {"id": target_mesa_id}
+                )
+                for ingrediente in mesa_update.ingredientes:
+                    await self.db.execute(
+                        text("""
+                            INSERT INTO mesa_consumo_ingredientes (id_mesa_consumo, id_ingrediente, accion)
+                            VALUES (
+                                :id_mesa_consumo,
+                                :id_ingrediente,
+                                CAST(:accion AS tipo_accion)
+                            );
+                        """),
+                        {
+                            "id_mesa_consumo": target_mesa_id,
+                            "id_ingrediente": ingrediente.id_ingrediente,
+                            "accion": ingrediente.accion,
+                        },
+                    )
+
             await self.db.commit()
-            return dict(result.mappings().first())
+            return dict(consumo)
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Error crítico en actualización SQL: {str(e)}")
