@@ -823,7 +823,7 @@ body {
     /* El panel de productos absorbe el espacio extra; el resumen tiene un ancho
        minimo garantizado porque sus filas de control necesitan mas ancho que
        la grilla de productos. minmax(0, ...) evita que el grid desborde. */
-    grid-template-columns: minmax(0, 1fr) minmax(500px, 580px);
+    grid-template-columns: minmax(0, 1fr) minmax(560px, 660px);
     gap: 0;
     flex: 1 1 auto;
     min-height: 0;
@@ -962,10 +962,10 @@ body {
 
 .pedido-resumen {
 
-    padding: 20px 24px;
+    padding: 24px 28px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
     min-width: 0;
     min-height: 0;
     /* El scroll esta en .pedido-lineas, no aqui: asi los totales y los
@@ -983,7 +983,7 @@ body {
 .resumen-titulo h3 {
 
     margin: 0;
-    font-size: 18px;
+    font-size: 22px;
 
 }
 
@@ -991,12 +991,12 @@ body {
 
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     /* Es el unico contenedor que hace scroll del panel de resumen.
        flex-basis 0 + min-height 0 permiten que encoja dentro del modal
        en vez de empujar los totales fuera de la vista. */
     flex: 1 1 0;
-    min-height: 60px;
+    min-height: 170px;
     overflow-y: auto;
     overscroll-behavior: contain;
     /* Reserva el espacio de la barra de scroll para que las tarjetas
@@ -1008,9 +1008,9 @@ body {
 .pedido-vacio {
 
     color: #9C9287;
-    font-size: 13px;
+    font-size: 15px;
     text-align: center;
-    padding: 20px 0;
+    padding: 26px 0;
 
 }
 
@@ -1019,7 +1019,7 @@ body {
     border: 1px solid #45382E;
     border-radius: 14px;
     background: #2D2620;
-    padding: 18px;
+    padding: 22px;
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -1049,7 +1049,7 @@ body {
 
 .linea-nombre strong {
 
-    font-size: 18px;
+    font-size: 21px;
     font-weight: 600;
     line-height: 1.25;
     /* Permite que nombres largos bajen de linea en vez de estirar la tarjeta. */
@@ -1061,7 +1061,7 @@ body {
 .linea-nombre span {
 
     color: #B8B1A8;
-    font-size: 15px;
+    font-size: 17px;
     font-variant-numeric: tabular-nums;
 
 }
@@ -1069,7 +1069,7 @@ body {
 .linea-subtotal {
 
     flex: 0 0 auto;
-    font-size: 22px;
+    font-size: 26px;
     font-weight: 700;
     line-height: 1.2;
     color: #D8A85B;

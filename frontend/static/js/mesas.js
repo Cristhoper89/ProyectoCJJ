@@ -1552,7 +1552,8 @@ mesaModal.addEventListener("click", event => {
 // EVENTOS / INICIO
 // ======================================================
 
-btnRegistrarMesa.addEventListener("click", abrirMesaModal);
+// El boton "Registrar mesa" esta oculto por ahora; si no existe no se registra el listener.
+if (btnRegistrarMesa) { btnRegistrarMesa.addEventListener("click", abrirMesaModal); }
 cerrarMesaModal.addEventListener("click", cerrarMesaModalFn);
 cancelarMesaModal.addEventListener("click", cerrarMesaModalFn);
 cerrarPedido.addEventListener("click", () => { cerrarPedidoFn(); mostrarMesas(filtroMesas()); });
