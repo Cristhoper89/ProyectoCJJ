@@ -1,0 +1,373 @@
+body {
+    min-height: 100%;
+    overflow-y: auto;
+    background: #1D1A17;
+    color: #F5EBDD;
+}
+
+.opciones-page {
+    width: min(100%, 1180px);
+    min-height: calc(100vh - 72px);
+    margin: 0 auto;
+    padding: 36px 42px 56px;
+}
+
+.opciones-header,
+.opciones-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.opciones-header {
+    margin-bottom: 34px;
+}
+
+.opciones-header h1 {
+    margin-top: 7px;
+    font-size: 30px;
+    line-height: 1.2;
+}
+
+.opciones-header p {
+    margin-top: 8px;
+    color: #B8B1A8;
+    font-size: 14px;
+}
+
+.opciones-primary,
+.opciones-secondary {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 17px;
+    border: 0;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 180ms ease, opacity 180ms ease;
+}
+
+.opciones-primary {
+    background: #F0B35A;
+    color: #251D17;
+}
+
+.opciones-primary:hover {
+    background: #D8A04C;
+}
+
+.opciones-primary:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
+.opciones-primary svg,
+.opciones-secondary svg {
+    width: 18px;
+    height: 18px;
+}
+
+.opciones-secondary {
+    border: 1px solid #514236;
+    background: #32281F;
+    color: #F5EBDD;
+}
+
+.opciones-secondary:hover {
+    background: #403329;
+}
+
+.opciones-section {
+    margin-top: 42px;
+}
+
+.grupos-section h2,
+.opciones-section h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.grupos-lista {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.grupo-card {
+    position: relative;
+    width: 100%;
+    min-height: 96px;
+    padding: 18px 112px 16px 20px;
+    border: 1px solid #45382E;
+    border-radius: 12px;
+    background: #32281F;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 180ms ease, background 180ms ease;
+}
+
+.grupo-card:hover {
+    border-color: #9A7647;
+}
+
+.grupo-card.seleccionado {
+    border: 2px solid #F0B35A;
+    padding: 17px 111px 15px 19px;
+    background: #352B21;
+}
+
+.grupo-nombre {
+    display: block;
+    overflow-wrap: anywhere;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.grupo-card-select {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.grupo-cantidad {
+    display: block;
+    margin-top: 7px;
+    color: #B8A99A;
+    font-size: 14px;
+}
+
+.grupo-acciones,
+.opcion-acciones {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateY(-50%);
+}
+
+.opciones-icon-button {
+    width: 38px;
+    height: 38px;
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #F0B35A;
+    cursor: pointer;
+}
+
+.opciones-icon-button:hover {
+    background: rgba(240, 179, 90, .12);
+}
+
+.opciones-icon-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+.opciones-icon-button.danger {
+    color: #D98672;
+}
+
+.opciones-section-header {
+    margin-bottom: 12px;
+}
+
+.opciones-lista {
+    overflow: hidden;
+    border-radius: 10px;
+    background: #32281F;
+}
+
+.opcion-row {
+    position: relative;
+    min-height: 62px;
+    display: flex;
+    align-items: center;
+    padding: 14px 112px 14px 20px;
+    border-bottom: 1px solid #45382E;
+    color: #F5EBDD;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+}
+
+.opcion-row:last-child {
+    border-bottom: 0;
+}
+
+.opciones-empty {
+    margin: 0;
+    padding: 22px;
+    border: 1px dashed #514236;
+    border-radius: 10px;
+    color: #B8A99A;
+    font-size: 14px;
+}
+
+.opciones-message {
+    display: none;
+    margin-bottom: 20px;
+    padding: 12px 15px;
+    border: 1px solid #754A3E;
+    border-radius: 8px;
+    background: rgba(217, 134, 114, .1);
+    color: #E7A28C;
+    font-size: 13px;
+}
+
+.opciones-message.visible {
+    display: block;
+}
+
+.opciones-message.success {
+    border-color: #426C50;
+    background: rgba(46, 204, 113, .1);
+    color: #91D5A8;
+}
+
+.opciones-modal-overlay[hidden] {
+    display: none;
+}
+
+.opciones-modal-overlay {
+    position: fixed;
+    z-index: 20;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, .68);
+}
+
+.opciones-modal {
+    width: min(100%, 460px);
+    padding: 22px;
+    border: 1px solid #514236;
+    border-radius: 12px;
+    background: #29231E;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .4);
+}
+
+.opciones-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.opciones-modal-header h2 {
+    font-size: 20px;
+}
+
+.opciones-modal-header p {
+    margin-top: 6px;
+    color: #B8A99A;
+    font-size: 13px;
+}
+
+.opciones-modal form > label {
+    display: block;
+    margin-bottom: 8px;
+    color: #E7DDD0;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.opciones-modal input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 12px;
+    border: 1px solid #604D3A;
+    border-radius: 7px;
+    outline: none;
+    background: #1D1A17;
+    color: #F5EBDD;
+    font: inherit;
+}
+
+.opciones-modal input:focus {
+    border-color: #F0B35A;
+}
+
+.opciones-form-error {
+    min-height: 18px;
+    margin-top: 6px;
+    color: #E7A28C;
+    font-size: 12px;
+}
+
+.opciones-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+@media (max-width: 760px) {
+    .opciones-page {
+        padding: 28px 18px 42px;
+    }
+
+    .opciones-header {
+        align-items: flex-start;
+        flex-direction: column;
+        margin-bottom: 28px;
+    }
+
+    .opciones-header h1 {
+        font-size: 26px;
+    }
+
+    .opciones-primary {
+        min-height: 44px;
+    }
+
+    .opciones-section {
+        margin-top: 34px;
+    }
+
+    .opciones-section-header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 420px) {
+    .grupo-card {
+        padding-left: 15px;
+        padding-right: 98px;
+    }
+
+    .grupo-card.seleccionado {
+        padding-left: 14px;
+        padding-right: 97px;
+    }
+
+    .grupo-acciones,
+    .opcion-acciones {
+        right: 8px;
+        gap: 4px;
+    }
+
+    .opciones-primary-small {
+        padding: 0 10px;
+        font-size: 12px;
+    }
+}
