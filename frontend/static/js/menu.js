@@ -3,8 +3,8 @@ const MENU_HTML_CACHE_KEY = "cabana_menu_html";
 const MENU_USER_CACHE_KEY = "cabana_menu_user";
 const menuModules = {
 	admin: [
-		["Perfil", "user-round", "/dashboard"], ["Caja", "wallet-cards", "/caja"],
-		["Categorías", "tags", "/categorias"], ["Mesa", "layout-grid", "/mesas"],
+		["Mesa", "layout-grid", "/mesas"], ["Caja", "wallet-cards", "/caja"],
+		["Categorías", "tags", "/categorias"], ["Perfil", "user-round", "/dashboard"],
 		["Movimientos", "arrow-left-right", "/movimientos"], ["Productos", "package", "/productos"],
 		["Opciones de productos", "tags", "/opciones-productos"],
 		["Ingredientes", "carrot", "/ingredientes"], ["Proveedores", "truck", null], ["Empleados", "users-round", "/usuarios"],
@@ -13,7 +13,7 @@ const menuModules = {
 		["Configuración", "settings", "/configuracion"]
 	],
 	cajero: [
-		["Perfil", "user-round", "/dashboard"], ["Mesa", "layout-grid", "/mesas"],
+		["Mesa", "layout-grid", "/mesas"], ["Perfil", "user-round", "/dashboard"],
 		["Movimientos", "arrow-left-right", "/movimientos"], ["Caja", "wallet-cards", "/caja"],
 		["Categorías", "tags", "/categorias"], ["Productos", "package", "/productos"],
 		["Opciones de productos", "tags", "/opciones-productos"],

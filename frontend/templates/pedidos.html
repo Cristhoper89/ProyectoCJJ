@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedidos</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css">
+    <link rel="stylesheet" href="../static/css/modules/pedidos.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+
+        <main class="ped-page">
+            <header class="ped-header">
+                <div>
+                    <span class="eyebrow">Cocina</span>
+                    <h1>Pedidos</h1>
+                    <p>Marca los productos como listos y entrega cada pedido a tiempo.</p>
+                </div>
+                <div class="ped-actions">
+                    <button class="btn-secondary" id="btnRefrescar" type="button">
+                        <i data-lucide="refresh-cw"></i>
+                        Actualizar
+                    </button>
+                </div>
+            </header>
+
+            <section class="ped-summary" aria-label="Resumen de pedidos">
+                <article class="ped-summary-card pending">
+                    <div class="summary-icon"><i data-lucide="clock-3"></i></div>
+                    <div><span>Pendientes</span><strong id="totalPendientes">0</strong></div>
+                </article>
+                <article class="ped-summary-card ready">
+                    <div class="summary-icon"><i data-lucide="circle-check"></i></div>
+                    <div><span>Listos / Entregados</span><strong id="totalListos">0</strong></div>
+                </article>
+                <article class="ped-summary-card risk">
+                    <div class="summary-icon"><i data-lucide="triangle-alert"></i></div>
+                    <div><span>En riesgo</span><strong id="totalRiesgo">0</strong></div>
+                </article>
+            </section>
+
+            <div class="ped-tabs" role="tablist" aria-label="Pedidos de cocina">
+                <button class="ped-tab is-active" id="tabPendientes" type="button" role="tab" aria-selected="true" data-tab="pendientes">
+                    Pendientes
+                    <span class="ped-badge pending" id="badgePendientes">0</span>
+                </button>
+                <button class="ped-tab" id="tabListos" type="button" role="tab" aria-selected="false" data-tab="listos">
+                    Listos / Entregados
+                    <span class="ped-badge ready" id="badgeListos">0</span>
+                </button>
+            </div>
+
+            <div class="ped-error" id="pedError" hidden>
+                <i data-lucide="triangle-alert"></i>
+                <span id="pedErrorTexto"></span>
+                <button class="ped-error-retry" id="btnReintentar" type="button">Reintentar</button>
+            </div>
+
+            <section class="ped-list" id="pedList" aria-live="polite"></section>
+
+            <p class="ped-message" id="pedMessage" role="status"></p>
+        </main>
+    </div>
+
+    <script src="../static/js/menu.js?v=6"></script>
+    <script src="../static/js/pedidos.js?v=1"></script>
+</body>
+</html>

@@ -13,8 +13,8 @@ let toastTimeout;
 
 const modules = {
 	admin: [
-		["Perfil", "user-round", "/dashboard"], ["Caja", "wallet-cards", "/caja"],
-		["Categorías", "tags", "/categorias"], ["Mesa", "layout-grid", "/mesas"],
+		["Mesa", "layout-grid", "/mesas"], ["Caja", "wallet-cards", "/caja"],
+		["Categorías", "tags", "/categorias"], ["Perfil", "user-round", "/dashboard"],
 		["Movimientos", "arrow-left-right", "/movimientos"], ["Productos", "package", "/productos"],
 		["Ingredientes", "carrot", "/ingredientes"], ["Proveedores", "truck", null], ["Empleados", "users-round", "/usuarios"],
 		["Clientes", "contact-round", null], ["Estadística", "chart-no-axes-combined", "/reportes"],
@@ -22,7 +22,7 @@ const modules = {
 		["Configuración", "settings", "/configuracion"]
 	],
 	cajero: [
-		["Perfil", "user-round", "/dashboard"], ["Mesa", "layout-grid", "/mesas"],
+		["Mesa", "layout-grid", "/mesas"], ["Perfil", "user-round", "/dashboard"],
 		["Movimientos", "arrow-left-right", "/movimientos"], ["Caja", "wallet-cards", "/caja"],
 		["Categorías", "tags", "/categorias"], ["Productos", "package", "/productos"],
 		["Ingredientes", "carrot", "/ingredientes"]
