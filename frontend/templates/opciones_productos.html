@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opciones de productos</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css">
+    <link rel="stylesheet" href="../static/css/modules/opciones_productos.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+        <main class="opciones-page">
+            <header class="opciones-header">
+                <div>
+                    <span class="eyebrow">Menú</span>
+                    <h1>Opciones de productos</h1>
+                    <p>Configura términos y personalizaciones.</p>
+                </div>
+                <button class="opciones-primary" id="btnNuevoGrupo" type="button">
+                    <i data-lucide="plus"></i>
+                    Nuevo grupo
+                </button>
+            </header>
+
+            <div id="opcionesMessage" class="opciones-message" role="status" aria-live="polite"></div>
+
+            <section class="grupos-section" aria-labelledby="gruposTitle">
+                <h2 id="gruposTitle">Grupos</h2>
+                <div id="gruposLista" class="grupos-lista">
+                    <p class="opciones-empty">Cargando grupos...</p>
+                </div>
+            </section>
+
+            <section class="opciones-section" aria-labelledby="opcionesTitle">
+                <div class="opciones-section-header">
+                    <h2 id="opcionesTitle">Selecciona un grupo</h2>
+                    <button class="opciones-primary opciones-primary-small" id="btnNuevaOpcion" type="button" hidden>
+                        <i data-lucide="plus"></i>
+                        Nueva opción
+                    </button>
+                </div>
+                <div id="opcionesLista" class="opciones-lista">
+                    <p class="opciones-empty">Selecciona un grupo para consultar sus opciones.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="opciones-modal-overlay" id="opcionesModal" hidden>
+        <section class="opciones-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <header class="opciones-modal-header">
+                <div>
+                    <h2 id="modalTitle">Nuevo grupo</h2>
+                    <p id="modalDescription">Escribe el nombre que aparecerá en el menú.</p>
+                </div>
+                <button class="opciones-icon-button" id="cerrarModal" type="button" aria-label="Cerrar">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+            <form id="opcionesForm">
+                <label for="nombreRegistro" id="nombreLabel">Nombre del grupo</label>
+                <input id="nombreRegistro" name="nombre" type="text" maxlength="100" required autocomplete="off">
+                <p class="opciones-form-error" id="formError" role="alert"></p>
+                <div class="opciones-modal-actions">
+                    <button class="opciones-secondary" id="cancelarModal" type="button">Cancelar</button>
+                    <button class="opciones-primary" id="guardarRegistro" type="submit">Guardar</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <script src="../static/js/opciones_productos.js?v=1"></script>
+    <script src="../static/js/menu.js?v=5"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

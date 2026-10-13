@@ -6,7 +6,8 @@ const menuModules = {
 		["Perfil", "user-round", "/dashboard"], ["Caja", "wallet-cards", "/caja"],
 		["Categorías", "tags", "/categorias"], ["Mesa", "layout-grid", "/mesas"],
 		["Movimientos", "arrow-left-right", "/movimientos"], ["Productos", "package", "/productos"],
-		["Ingredientes", "carrot", null], ["Proveedores", "truck", null], ["Empleados", "users-round", "/usuarios"],
+		["Opciones de productos", "tags", "/opciones-productos"],
+		["Ingredientes", "carrot", "/ingredientes"], ["Proveedores", "truck", null], ["Empleados", "users-round", "/usuarios"],
 		["Clientes", "contact-round", null], ["Estadística", "chart-no-axes-combined", "/reportes"],
 		["Pedidos", "clipboard-list", "/pedidos"], ["Carta", "book-open", null],
 		["Configuración", "settings", "/configuracion"]
@@ -14,7 +15,9 @@ const menuModules = {
 	cajero: [
 		["Perfil", "user-round", "/dashboard"], ["Mesa", "layout-grid", "/mesas"],
 		["Movimientos", "arrow-left-right", "/movimientos"], ["Caja", "wallet-cards", "/caja"],
-		["Categorías", "tags", "/categorias"], ["Productos", "package", "/productos"]
+		["Categorías", "tags", "/categorias"], ["Productos", "package", "/productos"],
+		["Opciones de productos", "tags", "/opciones-productos"],
+		["Ingredientes", "carrot", "/ingredientes"]
 	]
 };
 

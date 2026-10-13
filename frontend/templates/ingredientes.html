@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingredientes</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css">
+    <link rel="stylesheet" href="../static/css/modules/ingredientes.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+        <main class="ingredientes-page">
+            <header class="ingredientes-header">
+                <div>
+                    <span class="eyebrow">Inventario</span>
+                    <h1>Ingredientes</h1>
+                    <p>Administra los insumos de tu cocina.</p>
+                </div>
+                <button class="ingredientes-primary" id="btnNuevoIngrediente" type="button">
+                    <i data-lucide="plus"></i>
+                    Nuevo
+                </button>
+            </header>
+
+            <div id="ingredientesMessage" class="ingredientes-message" role="status" aria-live="polite"></div>
+
+            <label class="ingredientes-search" for="buscarIngrediente">
+                <i data-lucide="search"></i>
+                <input id="buscarIngrediente" type="search" placeholder="Buscar ingrediente..." autocomplete="off">
+            </label>
+
+            <div class="ingredientes-filters" role="group" aria-label="Filtrar ingredientes">
+                <button class="ingrediente-filter selected" id="filterActive" type="button" aria-pressed="true">Activos</button>
+                <button class="ingrediente-filter" id="filterAll" type="button" aria-pressed="false">Todos</button>
+                <span class="ingredientes-counter" id="ingredientesCounter"></span>
+            </div>
+
+            <section id="ingredientesList" class="ingredientes-list" aria-live="polite">
+                <p class="ingredientes-empty">Cargando ingredientes...</p>
+            </section>
+        </main>
+    </div>
+
+    <div class="ingredientes-modal-overlay" id="ingredienteModal" hidden>
+        <section class="ingredientes-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <header class="ingredientes-modal-header">
+                <div>
+                    <span class="eyebrow" id="modalEyebrow">Nuevo registro</span>
+                    <h2 id="modalTitle">Nuevo ingrediente</h2>
+                </div>
+                <button class="ingrediente-icon-button" id="cerrarModal" type="button" aria-label="Cerrar">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+            <form id="ingredienteForm">
+                <label for="nombreIngrediente">Nombre</label>
+                <input id="nombreIngrediente" name="nombre" type="text" maxlength="100" placeholder="Ej. Tomate" autocomplete="off" required>
+                <p class="ingrediente-helper"><span id="nombreCount">0</span>/100 caracteres</p>
+                <p class="ingrediente-form-error" id="formError" role="alert"></p>
+                <div class="ingredientes-modal-actions">
+                    <button class="ingredientes-secondary" id="cancelarModal" type="button">Cancelar</button>
+                    <button class="ingredientes-primary" id="guardarIngrediente" type="submit">Crear ingrediente</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <script src="../static/js/ingredientes.js?v=1"></script>
+    <script src="../static/js/menu.js?v=5"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
