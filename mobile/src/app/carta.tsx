@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { apiRequest } from '../constants/api';
+import { apiRequest, restoreAccessToken } from '../constants/api';
 
 type CartaIngrediente = { id: number; nombre: string };
 type CartaOpcion = { id: number; nombre: string };
@@ -89,6 +89,8 @@ export default function CartaScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cacheReady, setCacheReady] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [cart, setCart] = useState<LineaCarrito[]>([]);
   const [mesaId, setMesaId] = useState<number | null>(null);
   const [mesa, setMesa] = useState<MesaCarta | null>(null);
@@ -103,6 +105,24 @@ export default function CartaScreen() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const scannedRef = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    restoreAccessToken()
+      .then((token) => {
+        if (active) setIsAuthenticated(Boolean(token));
+      })
+      .catch((sessionError: unknown) => {
+        Alert.alert(
+          'No se pudo verificar la sesión',
+          sessionError instanceof Error ? sessionError.message : 'Intenta nuevamente.',
+        );
+      })
+      .finally(() => {
+        if (active) setSessionReady(true);
+      });
+    return () => { active = false; };
+  }, []);
 
   const loadCatalog = useCallback(async () => {
     try {
@@ -173,14 +193,17 @@ export default function CartaScreen() {
 
   useFocusEffect(useCallback(() => {
     void loadCatalog();
-    if (mesaId !== null) void refreshMesa(mesaId);
-  }, [loadCatalog, mesaId, refreshMesa]));
+  }, [loadCatalog]));
+
+  useFocusEffect(useCallback(() => {
+    if (sessionReady && isAuthenticated && mesaId !== null) void refreshMesa(mesaId);
+  }, [isAuthenticated, mesaId, refreshMesa, sessionReady]));
 
   useEffect(() => {
-    if (mesaId === null) return;
+    if (!sessionReady || !isAuthenticated || mesaId === null) return;
     const timer = setInterval(() => { void refreshMesa(mesaId); }, 15000);
     return () => clearInterval(timer);
-  }, [mesaId, refreshMesa]);
+  }, [isAuthenticated, mesaId, refreshMesa, sessionReady]);
 
   const categories = useMemo(() => [
     { id: null, nombre: 'Todos', productos: catalog.flatMap((category) => category.productos) },
@@ -206,6 +229,7 @@ export default function CartaScreen() {
   );
 
   const openProduct = (item: ProductoCarta) => {
+    if (!sessionReady || !isAuthenticated) return;
     setProduct(item);
     setQuantity(1);
     setNotes('');
@@ -214,7 +238,7 @@ export default function CartaScreen() {
   };
 
   const addToCart = () => {
-    if (!product) return;
+    if (!sessionReady || !isAuthenticated || !product) return;
     const line: LineaCarrito = {
       id: `${product.id}-${Date.now()}`,
       producto: product,
@@ -236,6 +260,7 @@ export default function CartaScreen() {
   };
 
   const startQrScan = async () => {
+    if (!sessionReady || !isAuthenticated) return;
     if (!permission?.granted) {
       const result = await requestPermission();
       if (!result.granted) {
@@ -259,12 +284,7 @@ export default function CartaScreen() {
 
     try {
       setSaving(true);
-      const result = await apiRequest<MesaCarta>(`/carta/mesas/${scannedMesaId}`);
-      if (!result.activa) {
-        scannedRef.current = false;
-        Alert.alert('Mesa no disponible', 'La mesa todavía no está abierta o ya fue finalizada.');
-        return;
-      }
+      const result = await apiRequest<MesaCarta>(`/carta/mesas/${scannedMesaId}/activar`, { method: 'POST' });
       await AsyncStorage.setItem(TABLE_KEY, String(scannedMesaId));
       setMesaId(scannedMesaId);
       setMesa(result);
@@ -279,6 +299,7 @@ export default function CartaScreen() {
   };
 
   const submitOrder = async () => {
+    if (!sessionReady || !isAuthenticated) return;
     if (cart.length === 0) return;
     if (mesaId === null) {
       setCartOpen(false);
@@ -337,9 +358,11 @@ export default function CartaScreen() {
           <Text style={styles.brandEyebrow}>LA CABAÑA</Text>
           <Text style={styles.brandTitle}>Nuestra carta</Text>
         </View>
-        <Pressable style={styles.mesaButton} onPress={() => mesa ? setMesaOpen(true) : void startQrScan()}>
-          {mesa ? <Text style={styles.mesaButtonText}>{mesa.mesa_nombre}</Text> : <Camera size={19} color="#D8A85B" />}
-        </Pressable>
+        {sessionReady && isAuthenticated && (
+          <Pressable style={styles.mesaButton} onPress={() => mesa ? setMesaOpen(true) : void startQrScan()}>
+            {mesa ? <Text style={styles.mesaButtonText}>{mesa.mesa_nombre}</Text> : <Camera size={19} color="#D8A85B" />}
+          </Pressable>
+        )}
       </View>
 
       <View style={styles.hero}>
@@ -357,7 +380,7 @@ export default function CartaScreen() {
         />
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryList}>
+      <View style={styles.categoryList}>
         {categories.map((category) => (
           <Pressable
             key={category.id ?? 'all'}
@@ -369,7 +392,7 @@ export default function CartaScreen() {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
       {loading ? (
         <ActivityIndicator color="#D8A85B" style={styles.loading} />
@@ -389,15 +412,17 @@ export default function CartaScreen() {
               <Text style={styles.emptyText}>Prueba con otra categoría o búsqueda.</Text>
             </View>
           ) : filteredProducts.map((item) => (
-            <Pressable key={item.id} style={styles.productCard} onPress={() => openProduct(item)}>
+            <Pressable key={item.id} style={styles.productCard} onPress={() => openProduct(item)} disabled={!sessionReady || !isAuthenticated}>
               <View style={styles.productCopy}>
                 <Text style={styles.productName}>{item.nombre}</Text>
                 <Text style={styles.productDescription} numberOfLines={2}>{item.descripcion || 'Preparado al momento con ingredientes seleccionados.'}</Text>
                 <View style={styles.productFooter}>
                   <Text style={styles.productPrice}>{money(item.precio)}</Text>
-                  <View style={styles.addButton}>
-                    <Plus size={17} color="#1D1A17" />
-                  </View>
+                  {sessionReady && isAuthenticated && (
+                    <View style={styles.addButton}>
+                      <Plus size={17} color="#1D1A17" />
+                    </View>
+                  )}
                 </View>
               </View>
               {item.imagen_url
@@ -408,27 +433,29 @@ export default function CartaScreen() {
         </ScrollView>
       )}
 
-      <View style={styles.bottomBar}>
-        {!!mesaError && <Text style={styles.mesaError}>{mesaError}</Text>}
-        {mesa ? (
-          <Pressable style={styles.linkedMesa} onPress={() => setMesaOpen(true)}>
-            <Check size={16} color="#2ECC71" />
-            <Text style={styles.linkedMesaText}>Vinculado a {mesa.mesa_nombre}</Text>
+      {sessionReady && isAuthenticated && (
+        <View style={styles.bottomBar}>
+          {!!mesaError && <Text style={styles.mesaError}>{mesaError}</Text>}
+          {mesa ? (
+            <Pressable style={styles.linkedMesa} onPress={() => setMesaOpen(true)}>
+              <Check size={16} color="#2ECC71" />
+              <Text style={styles.linkedMesaText}>Vinculado a {mesa.mesa_nombre}</Text>
+            </Pressable>
+          ) : (
+            <Pressable style={styles.scanPrompt} onPress={() => void startQrScan()}>
+              <Camera size={17} color="#D8A85B" />
+              <Text style={styles.scanPromptText}>Escanea el QR de tu mesa</Text>
+            </Pressable>
+          )}
+          <Pressable style={styles.cartButton} onPress={() => setCartOpen(true)}>
+            <ShoppingBag size={19} color="#1D1A17" />
+            <Text style={styles.cartButtonText}>Mi pedido{cartCount > 0 ? ` · ${cartCount}` : ''}</Text>
+            {cartCount > 0 && <Text style={styles.cartButtonText}>{money(cartTotal)}</Text>}
           </Pressable>
-        ) : (
-          <Pressable style={styles.scanPrompt} onPress={() => void startQrScan()}>
-            <Camera size={17} color="#D8A85B" />
-            <Text style={styles.scanPromptText}>Escanea el QR de tu mesa</Text>
-          </Pressable>
-        )}
-        <Pressable style={styles.cartButton} onPress={() => setCartOpen(true)}>
-          <ShoppingBag size={19} color="#1D1A17" />
-          <Text style={styles.cartButtonText}>Mi pedido{cartCount > 0 ? ` · ${cartCount}` : ''}</Text>
-          {cartCount > 0 && <Text style={styles.cartButtonText}>{money(cartTotal)}</Text>}
-        </Pressable>
-      </View>
+        </View>
+      )}
 
-      <Modal visible={product !== null} transparent animationType="slide" onRequestClose={() => setProduct(null)}>
+      <Modal visible={sessionReady && isAuthenticated && product !== null} transparent animationType="slide" onRequestClose={() => setProduct(null)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.detailSheet}>
             <View style={styles.sheetHeader}>
@@ -507,7 +534,7 @@ export default function CartaScreen() {
         </View>
       </Modal>
 
-      <Modal visible={cartOpen} transparent animationType="slide" onRequestClose={() => setCartOpen(false)}>
+      <Modal visible={sessionReady && isAuthenticated && cartOpen} transparent animationType="slide" onRequestClose={() => setCartOpen(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.detailSheet}>
             <View style={styles.sheetHeader}>
@@ -590,7 +617,7 @@ export default function CartaScreen() {
         </View>
       </Modal>
 
-      <Modal visible={scannerOpen} animationType="slide" onRequestClose={() => setScannerOpen(false)}>
+      <Modal visible={sessionReady && isAuthenticated && scannerOpen} animationType="slide" onRequestClose={() => setScannerOpen(false)}>
         <SafeAreaView style={styles.scannerContainer}>
           <View style={styles.scannerHeader}>
             <Text style={styles.sheetTitle}>Escanea el QR de tu mesa</Text>
@@ -628,8 +655,8 @@ const styles = StyleSheet.create({
   heroSubtitle: { color: '#B8B1A8', fontSize: 13, marginTop: 6 },
   searchBox: { marginHorizontal: 18, marginBottom: 14, minHeight: 46, justifyContent: 'center', paddingHorizontal: 14, backgroundColor: '#2D2620', borderWidth: 1, borderColor: '#4A3D31', borderRadius: 10 },
   searchInput: { color: '#F5F5F5', fontSize: 14 },
-  categoryList: { gap: 8, paddingHorizontal: 18, paddingBottom: 14 },
-  categoryChip: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 15, backgroundColor: '#32281F', borderWidth: 1, borderColor: '#45382E', borderRadius: 18 },
+  categoryList: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingBottom: 14 },
+  categoryChip: { alignSelf: 'center', minHeight: 36, justifyContent: 'center', paddingHorizontal: 15, backgroundColor: '#32281F', borderWidth: 1, borderColor: '#45382E', borderRadius: 18 },
   categoryChipSelected: { backgroundColor: '#D8A85B', borderColor: '#D8A85B' },
   categoryText: { color: '#B8B1A8', fontSize: 12, fontWeight: '700' },
   categoryTextSelected: { color: '#1D1A17' },

@@ -2,7 +2,7 @@
 import React, { Fragment, useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView } from 'react-native';
 import { 
-  Menu, X, User, WalletCards, Tags, LayoutGrid, ArrowLeftRight,
+  Menu, X, User, WalletCards, Tags, LayoutGrid, ArrowLeftRight, QrCode,
   Package, Truck, Users, ContactRound, ChartNoAxesCombined, ClipboardList, BookOpen, Settings, Carrot, ChevronDown
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -23,7 +23,8 @@ const menuItems: MenuItem[] = [
     { label: 'Cerrar y abrir caja', icon: WalletCards, route: '/cierre-caja' },
   ] },
   { label: 'Categorías', icon: Tags, route: '/categorias' },
-  { label: 'Mesa (página inicial)', icon: LayoutGrid, route: '/mesa' },
+  { label: 'Mesas', icon: LayoutGrid, route: '/mesa' },
+  { label: 'Configuración mesa', icon: QrCode, route: '/configuracion-mesas' },
   { label: 'Movimientos', icon: ArrowLeftRight, route: '/movimientos' },
   { label: 'Productos', icon: Package, children: [
     { label: 'Productos', icon: Package, route: '/productos' },

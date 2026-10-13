@@ -59,6 +59,17 @@ async def update_existing_mesa(
     await notify_mesa_change(db)
     return mesa
 
+@router.delete("/{mesa_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_existing_mesa(
+    mesa_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if current_user["role_name"] not in ["Administrador", "Cajero"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
+    await MesaService(db).delete_mesa(mesa_id)
+    await notify_mesa_change(db)
+
 @router.patch("/{mesa_id}/estado", response_model=MesaResponse, status_code=status.HTTP_200_OK)
 async def change_mesa_state(
     mesa_id: int,

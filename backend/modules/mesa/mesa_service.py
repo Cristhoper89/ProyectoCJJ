@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.logger import logger
 from modules.mesa.mesa_schema import MesaCreate, MesaUpdate, MesaFinalize
@@ -103,6 +104,63 @@ class MesaService:
             logger.error(f"Error crítico en actualización SQL: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
 
+    async def delete_mesa(self, target_mesa_id: int) -> None:
+        try:
+            mesa = (await self.db.execute(
+                text("SELECT id, estado, id_mov FROM mesa WHERE id = :id FOR UPDATE;"),
+                {"id": target_mesa_id},
+            )).mappings().first()
+            if not mesa:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La mesa no existe.")
+            if mesa["estado"] is not False or mesa["id_mov"] is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Solo se pueden eliminar mesas disponibles y sin movimientos activos.",
+                )
+
+            barra = (await self.db.execute(
+                text("SELECT 1 FROM barra WHERE id_mesa = :id LIMIT 1;"),
+                {"id": target_mesa_id},
+            )).first()
+            if barra:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="No se puede eliminar una mesa con movimientos de barra asociados.",
+                )
+
+            deleted = (await self.db.execute(
+                text("""
+                    DELETE FROM mesa
+                    WHERE id = :id AND estado = FALSE AND id_mov IS NULL
+                    RETURNING id;
+                """),
+                {"id": target_mesa_id},
+            )).first()
+            if not deleted:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="La mesa cambió de estado y no se pudo eliminar.",
+                )
+
+            await self.db.commit()
+        except HTTPException:
+            await self.db.rollback()
+            raise
+        except IntegrityError as error:
+            await self.db.rollback()
+            logger.warning(f"No se pudo eliminar la mesa {target_mesa_id} por registros relacionados: {error}")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="No se puede eliminar esta mesa porque tiene registros asociados.",
+            ) from error
+        except Exception as error:
+            await self.db.rollback()
+            logger.error(f"Error al eliminar la mesa {target_mesa_id}: {str(error)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="No fue posible eliminar la mesa.",
+            ) from error
+
     async def cambiar_estado_mesa(self, target_mesa_id: int, estado: bool) -> dict:
         logger.info(f"Intentando cambiar el estado de la mesa ID: {target_mesa_id}")
 
@@ -172,6 +230,26 @@ class MesaService:
             await self.db.rollback()
             logger.error(f"Error crítico al cambiar el estado de la mesa: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
+
+    async def activar_mesa_por_qr(self, target_mesa_id: int) -> dict:
+        mesa = (await self.db.execute(
+            text("SELECT id, tipo, estado, id_mov FROM mesa WHERE id = :id FOR UPDATE;"),
+            {"id": target_mesa_id},
+        )).mappings().first()
+        if mesa is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La mesa del código QR no existe.")
+        if mesa["tipo"] != "mesa":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Los pedidos por QR están disponibles para mesas, no para la barra.",
+            )
+        if mesa["estado"] is not False or mesa["id_mov"] is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Esta mesa ya está ocupada. Escanea el QR de una mesa disponible.",
+            )
+
+        return await self.cambiar_estado_mesa(target_mesa_id, True)
 
     async def cerrar_mesa(self, target_mesa_id: int) -> dict:
         logger.info(f"Intentando cerrar la mesa ID: {target_mesa_id}")
