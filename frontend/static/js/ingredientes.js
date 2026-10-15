@@ -84,40 +84,32 @@ function renderIngredients() {
             : hasIngredients && filtroActual === "active"
                 ? "No hay ingredientes activos."
                 : "Crea el primer ingrediente para comenzar.";
-        ingredientesList.innerHTML = `
-            <div class="ingredientes-empty">
-                <strong>No hay ingredientes</strong>
-                ${escapeHtml(message)}
-            </div>
-        `;
+        ingredientesList.innerHTML = `<tr><td colspan="4" class="ingredientes-table-message"><strong>No hay ingredientes</strong>${escapeHtml(message)}</td></tr>`;
         return;
     }
 
     ingredientesList.innerHTML = visible.map((item) => {
         const active = item.estado === true;
-        const initial = item.nombre.trim().charAt(0).toLocaleUpperCase("es");
         return `
-            <article class="ingrediente-row${active ? "" : " inactive"}" data-ingredient-id="${item.id}">
-                <div class="ingrediente-initial" aria-hidden="true">${escapeHtml(initial)}</div>
-                <div class="ingrediente-content">
-                    <span class="ingrediente-name">${escapeHtml(item.nombre)}</span>
-                    <span class="ingrediente-badge${active ? "" : " inactive"}">${active ? "ACTIVO" : "INACTIVO"}</span>
-                </div>
-                <div class="ingrediente-actions">
+            <tr data-ingredient-id="${item.id}" class="${active ? "" : "inactive"}">
+                <td>${item.id}</td>
+                <td><strong>${escapeHtml(item.nombre)}</strong></td>
+                <td><span class="ingrediente-status${active ? " active" : " inactive"}">${active ? "Activo" : "Inactivo"}</span></td>
+                <td><div class="ingrediente-actions">
                     ${active ? `
-                        <button class="ingrediente-icon-button" type="button" data-action="edit" aria-label="Editar ${escapeHtml(item.nombre)}" title="Editar">
+                        <button class="action-button btn-editar" type="button" data-action="edit" aria-label="Editar ${escapeHtml(item.nombre)}" title="Editar">
                             <i data-lucide="pencil"></i>
                         </button>
-                        <button class="ingrediente-icon-button danger" type="button" data-action="deactivate" aria-label="Desactivar ${escapeHtml(item.nombre)}" title="Desactivar">
-                            <i data-lucide="archive"></i>
+                        <button class="action-button danger" type="button" data-action="deactivate" aria-label="Desactivar ${escapeHtml(item.nombre)}" title="Desactivar">
+                            <i data-lucide="ban"></i>
                         </button>
                     ` : `
-                        <button class="ingrediente-icon-button success" type="button" data-action="activate" aria-label="Reactivar ${escapeHtml(item.nombre)}" title="Reactivar">
+                        <button class="action-button success" type="button" data-action="activate" aria-label="Reactivar ${escapeHtml(item.nombre)}" title="Reactivar">
                             <i data-lucide="rotate-ccw"></i>
                         </button>
                     `}
-                </div>
-            </article>
+                </div></td>
+            </tr>
         `;
     }).join("");
     lucide.createIcons();
@@ -125,17 +117,17 @@ function renderIngredients() {
 
 async function loadIngredients() {
     if (!localStorage.getItem("access_token")) {
-        ingredientesList.innerHTML = '<p class="ingredientes-empty">Inicia sesión para consultar los ingredientes.</p>';
+        ingredientesList.innerHTML = '<tr><td colspan="4" class="ingredientes-table-message">Inicia sesión para consultar los ingredientes.</td></tr>';
         return;
     }
 
-    ingredientesList.innerHTML = '<p class="ingredientes-empty">Cargando ingredientes...</p>';
+    ingredientesList.innerHTML = '<tr><td colspan="4" class="ingredientes-table-message">Cargando ingredientes...</td></tr>';
     try {
         const data = await request("/ingredientes/");
         ingredientes = data.map((item) => ({ ...item, estado: item.estado === true }));
         renderIngredients();
     } catch (error) {
-        ingredientesList.innerHTML = '<p class="ingredientes-empty">No fue posible cargar los ingredientes.</p>';
+        ingredientesList.innerHTML = '<tr><td colspan="4" class="ingredientes-table-message">No fue posible cargar los ingredientes.</td></tr>';
         showMessage(error.message || "No fue posible cargar los ingredientes.");
     }
 }

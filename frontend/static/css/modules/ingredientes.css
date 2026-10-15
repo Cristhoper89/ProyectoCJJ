@@ -148,6 +148,125 @@ body {
     gap: 10px;
 }
 
+.ingredientes-table-card {
+    overflow: hidden;
+    border: 1px solid #45382E;
+    border-radius: 16px;
+    background: #32281F;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+}
+
+.ingredientes-table-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.ingredientes-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ingredientes-table thead {
+    background: #2A221C;
+}
+
+.ingredientes-table th {
+    padding: 16px;
+    color: #B8B1A8;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.ingredientes-table td {
+    padding: 14px 16px;
+    border-top: 1px solid #45382E;
+    color: #F5F5F5;
+    font-size: 13px;
+}
+
+.ingredientes-table tbody tr {
+    transition: background 200ms ease-in-out;
+}
+
+.ingredientes-table tbody tr:hover {
+    background: #382D24;
+}
+
+.ingredientes-table tbody tr.inactive {
+    opacity: .68;
+}
+
+.ingredientes-table-message {
+    padding: 36px 20px !important;
+    color: #B8B1A8 !important;
+    text-align: center;
+}
+
+.ingredientes-table-message strong {
+    display: block;
+    margin-bottom: 6px;
+    color: #F5F5F5;
+}
+
+.ingrediente-status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ingrediente-status.active {
+    background: rgba(46, 204, 113, .12);
+    color: #2ECC71;
+}
+
+.ingrediente-status.inactive {
+    background: rgba(231, 76, 60, .12);
+    color: #E74C3C;
+}
+
+.ingredientes-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ingredientes-table .action-button {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #45382E;
+    border-radius: 8px;
+    background: #2D2620;
+    color: #B8B1A8;
+    cursor: pointer;
+    transition: 200ms ease-in-out;
+}
+
+.ingredientes-table .action-button:hover {
+    color: #D8A85B;
+    border-color: #D8A85B;
+}
+
+.ingredientes-table .action-button.danger:hover {
+    color: #E74C3C;
+    border-color: #E74C3C;
+}
+
+.ingredientes-table .action-button.success:hover {
+    color: #2ECC71;
+    border-color: #2ECC71;
+}
+
+.ingredientes-table .action-button svg {
+    width: 16px;
+}
+
 .ingrediente-row {
     min-height: 78px;
     display: flex;

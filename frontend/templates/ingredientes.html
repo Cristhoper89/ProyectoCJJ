@@ -39,8 +39,24 @@
                 <span class="ingredientes-counter" id="ingredientesCounter"></span>
             </div>
 
-            <section id="ingredientesList" class="ingredientes-list" aria-live="polite">
-                <p class="ingredientes-empty">Cargando ingredientes...</p>
+            <section class="ingredientes-table-card" aria-live="polite">
+                <div class="ingredientes-table-container">
+                    <table class="ingredientes-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Ingrediente</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ingredientesList">
+                            <tr>
+                                <td colspan="4" class="ingredientes-table-message">Cargando ingredientes...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
         </main>
     </div>
