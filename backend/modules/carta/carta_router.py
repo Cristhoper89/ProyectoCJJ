@@ -40,7 +40,8 @@ async def activate_public_mesa(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    mesa = await MesaService(db).activar_mesa_por_qr(mesa_id)
+    customer_id = current_user["id"] if current_user["role_name"] == "Cliente" else None
+    mesa = await MesaService(db).activar_mesa_por_qr(mesa_id, customer_id)
     await notify_mesa_change(db)
     return {
         "mesa_id": mesa["id"],

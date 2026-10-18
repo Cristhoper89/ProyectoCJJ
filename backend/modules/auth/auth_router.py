@@ -61,8 +61,13 @@ async def read_current_user(
         "id": current_user["id"],
         "username": current_user["username"],
         "email": current_user["email"],
+        "nombre": current_user["nombre"],
+        "telefono": current_user["telefono"],
         "role_name": current_user["role_name"],
-        "is_active": current_user["is_active"]
+        "role_id": current_user["role_id"],
+        "is_active": current_user["is_active"],
+        "created_at": current_user["created_at"],
+        "last_login": current_user["last_login"],
     }
 
 

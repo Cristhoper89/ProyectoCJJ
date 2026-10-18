@@ -98,9 +98,6 @@ export default function CajasScreen() {
           <Text style={styles.balanceArrow}>→</Text>
           <Text style={styles.balanceLabel}>{open ? 'Actual' : 'Final'} <Text style={[styles.balanceValue, open && styles.highlightValue]}>{money(endingBalance)}</Text></Text>
         </View>
-        {!open && item.diferencia_caja != null && (
-          <Text style={styles.differenceText}>Arqueo {amount(item.diferencia_caja) >= 0 ? 'sobrante' : 'faltante'}: {money(Math.abs(amount(item.diferencia_caja)))}</Text>
-        )}
       </Pressable>
     );
   };
@@ -194,7 +191,6 @@ const styles = StyleSheet.create({
   balanceValue: { color: '#F5F5F5', fontSize: 13, fontWeight: '800' },
   balanceArrow: { color: '#F0B35A', fontSize: 17 },
   highlightValue: { color: '#F5D3A7' },
-  differenceText: { marginTop: 9, color: '#C9B9A9', fontSize: 11 },
   empty: { alignItems: 'center', paddingHorizontal: 28, paddingTop: 52 },
   emptyTitle: { color: '#F5F5F5', fontWeight: '800', fontSize: 16 },
   errorText: { color: '#F28C8C', textAlign: 'center', marginTop: 8 },

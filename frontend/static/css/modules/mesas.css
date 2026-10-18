@@ -231,6 +231,7 @@ body {
     transition: 200ms ease-in-out;
     display: flex;
     flex-direction: column;
+    cursor: pointer;
 
 }
 
@@ -239,6 +240,13 @@ body {
     border-color: #D8A85B;
     transform: translateY(-2px);
     box-shadow: 0px 8px 20px rgba(0, 0, 0, .3);
+
+}
+
+.mesa-card:focus-visible {
+
+    outline: 2px solid #D8A85B;
+    outline-offset: 3px;
 
 }
 

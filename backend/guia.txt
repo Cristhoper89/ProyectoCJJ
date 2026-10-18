@@ -741,3 +741,4 @@ movil/
 npx expo run:android
 npm run start -- --lan
 ./gradlew assembleRelease
+git status

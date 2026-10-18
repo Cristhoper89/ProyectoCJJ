@@ -371,8 +371,10 @@ export default function MesaScreen() {
       if (!selectedMesa) return;
       try {
         setSaving(true);
-        await Promise.all(mesaConsumos.map((consumo) => apiRequest(`/mesasC/${consumo.id}`, { method: 'PUT', body: JSON.stringify({ subtotal: 0 }) })));
-        await apiRequest(`/mesas/${selectedMesa.id}/cerrar`, { method: 'PATCH' }); setSelectedMesa(null); setSelectedMovimiento(null); await loadData();
+        await apiRequest(`/mesas/${selectedMesa.id}/cerrar`, { method: 'PATCH' });
+        setSelectedMesa(null);
+        setSelectedMovimiento(null);
+        await loadData();
       } catch (requestError) { Alert.alert('No se pudo cancelar', requestError instanceof Error ? requestError.message : 'Intenta nuevamente.'); }
       finally { setSaving(false); }
     } },
@@ -594,4 +596,3 @@ const styles = StyleSheet.create({
   cardFooter: { paddingHorizontal: 14, paddingBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardAmount: { color: '#F0B35A', fontSize: 16, fontWeight: '800' },
 });
-

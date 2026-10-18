@@ -3,7 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.frontend import template_response
 from core.database import get_db
 from core.security import get_current_user  # Nueva importación
-from modules.cajas.cajas_schema import CajasCreate, CajasCierreApertura, CajasCierreAperturaResponse, CajasResponse, CajasUpdate
+from modules.cajas.cajas_schema import (
+    CajasCreate,
+    CajasCierreApertura,
+    CajasCierreAperturaResponse,
+    CajasResponse,
+    CajasUpdate,
+)
 from modules.cajas.cajas_service import CajasService
 
 router = APIRouter(prefix="/cajas", tags=["Cajas"])
@@ -70,6 +76,18 @@ async def change_caja_state(
     return await service.cambiar_estado_caja(caja_id, new_state)
 
 
+@router.post("/{caja_id}/cierre", response_model=CajasResponse, status_code=status.HTTP_200_OK)
+async def close_caja(
+    caja_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if current_user["role_name"] not in ["Administrador", "Cajero"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
+    service = CajasService(db)
+    return await service.cerrar_caja(caja_id)
+
+
 @router.post("/{caja_id}/cierre-apertura", response_model=CajasCierreAperturaResponse, status_code=status.HTTP_200_OK)
 async def close_and_open_caja(
     caja_id: int,
@@ -80,4 +98,4 @@ async def close_and_open_caja(
     if current_user["role_name"] not in ["Administrador", "Cajero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = CajasService(db)
-    return await service.cerrar_y_abrir_caja(caja_id, data)
+    return await service.cerrar_caja(caja_id, data)

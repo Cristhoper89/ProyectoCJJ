@@ -3,7 +3,7 @@ import React, { Fragment, useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView } from 'react-native';
 import { 
   Menu, X, User, WalletCards, Tags, LayoutGrid, ArrowLeftRight, QrCode,
-  Package, Truck, Users, ContactRound, ChartNoAxesCombined, ClipboardList, BookOpen, Settings, Carrot, ChevronDown
+  Package, Users, ContactRound, ChartNoAxesCombined, ClipboardList, BookOpen, Settings, Carrot, ChevronDown
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { clearAccessToken } from '../constants/api';
@@ -16,7 +16,7 @@ type MenuItem = {
 };
 
 const menuItems: MenuItem[] = [
-  { label: 'Perfil', icon: User },
+  { label: 'Perfil', icon: User, route: '/perfil' },
   { label: 'Caja', icon: WalletCards, children: [
     { label: 'Historial de cajas', icon: WalletCards, route: '/cajas' },
     { label: 'Caja actual', icon: WalletCards, route: '/caja-actual' },
@@ -31,13 +31,12 @@ const menuItems: MenuItem[] = [
     { label: 'Ingredientes', icon: Carrot, route: '/ingredientes' },
     { label: 'Opciones de productos', icon: Tags, route: '/opciones-productos' },
   ] },
-  { label: 'Proveedores', icon: Truck },
-  { label: 'Empleados', icon: Users },
-  { label: 'Clientes', icon: ContactRound },
+  { label: 'Empleados', icon: Users, route: '/empleados' },
+  { label: 'Clientes', icon: ContactRound, route: '/clientes' },
   { label: 'Estadística', icon: ChartNoAxesCombined },
   { label: 'Pedidos', icon: ClipboardList, route: '/pedidos' },
   { label: 'Carta', icon: BookOpen, route: '/carta' },
-  { label: 'Configuración', icon: Settings },
+  { label: 'Configuración', icon: Settings, route: '/configuracion' },
 ];
 
 export default function HeaderNavbar() {

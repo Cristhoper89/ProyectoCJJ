@@ -504,6 +504,9 @@ function mostrarMesas(filtro = "") {
         const ms = obtenerTiempoTranscurrido(mesa.hora_inicio);
 
         tarjeta.className = `mesa-card${ocupada ? " ocupada" : ""}`;
+        tarjeta.dataset.id = mesa.id;
+        tarjeta.tabIndex = 0;
+        tarjeta.setAttribute("aria-label", `Abrir pedido de ${nombreMesa(mesa)}`);
         tarjeta.innerHTML = `
 
             <div class="mesa-card-img ${ocupada ? "ocupada" : "disponible"}">
@@ -541,16 +544,6 @@ function mostrarMesas(filtro = "") {
                 </div>
 
                 <div class="actions">
-
-                    <button
-                        type="button"
-                        class="action-button"
-                        title="Abrir pedido"
-                        data-accion="pedido"
-                        data-id="${mesa.id}"
-                    >
-                        <i data-lucide="utensils-crossed"></i>
-                    </button>
 
                     ${tieneConsumos(mesa) ? `
                         <button
@@ -1134,7 +1127,10 @@ async function abrirConfigModal(linea) {
     if (!producto) { return; }
 
     try {
-        const grupos = await api(`/productos/${producto.id}/grupos-opciones/`);
+        const [grupos, modificaciones] = await Promise.all([
+            api(`/productos/${producto.id}/grupos-opciones/`),
+            api("/mesa-consumo-ingredientes/")
+        ]);
 
         configProducto = producto;
         configCantidad = Number(linea.cantidad) || 0;
@@ -1144,6 +1140,11 @@ async function abrirConfigModal(linea) {
                 .filter(relacion => relacion.id_producto === producto.id)
                 .map(relacion => [relacion.id_ingrediente, true])
         );
+        modificaciones
+            .filter(item => item.id_mesa_consumo === linea.id)
+            .forEach(item => {
+                configIngredientes[item.id_ingrediente] = item.accion !== "quitar";
+            });
         configOpciones = opcionesDesdeNotas(linea.notas);
 
         configTitulo.textContent = `Configurar: ${producto.nombre}`;
@@ -1503,16 +1504,18 @@ buscarMesa.addEventListener("input", () => {
 
 mesasTable.addEventListener("click", async event => {
     const boton = event.target.closest("[data-accion]");
-    if (!boton) { return; }
+    if (!boton) {
+        const tarjeta = event.target.closest(".mesa-card");
+        if (tarjeta) { abrirPedido(tarjeta.dataset.id); }
+        return;
+    }
 
     const accion = boton.getAttribute("data-accion");
     const id = Number(boton.getAttribute("data-id"));
     const mesa = mesas.find(item => item.id === id);
     if (!mesa) { return; }
 
-    if (accion === "pedido") {
-        abrirPedido(id);
-    } else if (accion === "cuenta") {
+    if (accion === "cuenta") {
         mesaActual = mesa;
         movimientoActual = esBarra(mesa) ? movimientoDeMesa(mesa) : null;
         const referencia = movimientoActual || movimientoDeMesa(mesa);
@@ -1522,6 +1525,14 @@ mesasTable.addEventListener("click", async event => {
     } else if (accion === "cancelar") {
         pedirConfirmacionCancelar(mesa);
     }
+});
+
+mesasTable.addEventListener("keydown", event => {
+    if (event.key !== "Enter" && event.key !== " ") { return; }
+    const tarjeta = event.target.closest(".mesa-card");
+    if (!tarjeta || event.target !== tarjeta) { return; }
+    event.preventDefault();
+    abrirPedido(tarjeta.dataset.id);
 });
 
 // ======================================================

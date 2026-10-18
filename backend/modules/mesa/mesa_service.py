@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -161,7 +163,12 @@ class MesaService:
                 detail="No fue posible eliminar la mesa.",
             ) from error
 
-    async def cambiar_estado_mesa(self, target_mesa_id: int, estado: bool) -> dict:
+    async def cambiar_estado_mesa(
+        self,
+        target_mesa_id: int,
+        estado: bool,
+        id_cliente: UUID | None = None,
+    ) -> dict:
         logger.info(f"Intentando cambiar el estado de la mesa ID: {target_mesa_id}")
 
         mesa_result = await self.db.execute(
@@ -197,10 +204,16 @@ class MesaService:
                     )
 
                 movimiento = (await self.db.execute(text("""
-                    INSERT INTO movimiento (estado, propina, domicilio, total, id_caja, metodo, "fecha-hora")
-                    VALUES (TRUE, 0, 0, 0, :id_caja, 'Efectivo', CURRENT_TIMESTAMP)
+                    INSERT INTO movimiento (
+                        estado, propina, domicilio, total, id_caja, metodo,
+                        id_cliente, "fecha-hora"
+                    )
+                    VALUES (
+                        TRUE, 0, 0, 0, :id_caja, 'Efectivo',
+                        :id_cliente, CURRENT_TIMESTAMP
+                    )
                     RETURNING id;
-                """), {"id_caja": caja.id})).first()
+                """), {"id_caja": caja.id, "id_cliente": id_cliente})).first()
                 movimiento_id = movimiento.id
 
                 if mesa["tipo"] == "barra":
@@ -231,7 +244,11 @@ class MesaService:
             logger.error(f"Error crítico al cambiar el estado de la mesa: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
 
-    async def activar_mesa_por_qr(self, target_mesa_id: int) -> dict:
+    async def activar_mesa_por_qr(
+        self,
+        target_mesa_id: int,
+        id_cliente: UUID | None = None,
+    ) -> dict:
         mesa = (await self.db.execute(
             text("SELECT id, tipo, estado, id_mov FROM mesa WHERE id = :id FOR UPDATE;"),
             {"id": target_mesa_id},
@@ -249,7 +266,7 @@ class MesaService:
                 detail="Esta mesa ya está ocupada. Escanea el QR de una mesa disponible.",
             )
 
-        return await self.cambiar_estado_mesa(target_mesa_id, True)
+        return await self.cambiar_estado_mesa(target_mesa_id, True, id_cliente)
 
     async def cerrar_mesa(self, target_mesa_id: int) -> dict:
         logger.info(f"Intentando cerrar la mesa ID: {target_mesa_id}")
@@ -277,35 +294,22 @@ class MesaService:
                 movement_ids = list(dict.fromkeys(movement_ids))
 
                 await self.db.execute(
-                    text("UPDATE mesa SET id_mov = NULL WHERE id = :id;"),
-                    {"id": target_mesa_id},
-                )
-
-                await self.db.execute(
                     text("""
-                        DELETE FROM mesa_consumo_ingredientes
-                        WHERE id_mesa_consumo IN (
-                            SELECT mc.id
-                            FROM mesa_consumo mc
-                            WHERE mc.id_mov = ANY(:movement_ids)
-                        );
+                        UPDATE movimiento
+                        SET estado = FALSE, total = 0, propina = 0, domicilio = 0
+                        WHERE id = ANY(:movement_ids);
                     """),
                     {"movement_ids": movement_ids},
                 )
 
                 await self.db.execute(
-                    text("DELETE FROM mesa_consumo WHERE id_mov = ANY(:movement_ids);"),
-                    {"movement_ids": movement_ids},
+                    text("UPDATE mesa SET id_mov = NULL WHERE id = :id;"),
+                    {"id": target_mesa_id},
                 )
 
                 await self.db.execute(
                     text("DELETE FROM barra WHERE id_mesa = :id_mesa AND id_movimiento = ANY(:movement_ids);"),
                     {"id_mesa": target_mesa_id, "movement_ids": movement_ids},
-                )
-
-                await self.db.execute(
-                    text("DELETE FROM movimiento WHERE id = ANY(:movement_ids);"),
-                    {"movement_ids": movement_ids},
                 )
 
             result = await self.db.execute(text("""

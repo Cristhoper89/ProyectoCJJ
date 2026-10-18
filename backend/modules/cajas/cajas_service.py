@@ -131,7 +131,11 @@ class CajasService:
             logger.error(f"Error crítico al cambiar el estado de la caja: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
 
-    async def cerrar_y_abrir_caja(self, target_caja_id: int, data: CajasCierreApertura) -> dict:
+    async def cerrar_caja(
+        self,
+        target_caja_id: int,
+        apertura: CajasCierreApertura | None = None,
+    ) -> dict:
         try:
             current_result = await self.db.execute(
                 text("""
@@ -191,8 +195,11 @@ class CajasService:
                 - total_expenses
                 - income_values["total_propinas"]
             )
-            difference = data.efectivo_contado - expected_balance
-
+            difference = (
+                apertura.efectivo_contado - expected_balance
+                if apertura is not None
+                else None
+            )
             closed_result = await self.db.execute(text("""
                 UPDATE caja
                 SET estado = 'cerrada',
@@ -215,33 +222,45 @@ class CajasService:
                 "ingresos_transferencia": income_values["ingresos_transferencia"],
                 "total_propinas": income_values["total_propinas"],
                 "balance_final": expected_balance,
-                "efectivo_contado": data.efectivo_contado,
+                "efectivo_contado": apertura.efectivo_contado if apertura is not None else None,
                 "diferencia_caja": difference,
-                "notas_cierre": data.notas_cierre,
+                "notas_cierre": apertura.notas_cierre if apertura is not None else None,
             })
             closed_caja = dict(closed_result.mappings().one())
 
-            new_result = await self.db.execute(text("""
-                INSERT INTO caja (
-                    fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia,
-                    egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas,
-                    balance_inicial, balance_final, estado
-                ) VALUES (
-                    CURRENT_TIMESTAMP, 0, 0, 0, 0, 0, 0, 0,
-                    :balance_inicial, 0, 'abierta'
-                )
-                RETURNING id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia,
-                          egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas,
-                          balance_inicial, balance_final, efectivo_contado, diferencia_caja, notas_cierre, estado;
-            """), {"balance_inicial": data.balance_inicial})
-            new_caja = dict(new_result.mappings().one())
+            if apertura is not None:
+                new_result = await self.db.execute(text("""
+                    INSERT INTO caja (
+                        fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia,
+                        egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas,
+                        balance_inicial, balance_final, estado
+                    ) VALUES (
+                        CURRENT_TIMESTAMP, 0, 0, 0, 0, 0, 0, 0,
+                        :balance_inicial, 0, 'abierta'
+                    )
+                    RETURNING id, fecha, ingresos_efectivo, ingresos_tarjeta, ingresos_transferencia,
+                              egresos_efectivo, egresos_tarjeta, egresos_transferencia, total_propinas,
+                              balance_inicial, balance_final, efectivo_contado, diferencia_caja, notas_cierre, estado;
+                """), {"balance_inicial": apertura.balance_inicial})
+                nueva_caja = dict(new_result.mappings().one())
+            else:
+                nueva_caja = None
 
             await self.db.commit()
-            return {"caja_cerrada": closed_caja, "caja_nueva": new_caja}
+            if nueva_caja is not None:
+                return {"caja_cerrada": closed_caja, "caja_nueva": nueva_caja}
+            return closed_caja
         except HTTPException:
             await self.db.rollback()
             raise
         except Exception as error:
             await self.db.rollback()
-            logger.error(f"Error al cerrar y abrir cajas: {str(error)}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No fue posible completar el cierre y la apertura de caja.")
+            logger.error(f"Error al cerrar la caja: {str(error)}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No fue posible cerrar la caja.")
+
+    async def cerrar_y_abrir_caja(
+        self,
+        target_caja_id: int,
+        data: CajasCierreApertura,
+    ) -> dict:
+        return await self.cerrar_caja(target_caja_id, data)

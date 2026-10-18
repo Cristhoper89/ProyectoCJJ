@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 from core.frontend import template_response
 from core.database import get_db
 from core.security import get_current_user
@@ -67,7 +68,7 @@ async def register_user(
 # Actualizar un usuario
 @router.put("/{user_id}", response_model=UserResponse, status_code=status.HTTP_200_OK)
 async def update_existing_user(
-    user_id: int,
+    user_id: UUID,
     user_data: UserUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user)

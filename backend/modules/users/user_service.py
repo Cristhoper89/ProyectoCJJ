@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 from modules.users.user_schema import UserCreate
 from core.security import hash_password
 from core.logger import logger
@@ -161,7 +162,7 @@ class UserService:
     # Actualizar la información de un usuario
     async def update_user(
         self,
-        target_user_id: int,
+        target_user_id: UUID,
         user_update: UserUpdate,
         current_user: dict
     ) -> dict:
