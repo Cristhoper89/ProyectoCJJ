@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CalendarDays, Check, ChefHat, Clock3, ContactRound, Mail, Plus, Search, ShoppingBag, X } from 'lucide-react-native';
+import { Ban, CalendarDays, Check, ChefHat, Clock3, ContactRound, Edit3, Mail, Plus, RotateCcw, Search, ShoppingBag, X } from 'lucide-react-native';
 import HeaderNavbar from '../components/HeaderNavbar';
 import { apiRequest, getAccessToken } from '../constants/api';
 
@@ -34,6 +34,7 @@ type CustomerForm = {
   email: string;
   telefono: string;
   password: string;
+  is_active: boolean;
 };
 type Movement = {
   id: number;
@@ -64,6 +65,7 @@ const EMPTY_CUSTOMER_FORM: CustomerForm = {
   email: '',
   telefono: '',
   password: '',
+  is_active: true,
 };
 
 const money = (value: number | string | null | undefined) => {
@@ -127,6 +129,7 @@ export default function ClientesScreen() {
   const [search, setSearch] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [selected, setSelected] = useState<Customer | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [customerForm, setCustomerForm] = useState<CustomerForm>(EMPTY_CUSTOMER_FORM);
   const [isAdministrator, setIsAdministrator] = useState(false);
@@ -173,7 +176,22 @@ export default function ClientesScreen() {
   const customerRoleId = roles.find((role) => role.name === 'Cliente')?.id;
 
   const openCreate = () => {
+    setEditingCustomer(null);
     setCustomerForm(EMPTY_CUSTOMER_FORM);
+    setCreateModalVisible(true);
+  };
+
+  const openEdit = (customer: Customer) => {
+    setSelected(null);
+    setEditingCustomer(customer);
+    setCustomerForm({
+      nombre: customer.nombre || '',
+      username: customer.username,
+      email: customer.email,
+      telefono: customer.telefono || '',
+      password: '',
+      is_active: customer.is_active,
+    });
     setCreateModalVisible(true);
   };
 
@@ -184,7 +202,7 @@ export default function ClientesScreen() {
     const telefono = customerForm.telefono.trim();
     const password = customerForm.password;
 
-    if (!customerRoleId) {
+    if (!editingCustomer && !customerRoleId) {
       Alert.alert('Rol no disponible', 'No se encontró el rol Cliente.');
       return;
     }
@@ -192,7 +210,7 @@ export default function ClientesScreen() {
       Alert.alert('Nombre requerido', 'Ingresa el nombre del cliente.');
       return;
     }
-    if (username.length < 4) {
+    if (!editingCustomer && username.length < 4) {
       Alert.alert('Usuario inválido', 'El usuario debe tener al menos 4 caracteres.');
       return;
     }
@@ -200,7 +218,7 @@ export default function ClientesScreen() {
       Alert.alert('Correo inválido', 'Ingresa un correo electrónico válido.');
       return;
     }
-    if (password.length < 6) {
+    if ((!editingCustomer || password.length > 0) && password.length < 6) {
       Alert.alert('Contraseña inválida', 'La contraseña debe tener al menos 6 caracteres.');
       return;
     }
@@ -211,26 +229,76 @@ export default function ClientesScreen() {
 
     try {
       setSaving(true);
-      const created = await apiRequest<Customer>('/users/', {
-        method: 'POST',
-        body: JSON.stringify({
-          nombre,
-          username,
-          email,
-          telefono: telefono || null,
-          password,
-          role_id: customerRoleId,
-        }),
-      });
-      setCustomers((current) => [created, ...current]);
+      if (editingCustomer) {
+        const updated = await apiRequest<Customer>(`/users/${editingCustomer.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            nombre,
+            email,
+            telefono: telefono || '',
+            is_active: customerForm.is_active,
+            ...(password ? { password } : {}),
+          }),
+        });
+        setCustomers((current) => current.map((customer) => customer.id === updated.id ? updated : customer));
+      } else {
+        const created = await apiRequest<Customer>('/users/', {
+          method: 'POST',
+          body: JSON.stringify({
+            nombre,
+            username,
+            email,
+            telefono: telefono || null,
+            password,
+            role_id: customerRoleId,
+          }),
+        });
+        setCustomers((current) => [created, ...current]);
+      }
       setCreateModalVisible(false);
+      setEditingCustomer(null);
       setCustomerForm(EMPTY_CUSTOMER_FORM);
-      Alert.alert('Cliente creado', 'El cliente se registró correctamente.');
+      Alert.alert(
+        editingCustomer ? 'Cliente actualizado' : 'Cliente creado',
+        editingCustomer ? 'Los datos se actualizaron correctamente.' : 'El cliente se registró correctamente.',
+      );
     } catch (requestError) {
-      Alert.alert('No se pudo crear el cliente', requestError instanceof Error ? requestError.message : 'Intenta nuevamente.');
+      Alert.alert(
+        editingCustomer ? 'No se pudo actualizar el cliente' : 'No se pudo crear el cliente',
+        requestError instanceof Error ? requestError.message : 'Intenta nuevamente.',
+      );
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleCustomerState = (customer: Customer) => {
+    const nextState = !customer.is_active;
+    Alert.alert(
+      nextState ? 'Reactivar cliente' : 'Desactivar cliente',
+      `¿Quieres ${nextState ? 'reactivar' : 'desactivar'} a ${customer.nombre || customer.username}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: nextState ? 'Reactivar' : 'Desactivar',
+          style: nextState ? 'default' : 'destructive',
+          onPress: async () => {
+            try {
+              setSaving(true);
+              const updated = await apiRequest<Customer>(`/users/${customer.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ is_active: nextState }),
+              });
+              setCustomers((current) => current.map((item) => item.id === updated.id ? updated : item));
+            } catch (requestError) {
+              Alert.alert('No se pudo actualizar', requestError instanceof Error ? requestError.message : 'Intenta nuevamente.');
+            } finally {
+              setSaving(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const customerRoleIds = useMemo(
@@ -313,21 +381,31 @@ export default function ClientesScreen() {
       movement.id_cliente === item.id && movement.estado !== false ? sum + (Number(movement.total) || 0) : sum
     ), 0);
     return (
-      <Pressable style={[styles.customerCard, !item.is_active && styles.inactiveCard]} onPress={() => setSelected(item)}>
+      <View style={[styles.customerCard, !item.is_active && styles.inactiveCard]}>
         <View style={styles.avatar}><ContactRound size={21} color="#F0B35A" /></View>
-        <View style={styles.customerInfo}>
-          <Text style={styles.customerName}>{item.nombre || item.username}</Text>
-          <Text style={styles.username}>@{item.username}</Text>
-          <View style={styles.detailLine}><Mail size={13} color="#A99A8B" /><Text style={styles.detailText}>{item.email}</Text></View>
-          <View style={styles.summaryLine}>
-            <Text style={styles.summaryText}>{purchaseCount} {purchaseCount === 1 ? 'compra' : 'compras'}</Text>
-            <Text style={styles.summarySpent}>{money(totalSpent)}</Text>
+        <Pressable style={styles.customerInfo} onPress={() => setSelected(item)}>
+            <Text style={styles.customerName}>{item.nombre || item.username}</Text>
+            <Text style={styles.username}>@{item.username}</Text>
+            <View style={styles.detailLine}><Mail size={13} color="#A99A8B" /><Text style={styles.detailText}>{item.email}</Text></View>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryText}>{purchaseCount} {purchaseCount === 1 ? 'compra' : 'compras'}</Text>
+              <Text style={styles.summarySpent}>{money(totalSpent)}</Text>
+            </View>
+          <View style={[styles.statusBadge, item.is_active ? styles.activeBadge : styles.inactiveBadge]}>
+            <Text style={styles.statusText}>{item.is_active ? 'ACTIVO' : 'INACTIVO'}</Text>
           </View>
-        </View>
-        <View style={[styles.statusBadge, item.is_active ? styles.activeBadge : styles.inactiveBadge]}>
-          <Text style={styles.statusText}>{item.is_active ? 'ACTIVO' : 'INACTIVO'}</Text>
-        </View>
-      </Pressable>
+          </Pressable>
+          {isAdministrator ? (
+          <View style={styles.customerActions}>
+            <Pressable style={styles.iconButton} onPress={() => openEdit(item)} accessibilityLabel={`Editar ${item.nombre || item.username}`} disabled={saving}>
+              <Edit3 size={18} color="#F0B35A" />
+            </Pressable>
+            <Pressable style={styles.iconButton} onPress={() => toggleCustomerState(item)} accessibilityLabel={item.is_active ? 'Desactivar cliente' : 'Reactivar cliente'} disabled={saving}>
+              {item.is_active ? <Ban size={18} color="#D98672" /> : <RotateCcw size={18} color="#35C979" />}
+            </Pressable>
+          </View>
+          ) : null}
+      </View>
     );
   };
 
@@ -386,15 +464,15 @@ export default function ClientesScreen() {
         />
       )}
 
-      <Modal visible={createModalVisible} transparent animationType="slide" onRequestClose={() => setCreateModalVisible(false)}>
+      <Modal visible={createModalVisible} transparent animationType="slide" onRequestClose={() => !saving && setCreateModalVisible(false)}>
         <KeyboardAvoidingView style={styles.createModalBackdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.createModalCard}>
             <View style={styles.createModalHeader}>
               <View>
-                <Text style={styles.kicker}>NUEVO CLIENTE</Text>
-                <Text style={styles.createModalTitle}>Registrar cliente</Text>
+                <Text style={styles.kicker}>{editingCustomer ? 'EDITAR CLIENTE' : 'NUEVO CLIENTE'}</Text>
+                <Text style={styles.createModalTitle}>{editingCustomer ? 'Editar datos' : 'Registrar cliente'}</Text>
               </View>
-              <Pressable onPress={() => setCreateModalVisible(false)} accessibilityLabel="Cerrar" disabled={saving}>
+              <Pressable onPress={() => { setCreateModalVisible(false); setEditingCustomer(null); }} accessibilityLabel="Cerrar" disabled={saving}>
                 <X size={23} color="#F5EBDD" />
               </Pressable>
             </View>
@@ -417,11 +495,11 @@ export default function ClientesScreen() {
                 onChangeText={(value) => setCustomerForm((current) => ({ ...current, username: value }))}
                 placeholder="Mínimo 4 caracteres"
                 placeholderTextColor="#998C80"
-                style={styles.createInput}
+                style={[styles.createInput, !!editingCustomer && styles.readOnlyInput]}
                 maxLength={50}
                 autoCapitalize="none"
                 autoCorrect={false}
-                editable={!saving}
+                editable={!saving && !editingCustomer}
               />
 
               <Text style={styles.createLabel}>Correo electrónico</Text>
@@ -449,11 +527,11 @@ export default function ClientesScreen() {
                 editable={!saving}
               />
 
-              <Text style={styles.createLabel}>Contraseña</Text>
+              <Text style={styles.createLabel}>{editingCustomer ? 'Nueva contraseña (opcional)' : 'Contraseña'}</Text>
               <TextInput
                 value={customerForm.password}
                 onChangeText={(value) => setCustomerForm((current) => ({ ...current, password: value }))}
-                placeholder="Mínimo 6 caracteres"
+                placeholder={editingCustomer ? 'Dejar vacío para conservarla' : 'Mínimo 6 caracteres'}
                 placeholderTextColor="#998C80"
                 style={styles.createInput}
                 secureTextEntry
@@ -461,13 +539,33 @@ export default function ClientesScreen() {
                 autoCorrect={false}
                 editable={!saving}
               />
+              {editingCustomer ? (
+                <>
+                  <Text style={styles.createLabel}>Estado</Text>
+                  <View style={styles.stateChoices}>
+                    {[{ value: true, label: 'Activo' }, { value: false, label: 'Inactivo' }].map((option) => {
+                      const isSelected = customerForm.is_active === option.value;
+                      return (
+                        <Pressable
+                          key={option.label}
+                          style={[styles.stateChoice, isSelected && styles.stateChoiceSelected]}
+                          onPress={() => setCustomerForm((current) => ({ ...current, is_active: option.value }))}
+                          disabled={saving}
+                        >
+                          <Text style={[styles.stateChoiceText, isSelected && styles.stateChoiceTextSelected]}>{option.label}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              ) : null}
             </ScrollView>
             <View style={styles.createModalActions}>
-              <Pressable style={styles.createCancelButton} onPress={() => setCreateModalVisible(false)} disabled={saving}>
+              <Pressable style={styles.createCancelButton} onPress={() => { setCreateModalVisible(false); setEditingCustomer(null); }} disabled={saving}>
                 <Text style={styles.createCancelText}>Cancelar</Text>
               </Pressable>
               <Pressable style={styles.createSaveButton} onPress={saveCustomer} disabled={saving}>
-                {saving ? <ActivityIndicator color="#251D17" /> : <><Check size={18} color="#251D17" /><Text style={styles.createSaveText}>Registrar</Text></>}
+                {saving ? <ActivityIndicator color="#251D17" /> : <><Check size={18} color="#251D17" /><Text style={styles.createSaveText}>{editingCustomer ? 'Guardar cambios' : 'Registrar'}</Text></>}
               </Pressable>
             </View>
           </View>
@@ -592,6 +690,8 @@ const styles = StyleSheet.create({
   inactiveCard: { opacity: 0.65 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#49382A', alignItems: 'center', justifyContent: 'center', marginRight: 11 },
   customerInfo: { flex: 1, gap: 5 },
+  customerActions: { marginLeft: 4 },
+  iconButton: { width: 36, height: 37, alignItems: 'center', justifyContent: 'center' },
   customerName: { color: '#F5EBDD', fontSize: 15, fontWeight: '800' },
   username: { color: '#D8B47A', fontSize: 12, fontWeight: '600' },
   detailLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -599,7 +699,7 @@ const styles = StyleSheet.create({
   summaryLine: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 3 },
   summaryText: { color: '#A99A8B', fontSize: 11 },
   summarySpent: { color: '#6DD3A0', fontSize: 12, fontWeight: '800' },
-  statusBadge: { borderRadius: 5, paddingHorizontal: 7, paddingVertical: 4 },
+  statusBadge: { alignSelf: 'flex-start', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 4 },
   activeBadge: { backgroundColor: '#29483D' },
   inactiveBadge: { backgroundColor: '#49362F' },
   statusText: { color: '#EBDCCE', fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
@@ -616,6 +716,12 @@ const styles = StyleSheet.create({
   createFormScroll: { flexShrink: 1 },
   createLabel: { color: '#F5EBDD', fontSize: 13, fontWeight: '700', marginTop: 12, marginBottom: 7 },
   createInput: { minHeight: 46, borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, color: '#F5EBDD', backgroundColor: '#2D2620', paddingHorizontal: 12, fontSize: 14 },
+  readOnlyInput: { opacity: 0.6 },
+  stateChoices: { flexDirection: 'row', gap: 9 },
+  stateChoice: { flex: 1, minHeight: 42, borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  stateChoiceSelected: { backgroundColor: '#F0B35A', borderColor: '#F0B35A' },
+  stateChoiceText: { color: '#B8A99A', fontSize: 13, fontWeight: '700' },
+  stateChoiceTextSelected: { color: '#251D17' },
   createModalActions: { flexDirection: 'row', gap: 10, marginTop: 18 },
   createCancelButton: { flex: 1, minHeight: 48, borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   createCancelText: { color: '#F5EBDD', fontWeight: '700' },
