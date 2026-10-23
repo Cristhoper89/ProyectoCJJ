@@ -9,6 +9,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         {/* Pantallas de autenticación y principales fuera de las pestañas */}
         <Stack.Screen name="index" />
+        <Stack.Screen name="crear-cuenta" />
         <Stack.Screen name="olvido-contrasena" />
         <Stack.Screen name="desbloquear-cuenta" />
       </Stack>
