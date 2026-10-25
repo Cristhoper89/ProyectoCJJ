@@ -33,7 +33,7 @@ const menuItems: MenuItem[] = [
   ] },
   { label: 'Empleados', icon: Users, route: '/empleados' },
   { label: 'Clientes', icon: ContactRound, route: '/clientes' },
-  { label: 'Estadística', icon: ChartNoAxesCombined },
+  { label: 'Estadística', icon: ChartNoAxesCombined, route: '/estadistica' },
   { label: 'Pedidos', icon: ClipboardList, route: '/pedidos' },
   { label: 'Carta', icon: BookOpen, route: '/carta' },
   { label: 'Configuración', icon: Settings, route: '/configuracion' },
