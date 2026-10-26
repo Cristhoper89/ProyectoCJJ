@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empleados | Cabaña</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css">
+    <link rel="stylesheet" href="../static/css/modules/usuarios.css">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+        <main class="dashboard-main">
+            <div class="employees-page">
+                <header class="employees-header">
+                    <div>
+                        <span class="eyebrow">Equipo</span>
+                        <h1>Empleados</h1>
+                        <p>Administra las cuentas del personal de cocina, caja y servicio.</p>
+                    </div>
+                    <button class="employee-button employee-button-primary" id="addEmployeeButton" type="button">
+                        <i data-lucide="user-plus"></i>
+                        Nuevo empleado
+                    </button>
+                </header>
+
+                <section class="employees-summary" aria-label="Resumen de empleados">
+                    <div class="employee-summary-card">
+                        <span>Total de empleados</span>
+                        <strong id="totalEmployees">—</strong>
+                    </div>
+                    <div class="employee-summary-card">
+                        <span>Activos</span>
+                        <strong id="activeEmployees">—</strong>
+                    </div>
+                    <div class="employee-summary-card">
+                        <span>Inactivos</span>
+                        <strong id="inactiveEmployees">—</strong>
+                    </div>
+                </section>
+
+                <section class="employees-tools" aria-label="Filtros de empleados">
+                    <label class="employee-search">
+                        <i data-lucide="search"></i>
+                        <input id="employeeSearch" type="search" placeholder="Buscar por nombre, usuario o correo" autocomplete="off">
+                    </label>
+                    <label class="employee-filter">
+                        <span>Estado</span>
+                        <select id="employeeStatus">
+                            <option value="active">Activos</option>
+                            <option value="all">Todos</option>
+                            <option value="inactive">Inactivos</option>
+                        </select>
+                    </label>
+                </section>
+
+                <div id="employeesMessage" class="employees-message" role="status" aria-live="polite"></div>
+
+                <section class="employees-card">
+                    <div class="employees-table-wrap">
+                        <table class="employees-table">
+                            <thead>
+                                <tr>
+                                    <th>Empleado</th>
+                                    <th>Rol</th>
+                                    <th>Contacto</th>
+                                    <th>Estado</th>
+                                    <th class="employee-actions-heading">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeesTable">
+                                <tr><td colspan="5" class="employees-placeholder">Cargando empleados...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="employee-modal-overlay" id="employeeModal" aria-hidden="true">
+        <section class="employee-modal" role="dialog" aria-modal="true" aria-labelledby="employeeModalTitle">
+            <header class="employee-modal-header">
+                <div>
+                    <span class="eyebrow">Equipo</span>
+                    <h2 id="employeeModalTitle">Nuevo empleado</h2>
+                    <p id="employeeModalDescription">Completa los datos para crear una cuenta de personal.</p>
+                </div>
+                <button class="employee-icon-button" id="closeEmployeeModal" type="button" aria-label="Cerrar">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+            <form id="employeeForm">
+                <div class="employee-form-grid">
+                    <label class="employee-field employee-field-wide" for="employeeName">
+                        Nombre completo
+                        <input id="employeeName" name="nombre" type="text" maxlength="100" required>
+                    </label>
+                    <label class="employee-field" for="employeeUsername">
+                        Usuario
+                        <input id="employeeUsername" name="username" type="text" minlength="4" maxlength="50" autocomplete="username" required>
+                    </label>
+                    <label class="employee-field" for="employeeRole">
+                        Rol del empleado
+                        <select id="employeeRole" name="role_id" required></select>
+                    </label>
+                    <label class="employee-field employee-field-wide" for="employeeEmail">
+                        Correo electrónico
+                        <input id="employeeEmail" name="email" type="email" maxlength="254" autocomplete="email" required>
+                    </label>
+                    <label class="employee-field" for="employeePhone">
+                        Teléfono
+                        <input id="employeePhone" name="telefono" type="tel" maxlength="10" autocomplete="tel">
+                    </label>
+                    <label class="employee-field" for="employeePassword">
+                        <span id="employeePasswordLabel">Contraseña</span>
+                        <input id="employeePassword" name="password" type="password" minlength="6" maxlength="100" autocomplete="new-password">
+                        <small id="employeePasswordHelp">Mínimo 6 caracteres.</small>
+                    </label>
+                </div>
+                <p id="employeeFormMessage" class="employee-form-message" role="alert"></p>
+                <footer class="employee-modal-actions">
+                    <button class="employee-button employee-button-secondary" id="cancelEmployeeModal" type="button">Cancelar</button>
+                    <button class="employee-button employee-button-primary" id="saveEmployeeButton" type="submit">Crear empleado</button>
+                </footer>
+            </form>
+        </section>
+    </div>
+
+    <div class="employee-confirm-overlay" id="employeeConfirmModal" aria-hidden="true">
+        <section class="employee-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="employeeConfirmTitle">
+            <div class="employee-confirm-icon"><i data-lucide="triangle-alert"></i></div>
+            <h2 id="employeeConfirmTitle">Cambiar estado del empleado</h2>
+            <p id="employeeConfirmMessage"></p>
+            <footer class="employee-modal-actions">
+                <button class="employee-button employee-button-secondary" id="cancelEmployeeStatus" type="button">Cancelar</button>
+                <button class="employee-button employee-button-danger" id="confirmEmployeeStatus" type="button">Confirmar</button>
+            </footer>
+        </section>
+    </div>
+
+    <script src="../static/js/usuarios.js?v=1"></script>
+    <script src="../static/js/menu.js?v=7"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -8,7 +8,7 @@ const menuModules = {
 		["Movimientos", "arrow-left-right", "/movimientos"], ["Productos", "package", "/productos"],
 		["Opciones de productos", "tags", "/opciones-productos"],
 		["Ingredientes", "carrot", "/ingredientes"], ["Proveedores", "truck", null], ["Empleados", "users-round", "/usuarios"],
-		["Clientes", "contact-round", null], ["Estadística", "chart-no-axes-combined", "/reportes"],
+		["Clientes", "contact-round", "/clientes"], ["Estadística", "chart-no-axes-combined", "/reportes"],
 		["Pedidos", "clipboard-list", "/pedidos"], ["Carta", "book-open", null],
 		["Configuración", "settings", "/configuracion"]
 	],

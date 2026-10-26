@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes | Cabaña</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css">
+    <link rel="stylesheet" href="../static/css/modules/clientes.css">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+        <main class="dashboard-main">
+            <div class="customers-page">
+                <header class="customers-header">
+                    <div>
+                        <span class="eyebrow">Relación con clientes</span>
+                        <h1>Clientes</h1>
+                        <p>Consulta sus compras, visitas y productos favoritos.</p>
+                    </div>
+                    <button class="customer-button customer-button-primary" id="addCustomerButton" type="button">
+                        <i data-lucide="user-round-plus"></i>
+                        Nuevo cliente
+                    </button>
+                </header>
+
+                <section class="customers-summary" aria-label="Resumen de clientes">
+                    <div class="customer-summary-card">
+                        <span>Total de clientes</span>
+                        <strong id="totalCustomers">—</strong>
+                    </div>
+                    <div class="customer-summary-card">
+                        <span>Activos</span>
+                        <strong id="activeCustomers">—</strong>
+                    </div>
+                    <div class="customer-summary-card">
+                        <span>Con compras</span>
+                        <strong id="customersWithPurchases">—</strong>
+                    </div>
+                </section>
+
+                <section class="customers-tools" aria-label="Buscar y filtrar clientes">
+                    <label class="customer-search">
+                        <i data-lucide="search"></i>
+                        <input id="customerSearch" type="search" placeholder="Buscar por nombre, usuario o correo" autocomplete="off">
+                    </label>
+                    <label class="customer-filter">
+                        <span>Estado</span>
+                        <select id="customerStatus">
+                            <option value="active">Activos</option>
+                            <option value="all">Todos</option>
+                            <option value="inactive">Inactivos</option>
+                        </select>
+                    </label>
+                </section>
+
+                <div id="customersMessage" class="customers-message" role="status" aria-live="polite"></div>
+
+                <section class="customers-card">
+                    <div class="customers-table-wrap">
+                        <table class="customers-table">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Contacto</th>
+                                    <th>Compras</th>
+                                    <th>Total gastado</th>
+                                    <th>Estado</th>
+                                    <th class="customer-actions-heading">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customersTable">
+                                <tr><td colspan="6" class="customers-placeholder">Cargando clientes...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="customer-modal-overlay" id="customerModal" aria-hidden="true">
+        <section class="customer-modal" role="dialog" aria-modal="true" aria-labelledby="customerModalTitle">
+            <header class="customer-modal-header">
+                <div>
+                    <span class="eyebrow">Relación con clientes</span>
+                    <h2 id="customerModalTitle">Nuevo cliente</h2>
+                    <p id="customerModalDescription">Registra una cuenta para que el cliente pueda realizar pedidos.</p>
+                </div>
+                <button class="customer-icon-button" id="closeCustomerModal" type="button" aria-label="Cerrar">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+            <form id="customerForm">
+                <div class="customer-form-grid">
+                    <label class="customer-field customer-field-wide" for="customerName">
+                        Nombre completo
+                        <input id="customerName" name="nombre" type="text" maxlength="100" required>
+                    </label>
+                    <label class="customer-field" for="customerUsername">
+                        Usuario
+                        <input id="customerUsername" name="username" type="text" minlength="4" maxlength="50" autocomplete="username" required>
+                    </label>
+                    <label class="customer-field" for="customerPhone">
+                        Teléfono
+                        <input id="customerPhone" name="telefono" type="tel" maxlength="10" autocomplete="tel">
+                    </label>
+                    <label class="customer-field customer-field-wide" for="customerEmail">
+                        Correo electrónico
+                        <input id="customerEmail" name="email" type="email" maxlength="254" autocomplete="email" required>
+                    </label>
+                    <label class="customer-field customer-field-wide" for="customerPassword">
+                        <span id="customerPasswordLabel">Contraseña</span>
+                        <input id="customerPassword" name="password" type="password" minlength="6" maxlength="100" autocomplete="new-password">
+                        <small id="customerPasswordHelp">Mínimo 6 caracteres.</small>
+                    </label>
+                </div>
+                <p id="customerFormMessage" class="customer-form-message" role="alert"></p>
+                <footer class="customer-modal-actions">
+                    <button class="customer-button customer-button-secondary" id="cancelCustomerModal" type="button">Cancelar</button>
+                    <button class="customer-button customer-button-primary" id="saveCustomerButton" type="submit">Crear cliente</button>
+                </footer>
+            </form>
+        </section>
+    </div>
+
+    <div class="customer-confirm-overlay" id="customerConfirmModal" aria-hidden="true">
+        <section class="customer-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="customerConfirmTitle">
+            <div class="customer-confirm-icon"><i data-lucide="triangle-alert"></i></div>
+            <h2 id="customerConfirmTitle">Cambiar estado del cliente</h2>
+            <p id="customerConfirmMessage"></p>
+            <footer class="customer-modal-actions">
+                <button class="customer-button customer-button-secondary" id="cancelCustomerStatus" type="button">Cancelar</button>
+                <button class="customer-button customer-button-danger" id="confirmCustomerStatus" type="button">Confirmar</button>
+            </footer>
+        </section>
+    </div>
+
+    <div class="customer-history-overlay" id="customerHistoryModal" aria-hidden="true">
+        <section class="customer-history-modal" role="dialog" aria-modal="true" aria-labelledby="customerHistoryTitle">
+            <header class="customer-history-header">
+                <div>
+                    <span class="eyebrow">Historial del cliente</span>
+                    <h2 id="customerHistoryTitle">Compras</h2>
+                    <p id="customerHistorySubtitle"></p>
+                </div>
+                <button class="customer-icon-button" id="closeCustomerHistory" type="button" aria-label="Cerrar historial">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+            <div class="customer-history-content" id="customerHistoryContent"></div>
+        </section>
+    </div>
+
+    <script src="../static/js/clientes.js?v=1"></script>
+    <script src="../static/js/menu.js?v=7"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

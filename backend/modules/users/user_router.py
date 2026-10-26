@@ -16,6 +16,10 @@ frontend_router = APIRouter()
 async def users_page():
     return template_response("usuarios.html")
 
+@frontend_router.get("/clientes", include_in_schema=False)
+async def customers_page():
+    return template_response("clientes.html")
+
 
 # Obtener la lista de usuarios
 @router.get("/", response_model=list[UserResponse], status_code=status.HTTP_200_OK)
