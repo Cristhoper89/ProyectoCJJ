@@ -163,6 +163,13 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
+            style={styles.createAccountButton}
+            onPress={() => router.push('/crear-cuenta' as any)}
+          >
+            <Text style={styles.createAccountText}>Crear cuenta</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={styles.menuButton}
             onPress={() => router.push('/carta' as any)}
           >
@@ -288,6 +295,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  createAccountButton: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  createAccountText: {
+    color: '#D8A85B',
+    fontSize: 14,
+    fontWeight: '600',
   },
   menuButton: {
     minHeight: 48,

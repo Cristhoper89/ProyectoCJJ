@@ -17,7 +17,7 @@ const modules = {
 		["Categorías", "tags", "/categorias"], ["Perfil", "user-round", "/dashboard"],
 		["Movimientos", "arrow-left-right", "/movimientos"], ["Productos", "package", "/productos"],
 		["Ingredientes", "carrot", "/ingredientes"], ["Proveedores", "truck", null], ["Empleados", "users-round", "/usuarios"],
-		["Clientes", "contact-round", null], ["Estadística", "chart-no-axes-combined", "/reportes"],
+		["Clientes", "contact-round", "/clientes"], ["Estadística", "chart-no-axes-combined", "/reportes"],
 		["Pedidos", "clipboard-list", "/pedidos"], ["Carta", "book-open", null],
 		["Configuración", "settings", "/configuracion"]
 	],
