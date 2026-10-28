@@ -23,7 +23,7 @@ from modules.mesa.mesa_router import frontend_router as mesas_frontend_router, r
 from modules.mesa_consumo.mesa_consumo_router import router as mesa_consumo_router
 from modules.proveedores.proveedores_router import router as prooveedores_router
 from modules.empresa.empresa_router import frontend_router as empresa_frontend_router, router as empresa_router
-from modules.movimientos.movimientos_router import frontend_router as movimientos_frontend_router, router as movimientos_router
+from modules.movimientos.movimientos_router import router as movimientos_router
 from modules.ingredientes.ingredientes_router import frontend_router as ingredientes_frontend_router, router as ingredientes_router
 from modules.producto_ingredientes.producto_ingredientes_router import router as producto_ingredientes_router
 from modules.mesa_consumo_ingrediente.mesa_consumo_ingrediente_router import router as mesa_consumo_ingrediente_router
@@ -128,7 +128,6 @@ app.include_router(categorias_frontend_router)
 app.include_router(productos_frontend_router)
 app.include_router(cajas_frontend_router)
 app.include_router(mesas_frontend_router)
-app.include_router(movimientos_frontend_router)
 app.include_router(ingredientes_frontend_router)
 app.include_router(opciones_frontend_router)
 app.include_router(pedido_frontend_router)
