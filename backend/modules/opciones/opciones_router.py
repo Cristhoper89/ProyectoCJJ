@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.frontend import template_response
 from core.database import get_db
 from core.security import get_current_user
 from modules.opciones.opciones_schema import (
@@ -18,12 +17,6 @@ from modules.opciones.opciones_service import OpcionesService
 
 
 router = APIRouter(tags=["Opciones de productos"])
-frontend_router = APIRouter()
-
-
-@frontend_router.get("/opciones-productos", include_in_schema=False)
-async def opciones_productos_page():
-    return template_response("opciones_productos.html")
 
 
 def require_read_access(current_user: dict) -> None:

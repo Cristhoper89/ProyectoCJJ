@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
-from core.frontend import template_response
 from core.database import get_db
 from core.security import get_current_user
 from modules.users.user_schema import UserCreate, UserUpdate, UserResponse
@@ -9,16 +8,6 @@ from modules.users.user_service import UserService
 
 # Crear las rutas del módulo de usuarios
 router = APIRouter(prefix="/users", tags=["Usuarios"])
-frontend_router = APIRouter()
-
-
-@frontend_router.get("/usuarios", include_in_schema=False)
-async def users_page():
-    return template_response("usuarios.html")
-
-@frontend_router.get("/clientes", include_in_schema=False)
-async def customers_page():
-    return template_response("clientes.html")
 
 
 # Obtener la lista de usuarios

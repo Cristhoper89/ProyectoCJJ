@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.frontend import template_response
 from core.database import get_db
 from core.security import get_current_user
 
@@ -19,12 +18,6 @@ router = APIRouter(
     prefix="/productos",
     tags=["Productos"]
 )
-frontend_router = APIRouter()
-
-
-@frontend_router.get("/productos", include_in_schema=False)
-async def productos_page():
-    return template_response("productos.html")
 
 
 # ======================================================

@@ -6,29 +6,27 @@ from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from core.database import engine
-from core.frontend import FRONTEND_DIR
 
 from modules.metodos_pagos.metodo_pago_router import router as metodo_pago_router
-from modules.categorias.categorias_router import frontend_router as categorias_frontend_router, router as categorias_router
+from modules.categorias.categorias_router import router as categorias_router
 from modules.roles.role_router import router as role_router
-from modules.users.user_router import frontend_router as users_frontend_router, router as user_router
-from modules.auth.auth_router import frontend_router as auth_frontend_router, router as auth_router
-from modules.productos.productos_router import frontend_router as productos_frontend_router, router as productos_router
-from modules.cajas.cajas_router import frontend_router as cajas_frontend_router, router as cajas_router
-from modules.mesa.mesa_router import frontend_router as mesas_frontend_router, router as mesa_router
+from modules.users.user_router import router as user_router
+from modules.auth.auth_router import router as auth_router
+from modules.productos.productos_router import router as productos_router
+from modules.cajas.cajas_router import router as cajas_router
+from modules.mesa.mesa_router import router as mesa_router
 from modules.mesa_consumo.mesa_consumo_router import router as mesa_consumo_router
 from modules.proveedores.proveedores_router import router as prooveedores_router
-from modules.empresa.empresa_router import frontend_router as empresa_frontend_router, router as empresa_router
+from modules.empresa.empresa_router import router as empresa_router
 from modules.movimientos.movimientos_router import router as movimientos_router
-from modules.ingredientes.ingredientes_router import frontend_router as ingredientes_frontend_router, router as ingredientes_router
+from modules.ingredientes.ingredientes_router import router as ingredientes_router
 from modules.producto_ingredientes.producto_ingredientes_router import router as producto_ingredientes_router
 from modules.mesa_consumo_ingrediente.mesa_consumo_ingrediente_router import router as mesa_consumo_ingrediente_router
-from modules.opciones.opciones_router import frontend_router as opciones_frontend_router, router as opciones_router
-from modules.pedido.pedido_router import frontend_router as pedido_frontend_router, router as pedido_router
+from modules.opciones.opciones_router import router as opciones_router
+from modules.pedido.pedido_router import router as pedido_router
 from modules.carta.carta_router import router as carta_router
 from core.mesa_realtime import listen_for_mesa_events, router as mesa_realtime_router
 from core.logger import logger
@@ -117,32 +115,6 @@ app.include_router(opciones_router)
 app.include_router(pedido_router)
 app.include_router(carta_router)
 app.include_router(mesa_realtime_router)
-app.include_router(auth_frontend_router)
-
-
-
-
-
-app.include_router(users_frontend_router)
-app.include_router(categorias_frontend_router)
-app.include_router(productos_frontend_router)
-app.include_router(cajas_frontend_router)
-app.include_router(mesas_frontend_router)
-app.include_router(ingredientes_frontend_router)
-app.include_router(opciones_frontend_router)
-app.include_router(pedido_frontend_router)
-app.include_router(empresa_frontend_router)
-
-# ==============================
-# FRONTEND
-# ==============================
-
-if FRONTEND_DIR.is_dir():
-    app.mount(
-        "/static",
-        StaticFiles(directory=FRONTEND_DIR / "static"),
-        name="static"
-    )
 
 
 
