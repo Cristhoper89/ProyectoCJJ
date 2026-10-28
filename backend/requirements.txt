@@ -1,5 +1,5 @@
-fastapi[standard]
-sqlalchemy>=2.0.28
+fastapi[standard]>=0.141.1
+sqlalchemy[asyncio]>=2.0.28
 asyncpg>=0.29.0
 pydantic[email]>=2.6.4
 python-dotenv==1.0.1
