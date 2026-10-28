@@ -1,4 +1,4 @@
-const MENU_API_URL = window.location.protocol === "https:" ? window.location.origin : "https://backend-6ad6b6fa.fastapicloud.dev";
+const MENU_API_URL = "http://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
 const MENU_HTML_CACHE_KEY = "cabana_menu_html";
 const MENU_USER_CACHE_KEY = "cabana_menu_user";
 const menuModules = {

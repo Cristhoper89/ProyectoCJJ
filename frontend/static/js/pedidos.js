@@ -1,4 +1,4 @@
-const PEDIDOS_API_URL = window.location.protocol === "https:" ? window.location.origin : "https://backend-6ad6b6fa.fastapicloud.dev";
+const PEDIDOS_API_URL = "http://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
 
 let pedidos = [];
 let tabActivo = "pendientes";

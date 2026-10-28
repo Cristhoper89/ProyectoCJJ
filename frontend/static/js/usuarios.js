@@ -1,6 +1,4 @@
-const EMPLOYEES_API_URL = window.location.protocol === "https:"
-    ? window.location.origin
-    : "https://backend-6ad6b6fa.fastapicloud.dev";
+const EMPLOYEES_API_URL = "http://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
 const STAFF_ROLES = new Set(["Cocina", "Cajero", "Mesero"]);
 
 const employeesTable = document.getElementById("employeesTable");

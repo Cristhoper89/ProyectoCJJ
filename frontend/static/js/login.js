@@ -2,7 +2,7 @@
 // LOGIN
 // ======================================================
 
-const API_URL = window.location.protocol === "https:" ? window.location.origin : "https://backend-6ad6b6fa.fastapicloud.dev";
+const API_URL = "http://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
 const API_URL_STORAGE_KEY = "api_base_url";
 
 if (localStorage.getItem(API_URL_STORAGE_KEY) !== API_URL) {
