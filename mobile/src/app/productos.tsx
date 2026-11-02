@@ -14,6 +14,7 @@ type Ingrediente = { id: number; nombre: string; estado?: boolean | null };
 type ProductoIngrediente = { id: number; id_producto: number; id_ingrediente: number };
 type ProductoGrupo = { id_producto: number; id_grupo_opcion: number };
 type Pending = { item: Producto; nextState: boolean };
+type ProductAccessRole = 'Administrador' | 'Cajero' | 'Mesero' | 'Cocina';
 
 const money = (value?: number | null) => `$${Number(value || 0).toLocaleString('es-CO')}`;
 
@@ -43,24 +44,42 @@ export default function ProductosScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [userRole, setUserRole] = useState<ProductAccessRole | null>(null);
+  const canManageProducts = userRole === 'Administrador' || userRole === 'Cajero';
+  const canChangeProductState = canManageProducts || userRole === 'Mesero' || userRole === 'Cocina';
 
   const normalize = (item: Producto): Producto => ({ ...item, estado: item.estado === true });
   const load = useCallback(async () => {
     if (!getAccessToken()) { setError('Inicia sesión para consultar los productos.'); setLoading(false); return; }
     try {
       setError('');
-      const [products, categoryData, groupData, ingredientData, productIngredientData] = await Promise.all([
+      const [user, products] = await Promise.all([
+        apiRequest<{ role_name: string }>('/auth/me'),
         apiRequest<Producto[]>('/productos/'),
-        apiRequest<Categoria[]>('/categorias/'),
-        apiRequest<Grupo[]>('/grupos-opciones/'),
-        apiRequest<Ingrediente[]>('/ingredientes/'),
-        apiRequest<ProductoIngrediente[]>('/producto-ingredientes/'),
       ]);
+      if (!['Administrador', 'Cajero', 'Mesero', 'Cocina'].includes(user.role_name)) {
+        throw new Error('Tu rol no tiene acceso a la consulta de productos.');
+      }
+      const role = user.role_name as ProductAccessRole;
+      setUserRole(role);
       setItems(products.map(normalize));
-      setCategories(categoryData.filter((item) => item.estado === true));
-      setGroups(groupData);
-      setIngredients(ingredientData.filter((item) => item.estado === true));
-      setProductIngredients(productIngredientData);
+      if (role === 'Administrador' || role === 'Cajero') {
+        const [categoryData, groupData, ingredientData, productIngredientData] = await Promise.all([
+          apiRequest<Categoria[]>('/categorias/'),
+          apiRequest<Grupo[]>('/grupos-opciones/'),
+          apiRequest<Ingrediente[]>('/ingredientes/'),
+          apiRequest<ProductoIngrediente[]>('/producto-ingredientes/'),
+        ]);
+        setCategories(categoryData.filter((item) => item.estado === true));
+        setGroups(groupData);
+        setIngredients(ingredientData.filter((item) => item.estado === true));
+        setProductIngredients(productIngredientData);
+      } else {
+        setCategories([]);
+        setGroups([]);
+        setIngredients([]);
+        setProductIngredients([]);
+      }
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'No fue posible cargar los productos.'); }
     finally { setLoading(false); }
   }, []);
@@ -233,12 +252,14 @@ export default function ProductosScreen() {
         <View>
           <Text style={styles.kicker}>MENÚ</Text>
           <Text style={styles.title}>Productos</Text>
-          <Text style={styles.subtitle}>Administra la oferta disponible.</Text>
+          <Text style={styles.subtitle}>{canManageProducts ? 'Administra la oferta disponible.' : 'Consulta los productos disponibles.'}</Text>
         </View>
-        <Pressable style={styles.addButton} onPress={openCreate}>
-          <Plus size={19} color="#251D17" />
-          <Text style={styles.addText}>Nuevo</Text>
-        </Pressable>
+        {canManageProducts && (
+          <Pressable style={styles.addButton} onPress={openCreate}>
+            <Plus size={19} color="#251D17" />
+            <Text style={styles.addText}>Nuevo</Text>
+          </Pressable>
+        )}
       </View>
       <View style={styles.search}>
         <Search size={18} color="#A99A8B" />
@@ -265,25 +286,35 @@ export default function ProductosScreen() {
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <View style={[styles.row, item.estado !== true && styles.inactive]}>
-              <View style={styles.iconBox}>
-                {item.imagen_url
-                  ? <Image source={{ uri: item.imagen_url }} style={{ width: '100%', height: '100%', borderRadius: 8 }} resizeMode="cover" />
-                  : <Package size={19} color="#F0B35A" />}
-              </View>
-              <View style={styles.content}>
-                <Text style={styles.name}>{item.nombre || 'Sin nombre'}</Text>
-                <Text style={styles.detail}>{money(item.precio)}{item.descripcion ? `  ·  ${item.descripcion}` : ''}</Text>
-                <View style={[styles.badge, item.estado === true ? styles.activeBadge : styles.inactiveBadge]}>
-                  <Text style={styles.badgeText}>{item.estado === true ? 'ACTIVO' : 'INACTIVO'}</Text>
+              <View style={styles.productSummary}>
+                <View style={styles.iconBox}>
+                  {item.imagen_url
+                    ? <Image source={{ uri: item.imagen_url }} style={{ width: '100%', height: '100%', borderRadius: 8 }} resizeMode="cover" />
+                    : <Package size={19} color="#F0B35A" />}
                 </View>
+                <View style={styles.content}>
+                  <Text style={styles.name}>{item.nombre || 'Sin nombre'}</Text>
+                  <Text style={styles.detail}>{money(item.precio)}{item.descripcion ? `  ·  ${item.descripcion}` : ''}</Text>
+                  <View style={[styles.badge, item.estado === true ? styles.activeBadge : styles.inactiveBadge]}>
+                    <Text style={styles.badgeText}>{item.estado === true ? 'ACTIVO' : 'INACTIVO'}</Text>
+                  </View>
+                </View>
+                {canManageProducts && item.estado === true && <Pressable style={styles.iconButton} onPress={() => openEdit(item)}><Edit3 size={18} color="#F0B35A" /></Pressable>}
               </View>
-              {item.estado === true && <Pressable style={styles.iconButton} onPress={() => openEdit(item)}><Edit3 size={18} color="#F0B35A" /></Pressable>}
-              <Pressable style={styles.iconButton} onPress={() => setPending({ item, nextState: item.estado !== true })}>
-                {item.estado === true ? <Archive size={18} color="#D98672" /> : <RotateCcw size={18} color="#35C979" />}
-              </Pressable>
+              {canChangeProductState && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={item.estado === true ? 'Desactivar producto' : 'Reactivar producto'}
+                  style={styles.stateButton}
+                  onPress={() => setPending({ item, nextState: item.estado !== true })}
+                >
+                  {item.estado === true ? <Archive size={18} color="#D98672" /> : <RotateCcw size={18} color="#35C979" />}
+                  <Text style={styles.stateButtonText}>{item.estado === true ? 'Desactivar' : 'Reactivar'}</Text>
+                </Pressable>
+              )}
             </View>
           )}
-          ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyTitle}>No hay productos</Text><Text style={styles.emptyText}>Crea el primer producto para comenzar.</Text></View>}
+          ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyTitle}>No hay productos</Text><Text style={styles.emptyText}>{canManageProducts ? 'Crea el primer producto para comenzar.' : 'No hay productos disponibles para consultar.'}</Text></View>}
         />
       )}
       <Modal visible={modal} transparent animationType="slide" onRequestClose={() => setModal(false)}>
@@ -389,4 +420,83 @@ export default function ProductosScreen() {
   );
 }
 
-const styles = StyleSheet.create({ container: { flex: 1, backgroundColor: '#1D1A17' }, header: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }, kicker: { color: '#F0B35A', fontSize: 11, fontWeight: '700', letterSpacing: 1.5 }, title: { color: '#F5EBDD', fontSize: 30, fontWeight: '800', marginTop: 4 }, subtitle: { color: '#B8A99A', marginTop: 5 }, addButton: { flexDirection: 'row', gap: 6, alignItems: 'center', backgroundColor: '#F0B35A', paddingHorizontal: 14, paddingVertical: 11, borderRadius: 7 }, addText: { color: '#251D17', fontWeight: '800' }, search: { marginHorizontal: 20, height: 48, borderRadius: 8, borderWidth: 1, borderColor: '#4A3D31', backgroundColor: '#2D2620', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 9 }, searchInput: { flex: 1, color: '#F5EBDD', fontSize: 15 }, filters: { flexDirection: 'row', gap: 8, alignItems: 'center', padding: 16 }, filter: { paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1, borderColor: '#4A3D31', borderRadius: 6 }, selectedFilter: { backgroundColor: '#F0B35A', borderColor: '#F0B35A' }, filterText: { color: '#B8A99A', fontWeight: '700', fontSize: 12 }, selectedText: { color: '#251D17' }, counter: { marginLeft: 'auto', color: '#87796C', fontSize: 12 }, loader: { marginTop: 40 }, list: { paddingHorizontal: 20, paddingBottom: 30 }, row: { minHeight: 86, padding: 13, marginBottom: 10, borderRadius: 10, borderWidth: 1, borderColor: '#45382E', backgroundColor: '#32281F', flexDirection: 'row', alignItems: 'center' }, inactive: { opacity: 0.65 }, iconBox: { width: 42, height: 42, borderRadius: 8, backgroundColor: '#604332', alignItems: 'center', justifyContent: 'center' }, content: { flex: 1, marginLeft: 12, gap: 5 }, name: { color: '#F5EBDD', fontSize: 16, fontWeight: '700' }, detail: { color: '#B8A99A', fontSize: 12 }, badge: { alignSelf: 'flex-start', borderRadius: 4, paddingHorizontal: 7, paddingVertical: 3 }, activeBadge: { backgroundColor: '#29483D' }, inactiveBadge: { backgroundColor: '#49362F' }, badgeText: { color: '#EBDCCE', fontSize: 9, fontWeight: '800', letterSpacing: 0.7 }, iconButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' }, empty: { alignItems: 'center', padding: 35 }, emptyTitle: { color: '#F5EBDD', fontSize: 17, fontWeight: '700' }, emptyText: { color: '#B8A99A', marginTop: 8, textAlign: 'center' }, error: { color: '#E7A28C', textAlign: 'center' }, retry: { backgroundColor: '#F0B35A', padding: 10, borderRadius: 6, marginTop: 15 }, retryText: { color: '#251D17', fontWeight: '800' }, modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.65)' }, modalCard: { backgroundColor: '#32281F', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 22, paddingBottom: 34 }, modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 22 }, modalTitle: { color: '#F5EBDD', fontSize: 23, fontWeight: '800', marginTop: 4 }, label: { color: '#F5EBDD', fontWeight: '700', marginBottom: 8, marginTop: 10 }, input: { height: 48, borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, color: '#F5EBDD', backgroundColor: '#2D2620', paddingHorizontal: 14, fontSize: 16 }, multiline: { height: 70, paddingTop: 12, textAlignVertical: 'top' }, imagePicker: { minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 13, borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, backgroundColor: '#2D2620' }, imagePickerText: { color: '#F5EBDD', fontWeight: '600' }, imagePreview: { width: '100%', height: 180, borderRadius: 8, marginTop: 10, backgroundColor: '#2D2620' }, twoColumns: { flexDirection: 'row', gap: 10 }, column: { flex: 1 }, categoryList: { gap: 8, paddingBottom: 4 }, categoryChip: { borderWidth: 1, borderColor: '#604D3A', borderRadius: 6, paddingHorizontal: 11, paddingVertical: 8 }, categoryChipSelected: { backgroundColor: '#F0B35A', borderColor: '#F0B35A' }, categoryChipText: { color: '#B8A99A', fontSize: 12, fontWeight: '700' }, categoryChipTextSelected: { color: '#251D17' }, preparation: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 18 }, ingredientsSection: { marginTop: 8 }, ingredientRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8 }, ingredientText: { color: '#F5EBDD', flex: 1 }, helperText: { color: '#998C80', fontSize: 12 }, checkbox: { width: 22, height: 22, borderWidth: 1, borderColor: '#806B55', borderRadius: 4, alignItems: 'center', justifyContent: 'center' }, checkboxSelected: { backgroundColor: '#F0B35A', borderColor: '#F0B35A' }, preparationText: { color: '#F5EBDD', fontWeight: '600' }, saveButton: { height: 50, marginTop: 22, borderRadius: 7, backgroundColor: '#F0B35A', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }, saveText: { color: '#251D17', fontWeight: '800' }, confirmBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.72)' }, confirmCard: { width: '88%', maxWidth: 500, backgroundColor: '#32281F', borderWidth: 1, borderColor: '#604D3A', borderRadius: 18, padding: 28, alignItems: 'center' }, alertIcon: { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', marginBottom: 18 }, greenBg: { backgroundColor: '#29483D' }, redBg: { backgroundColor: '#57352F' }, confirmTitle: { color: '#F5EBDD', fontSize: 24, fontWeight: '800', textAlign: 'center' }, confirmText: { color: '#C9B9A9', fontSize: 16, lineHeight: 23, textAlign: 'center', marginTop: 12 }, actions: { flexDirection: 'row', gap: 12, marginTop: 25, width: '100%' }, cancelButton: { flex: 1, height: 50, borderRadius: 8, borderWidth: 1, borderColor: '#604D3A', alignItems: 'center', justifyContent: 'center' }, cancelText: { color: '#F5EBDD', fontWeight: '700' }, confirmButton: { flex: 1, height: 50, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }, deactivate: { backgroundColor: '#F05245' }, reactivate: { backgroundColor: '#35C979' }, confirmButtonText: { color: '#FFFFFF', fontWeight: '800' } });
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#1D1A17' },
+  header: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  kicker: { color: '#F0B35A', fontSize: 11, fontWeight: '700', letterSpacing: 1.5 },
+  title: { color: '#F5EBDD', fontSize: 30, fontWeight: '800', marginTop: 4 },
+  subtitle: { color: '#B8A99A', marginTop: 5 },
+  addButton: { flexDirection: 'row', gap: 6, alignItems: 'center', backgroundColor: '#F0B35A', paddingHorizontal: 14, paddingVertical: 11, borderRadius: 7 },
+  addText: { color: '#251D17', fontWeight: '800' },
+  search: { marginHorizontal: 20, height: 48, borderRadius: 8, borderWidth: 1, borderColor: '#4A3D31', backgroundColor: '#2D2620', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 9 },
+  searchInput: { flex: 1, color: '#F5EBDD', fontSize: 15 },
+  filters: { flexDirection: 'row', gap: 8, alignItems: 'center', padding: 16 },
+  filter: { paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1, borderColor: '#4A3D31', borderRadius: 6 },
+  selectedFilter: { backgroundColor: '#F0B35A', borderColor: '#F0B35A' },
+  filterText: { color: '#B8A99A', fontWeight: '700', fontSize: 12 },
+  selectedText: { color: '#251D17' },
+  counter: { marginLeft: 'auto', color: '#87796C', fontSize: 12 },
+  loader: { marginTop: 40 },
+  list: { paddingHorizontal: 20, paddingBottom: 30 },
+  row: { minHeight: 86, padding: 13, marginBottom: 10, borderRadius: 10, borderWidth: 1, borderColor: '#45382E', backgroundColor: '#32281F' },
+  productSummary: { width: '100%', flexDirection: 'row', alignItems: 'center' },
+  inactive: { opacity: 0.65 },
+  iconBox: { width: 42, height: 42, borderRadius: 8, backgroundColor: '#604332', alignItems: 'center', justifyContent: 'center' },
+  content: { flex: 1, marginLeft: 12, gap: 5 },
+  name: { color: '#F5EBDD', fontSize: 16, fontWeight: '700' },
+  detail: { color: '#B8A99A', fontSize: 12 },
+  badge: { alignSelf: 'flex-start', borderRadius: 4, paddingHorizontal: 7, paddingVertical: 3 },
+  activeBadge: { backgroundColor: '#29483D' },
+  inactiveBadge: { backgroundColor: '#49362F' },
+  badgeText: { color: '#EBDCCE', fontSize: 9, fontWeight: '800', letterSpacing: 0.7 },
+  iconButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  stateButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, width: '100%', minHeight: 44, marginTop: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: '#B86B57', backgroundColor: '#57352F', borderRadius: 7 },
+  stateButtonText: { color: '#F5EBDD', fontSize: 13, fontWeight: '700' },
+  empty: { alignItems: 'center', padding: 35 },
+  emptyTitle: { color: '#F5EBDD', fontSize: 17, fontWeight: '700' },
+  emptyText: { color: '#B8A99A', marginTop: 8, textAlign: 'center' },
+  error: { color: '#E7A28C', textAlign: 'center' },
+  retry: { backgroundColor: '#F0B35A', padding: 10, borderRadius: 6, marginTop: 15 },
+  retryText: { color: '#251D17', fontWeight: '800' },
+  modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.65)' },
+  modalCard: { backgroundColor: '#32281F', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 22, paddingBottom: 34 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 22 },
+  modalTitle: { color: '#F5EBDD', fontSize: 23, fontWeight: '800', marginTop: 4 },
+  label: { color: '#F5EBDD', fontWeight: '700', marginBottom: 8, marginTop: 10 },
+  input: { height: 48, borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, color: '#F5EBDD', backgroundColor: '#2D2620', paddingHorizontal: 14, fontSize: 16 },
+  multiline: { height: 70, paddingTop: 12, textAlignVertical: 'top' },
+  imagePicker: { minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 13, borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, backgroundColor: '#2D2620' },
+  imagePickerText: { color: '#F5EBDD', fontWeight: '600' },
+  imagePreview: { width: '100%', height: 180, borderRadius: 8, marginTop: 10, backgroundColor: '#2D2620' },
+  twoColumns: { flexDirection: 'row', gap: 10 },
+  column: { flex: 1 },
+  categoryList: { gap: 8, paddingBottom: 4 },
+  categoryChip: { borderWidth: 1, borderColor: '#604D3A', borderRadius: 6, paddingHorizontal: 11, paddingVertical: 8 },
+  categoryChipSelected: { backgroundColor: '#F0B35A', borderColor: '#F0B35A' },
+  categoryChipText: { color: '#B8A99A', fontSize: 12, fontWeight: '700' },
+  categoryChipTextSelected: { color: '#251D17' },
+  preparation: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 18 },
+  ingredientsSection: { marginTop: 8 },
+  ingredientRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 8 },
+  ingredientText: { color: '#F5EBDD', flex: 1 },
+  helperText: { color: '#998C80', fontSize: 12 },
+  checkbox: { width: 22, height: 22, borderWidth: 1, borderColor: '#806B55', borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
+  checkboxSelected: { backgroundColor: '#F0B35A', borderColor: '#F0B35A' },
+  preparationText: { color: '#F5EBDD', fontWeight: '600' },
+  saveButton: { height: 50, marginTop: 22, borderRadius: 7, backgroundColor: '#F0B35A', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
+  saveText: { color: '#251D17', fontWeight: '800' },
+  confirmBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.72)' },
+  confirmCard: { width: '88%', maxWidth: 500, backgroundColor: '#32281F', borderWidth: 1, borderColor: '#604D3A', borderRadius: 18, padding: 28, alignItems: 'center' },
+  alertIcon: { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  greenBg: { backgroundColor: '#29483D' },
+  redBg: { backgroundColor: '#57352F' },
+  confirmTitle: { color: '#F5EBDD', fontSize: 24, fontWeight: '800', textAlign: 'center' },
+  confirmText: { color: '#C9B9A9', fontSize: 16, lineHeight: 23, textAlign: 'center', marginTop: 12 },
+  actions: { flexDirection: 'row', gap: 12, marginTop: 25, width: '100%' },
+  cancelButton: { flex: 1, height: 50, borderRadius: 8, borderWidth: 1, borderColor: '#604D3A', alignItems: 'center', justifyContent: 'center' },
+  cancelText: { color: '#F5EBDD', fontWeight: '700' },
+  confirmButton: { flex: 1, height: 50, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  deactivate: { backgroundColor: '#F05245' },
+  reactivate: { backgroundColor: '#35C979' },
+  confirmButtonText: { color: '#FFFFFF', fontWeight: '800' },
+});

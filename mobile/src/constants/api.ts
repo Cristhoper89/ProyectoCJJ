@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const API_URL = 'https://backend-6ad6b6fa.fastapicloud.dev';
+export const API_URL = 'http://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io';
 const SESSION_KEY = '@la_cabana_session';
 const SESSION_DURATION = 60 * 60 * 1000;
+
+export type AuthenticatedHomeRoute = '/mesa' | '/caja-actual' | '/pedidos' | '/carta';
 
 let accessToken: string | null = null;
 
@@ -65,4 +67,21 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   }
 
   return (body ?? null) as T;
+}
+
+export async function getAuthenticatedHomeRoute(): Promise<AuthenticatedHomeRoute> {
+  const user = await apiRequest<{ role_name: string }>('/auth/me');
+
+  switch (user.role_name) {
+    case 'Administrador':
+    case 'Cajero':
+    case 'Mesero':
+      return '/mesa';
+    case 'Cocina':
+      return '/pedidos';
+    case 'Cliente':
+      return '/carta';
+    default:
+      throw new Error(`El rol "${user.role_name}" no tiene un flujo móvil configurado.`);
+  }
 }

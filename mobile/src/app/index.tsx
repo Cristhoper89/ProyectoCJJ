@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { User, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { API_URL, restoreAccessToken, setAccessToken } from '../constants/api';
+import { API_URL, clearAccessToken, getAuthenticatedHomeRoute, restoreAccessToken, setAccessToken } from '../constants/api';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -25,10 +25,27 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   React.useEffect(() => {
-    restoreAccessToken().then((token) => {
-      if (token) router.replace('/mesa' as any);
-      else setCheckingSession(false);
-    }).catch(() => setCheckingSession(false));
+    let cancelled = false;
+
+    const checkSession = async () => {
+      try {
+        const token = await restoreAccessToken();
+        if (token) {
+          const route = await getAuthenticatedHomeRoute();
+          if (!cancelled) router.replace(route as any);
+          return;
+        }
+      } catch (error) {
+        console.error('No fue posible restaurar la sesión móvil:', error);
+      }
+
+      if (!cancelled) setCheckingSession(false);
+    };
+
+    void checkSession();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   const handleLogin = async () => {
@@ -64,18 +81,19 @@ export default function LoginScreen() {
       });
 
       const data = await response.json();
-      setLoading(false);
 
       if (response.ok) {
         await setAccessToken(data.access_token);
+        const route = await getAuthenticatedHomeRoute();
+        setLoading(false);
         setMessage({ text: 'Bienvenido al sistema.', type: 'success' });
         setTimeout(() => {
-          // Redirige a mesa.tsx ubicado en la estructura de rutas de Expo Router
-          router.replace('/mesa' as any); 
+          router.replace(route as any);
         }, 1000);
         return;
       }
 
+      setLoading(false);
       if (response.status === 403) {
         setMessage({ text: data.detail, type: 'warning' });
         return;
@@ -84,9 +102,13 @@ export default function LoginScreen() {
       setMessage({ text: data.detail || 'Error en las credenciales', type: 'error' });
 
     } catch (error) {
+      await clearAccessToken();
       setLoading(false);
       console.error(error);
-      setMessage({ text: 'No fue posible conectar con el servidor.', type: 'error' });
+      setMessage({
+        text: error instanceof Error ? error.message : 'No fue posible conectar con el servidor.',
+        type: 'error',
+      });
     }
   };
 

@@ -34,7 +34,7 @@ async def read_productos(
     current_user: dict = Depends(get_current_user)
 ):
 
-    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero", "Cocina"]:
 
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -261,7 +261,7 @@ async def change_producto_state(
     current_user: dict = Depends(get_current_user)
 ):
 
-    if current_user["role_name"] not in ["Administrador", "Cajero"]:
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero", "Cocina"]:
 
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

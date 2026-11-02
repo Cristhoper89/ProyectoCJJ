@@ -12,8 +12,7 @@ import {
 } from 'react-native';
 import { Mail, Key, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-
-const API_URL = "https://backend-6ad6b6fa.fastapicloud.dev";
+import { API_URL } from '../constants/api';
 
 export default function OlvidoContrasenaScreen() {
   const router = useRouter();
