@@ -27,7 +27,7 @@ const menuItems: MenuItem[] = [
     { label: 'Caja actual', icon: WalletCards, roles: ['Administrador', 'Cajero'], route: '/caja-actual' },
     { label: 'Cerrar y abrir caja', icon: WalletCards, roles: ['Administrador', 'Cajero'], route: '/cierre-caja' },
   ] },
-  { label: 'Categorías', icon: Tags, roles: ['Administrador', 'Cajero', 'Mesero'], route: '/categorias' },
+  { label: 'Categorías', icon: Tags, roles: ['Administrador', 'Cajero'], route: '/categorias' },
   { label: 'Mesas', icon: LayoutGrid, roles: ['Administrador', 'Cajero', 'Mesero'], route: '/mesa' },
   { label: 'Configuración mesa', icon: QrCode, roles: ['Administrador', 'Cajero'], route: '/configuracion-mesas' },
   { label: 'Movimientos', icon: ArrowLeftRight, roles: ['Administrador', 'Cajero'], route: '/movimientos' },

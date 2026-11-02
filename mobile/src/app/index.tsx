@@ -11,14 +11,14 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { User, Lock, Eye, EyeOff } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { API_URL, clearAccessToken, getAuthenticatedHomeRoute, restoreAccessToken, setAccessToken } from '../constants/api';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [checkingSession, setCheckingSession] = useState(true);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -51,11 +51,11 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setMessage({ text: '', type: '' });
 
-    const user = username.trim();
+    const userEmail = email.trim();
     const pass = password.trim();
 
-    if (!user) {
-      setMessage({ text: 'Ingrese su usuario.', type: 'error' });
+    if (!userEmail) {
+      setMessage({ text: 'Ingrese su correo electrónico.', type: 'error' });
       return;
     }
 
@@ -68,7 +68,7 @@ export default function LoginScreen() {
     setLoading(true);
 
     const formData = new URLSearchParams();
-    formData.append("username", user);
+    formData.append("username", userEmail);
     formData.append("password", pass);
 
     try {
@@ -135,16 +135,18 @@ export default function LoginScreen() {
 
           {/* Form */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Usuario</Text>
+            <Text style={styles.label}>Correo electrónico</Text>
             <View style={styles.inputBox}>
-              <User color="#B8B1A8" size={20} style={styles.inputIcon} />
+              <Mail color="#B8B1A8" size={20} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Ingrese su usuario"
+                placeholder="Ingrese su correo electrónico"
                 placeholderTextColor="#9C9287"
-                value={username}
-                onChangeText={setUsername}
+                value={email}
+                onChangeText={setEmail}
                 autoCapitalize="none"
+                autoComplete="email"
+                keyboardType="email-address"
               />
             </View>
           </View>

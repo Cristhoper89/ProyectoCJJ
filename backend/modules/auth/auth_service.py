@@ -14,14 +14,14 @@ class AuthService:
         self.db = db
 
     # Iniciar sesión del usuario
-    async def login(self, username_in: str, password_in: str) -> str:
-        logger.info(f"SQL Nativo: Intento de login para: {username_in}")
+    async def login(self, email_in: str, password_in: str) -> str:
+        logger.info("SQL Nativo: Intento de login por correo.")
 
         # Buscar el usuario en la base de datos
         query = text(
-            """SELECT id,username,email,hashed_password,is_active,role_id, intentos_fallidos,bloqueado_hasta FROM users WHERE username = :username;"""
+            """SELECT id,username,email,hashed_password,is_active,role_id, intentos_fallidos,bloqueado_hasta FROM users WHERE LOWER(email) = LOWER(:email);"""
         )
-        result = await self.db.execute(query, {"username": username_in})
+        result = await self.db.execute(query, {"email": email_in.strip()})
         user = result.mappings().first()
 
         # Verificar si la cuenta está bloqueada

@@ -15,7 +15,7 @@ if (localStorage.getItem(API_URL_STORAGE_KEY) !== API_URL) {
 // ======================================================
 
 const loginForm = document.getElementById("loginForm");
-const username = document.getElementById("username");
+const email = document.getElementById("email");
 const password = document.getElementById("password");
 const loginMessage = document.getElementById("loginMessage");
 const showPassword = document.querySelector(".show-password");
@@ -78,17 +78,17 @@ loginForm.addEventListener("submit", async (e)=>{
 
     clearMessage();
 
-    const user = username.value.trim();
+    const userEmail = email.value.trim();
     const pass = password.value.trim();
 
-    if(user === ""){
+    if(userEmail === ""){
 
         showMessage(
-            "Ingrese su usuario.",
+            "Ingrese su correo electrónico.",
             "error"
         );
 
-        username.focus();
+        email.focus();
 
         return;
 
@@ -114,7 +114,7 @@ loginForm.addEventListener("submit", async (e)=>{
 
     const formData = new URLSearchParams();
 
-    formData.append("username",user);
+    formData.append("username",userEmail);
     formData.append("password",pass);
 
     try{
