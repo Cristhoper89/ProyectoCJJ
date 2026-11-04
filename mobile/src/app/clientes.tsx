@@ -30,7 +30,6 @@ type Customer = {
 };
 type CustomerForm = {
   nombre: string;
-  username: string;
   email: string;
   telefono: string;
   password: string;
@@ -61,7 +60,6 @@ type ProductStat = { id: number; nombre: string; cantidad: number; total: number
 
 const EMPTY_CUSTOMER_FORM: CustomerForm = {
   nombre: '',
-  username: '',
   email: '',
   telefono: '',
   password: '',
@@ -186,7 +184,6 @@ export default function ClientesScreen() {
     setEditingCustomer(customer);
     setCustomerForm({
       nombre: customer.nombre || '',
-      username: customer.username,
       email: customer.email,
       telefono: customer.telefono || '',
       password: '',
@@ -197,7 +194,6 @@ export default function ClientesScreen() {
 
   const saveCustomer = async () => {
     const nombre = customerForm.nombre.trim();
-    const username = customerForm.username.trim();
     const email = customerForm.email.trim().toLowerCase();
     const telefono = customerForm.telefono.trim();
     const password = customerForm.password;
@@ -208,10 +204,6 @@ export default function ClientesScreen() {
     }
     if (!nombre) {
       Alert.alert('Nombre requerido', 'Ingresa el nombre del cliente.');
-      return;
-    }
-    if (!editingCustomer && username.length < 4) {
-      Alert.alert('Usuario inválido', 'El usuario debe tener al menos 4 caracteres.');
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -246,7 +238,6 @@ export default function ClientesScreen() {
           method: 'POST',
           body: JSON.stringify({
             nombre,
-            username,
             email,
             telefono: telefono || null,
             password,
@@ -489,19 +480,6 @@ export default function ClientesScreen() {
                 editable={!saving}
               />
 
-              <Text style={styles.createLabel}>Usuario</Text>
-              <TextInput
-                value={customerForm.username}
-                onChangeText={(value) => setCustomerForm((current) => ({ ...current, username: value }))}
-                placeholder="Mínimo 4 caracteres"
-                placeholderTextColor="#998C80"
-                style={[styles.createInput, !!editingCustomer && styles.readOnlyInput]}
-                maxLength={50}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!saving && !editingCustomer}
-              />
-
               <Text style={styles.createLabel}>Correo electrónico</Text>
               <TextInput
                 value={customerForm.email}
@@ -716,7 +694,6 @@ const styles = StyleSheet.create({
   createFormScroll: { flexShrink: 1 },
   createLabel: { color: '#F5EBDD', fontSize: 13, fontWeight: '700', marginTop: 12, marginBottom: 7 },
   createInput: { minHeight: 46, borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, color: '#F5EBDD', backgroundColor: '#2D2620', paddingHorizontal: 12, fontSize: 14 },
-  readOnlyInput: { opacity: 0.6 },
   stateChoices: { flexDirection: 'row', gap: 9 },
   stateChoice: { flex: 1, minHeight: 42, borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   stateChoiceSelected: { backgroundColor: '#F0B35A', borderColor: '#F0B35A' },

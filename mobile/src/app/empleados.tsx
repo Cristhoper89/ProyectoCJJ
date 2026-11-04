@@ -31,7 +31,6 @@ type Employee = {
 };
 
 type EmployeeForm = {
-  username: string;
   email: string;
   nombre: string;
   telefono: string;
@@ -42,7 +41,6 @@ type EmployeeForm = {
 
 const STAFF_ROLE_NAMES = ['Cocina', 'Cajero', 'Mesero'];
 const EMPTY_FORM: EmployeeForm = {
-  username: '',
   email: '',
   nombre: '',
   telefono: '',
@@ -125,7 +123,6 @@ export default function EmpleadosScreen() {
   const openEdit = (employee: Employee) => {
     setSelected(employee);
     setForm({
-      username: employee.username,
       email: employee.email,
       nombre: employee.nombre || '',
       telefono: employee.telefono || '',
@@ -138,16 +135,11 @@ export default function EmpleadosScreen() {
 
   const save = async () => {
     const nombre = form.nombre.trim();
-    const username = form.username.trim();
     const email = form.email.trim();
     const roleId = form.role_id;
 
     if (nombre.length < 1) {
       Alert.alert('Nombre requerido', 'Ingresa el nombre del empleado.');
-      return;
-    }
-    if (!selected && username.length < 4) {
-      Alert.alert('Usuario inválido', 'El usuario debe tener al menos 4 caracteres.');
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -196,7 +188,6 @@ export default function EmpleadosScreen() {
           method: 'POST',
           body: JSON.stringify({
             ...details,
-            username,
             password: form.password,
           }),
         });
@@ -335,9 +326,6 @@ export default function EmpleadosScreen() {
               <Text style={styles.label}>Nombre completo</Text>
               <TextInput value={form.nombre} onChangeText={(value) => setForm((current) => ({ ...current, nombre: value }))} placeholder="Nombre del empleado" placeholderTextColor="#998C80" style={styles.input} maxLength={100} autoCapitalize="words" />
 
-              <Text style={styles.label}>Usuario</Text>
-              <TextInput value={form.username} onChangeText={(value) => setForm((current) => ({ ...current, username: value }))} editable={!selected} placeholder="Mínimo 4 caracteres" placeholderTextColor="#998C80" style={[styles.input, !!selected && styles.readOnlyInput]} maxLength={50} autoCapitalize="none" autoCorrect={false} />
-
               <Text style={styles.label}>Correo electrónico</Text>
               <TextInput value={form.email} onChangeText={(value) => setForm((current) => ({ ...current, email: value }))} placeholder="empleado@ejemplo.com" placeholderTextColor="#998C80" style={styles.input} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
 
@@ -438,7 +426,6 @@ const styles = StyleSheet.create({
   formScroll: { flexShrink: 1 },
   label: { color: '#F5EBDD', fontSize: 13, fontWeight: '700', marginTop: 12, marginBottom: 7 },
   input: { minHeight: 46, borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, color: '#F5EBDD', backgroundColor: '#2D2620', paddingHorizontal: 12, fontSize: 14 },
-  readOnlyInput: { color: '#998C80', backgroundColor: '#27221E' },
   roleChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   roleChoice: { minHeight: 38, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 8 },
   roleChoiceSelected: { backgroundColor: '#F0B35A', borderColor: '#F0B35A' },

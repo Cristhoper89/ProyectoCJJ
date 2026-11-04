@@ -13,6 +13,7 @@ class UserBase(BaseModel):
 
 # Validar los datos para crear un usuario
 class UserCreate(UserBase):
+    username: Optional[str] = Field(None, min_length=4, max_length=50)
     password: str = Field(..., min_length=6, max_length=100)
     role_id: int = Field(..., gt=0)
 

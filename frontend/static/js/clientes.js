@@ -226,8 +226,6 @@ function openCustomerModal(customer = null) {
     saveCustomerButton.textContent = customer ? "Guardar cambios" : "Crear cliente";
 
     document.getElementById("customerName").value = customer?.nombre || "";
-    document.getElementById("customerUsername").value = customer?.username || "";
-    document.getElementById("customerUsername").disabled = Boolean(customer);
     document.getElementById("customerEmail").value = customer?.email || "";
     document.getElementById("customerPhone").value = customer?.telefono || "";
     customerPassword.value = "";
@@ -250,7 +248,6 @@ async function saveCustomer(event) {
     setFormMessage("");
     const isEditing = Boolean(editingCustomer);
     const nombre = document.getElementById("customerName").value.trim();
-    const username = document.getElementById("customerUsername").value.trim();
     const emailInput = document.getElementById("customerEmail");
     const email = emailInput.value.trim().toLowerCase();
     const telefono = document.getElementById("customerPhone").value.trim();
@@ -262,10 +259,6 @@ async function saveCustomer(event) {
     }
     if (!nombre) {
         setFormMessage("Ingresa el nombre del cliente.");
-        return;
-    }
-    if (!isEditing && username.length < 4) {
-        setFormMessage("El usuario debe tener al menos 4 caracteres.");
         return;
     }
     if (!email || !emailInput.validity.valid) {
@@ -284,7 +277,7 @@ async function saveCustomer(event) {
     const details = {nombre, email, telefono, ...(password ? {password} : {})};
     const payload = isEditing
         ? details
-        : {...details, username, password, role_id: customerRoleId};
+        : {...details, password, role_id: customerRoleId};
     saveCustomerButton.disabled = true;
     saveCustomerButton.textContent = isEditing ? "Guardando..." : "Creando...";
 

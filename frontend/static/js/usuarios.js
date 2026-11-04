@@ -10,7 +10,6 @@ const employeeForm = document.getElementById("employeeForm");
 const employeeFormMessage = document.getElementById("employeeFormMessage");
 const employeesMessage = document.getElementById("employeesMessage");
 const employeeRole = document.getElementById("employeeRole");
-const employeeUsername = document.getElementById("employeeUsername");
 const employeePassword = document.getElementById("employeePassword");
 const saveEmployeeButton = document.getElementById("saveEmployeeButton");
 
@@ -193,8 +192,6 @@ function openEmployeeModal(employee = null) {
         : "Mínimo 6 caracteres.";
     saveEmployeeButton.textContent = employee ? "Guardar cambios" : "Crear empleado";
 
-    employeeUsername.disabled = Boolean(employee);
-    employeeUsername.value = employee?.username || "";
     document.getElementById("employeeName").value = employee?.nombre || "";
     document.getElementById("employeeEmail").value = employee?.email || "";
     document.getElementById("employeePhone").value = employee?.telefono || "";
@@ -219,7 +216,6 @@ async function saveEmployee(event) {
     const isEditing = Boolean(editingEmployee);
     const formData = new FormData(employeeForm);
     const nombre = String(formData.get("nombre") || "").trim();
-    const username = String(formData.get("username") || "").trim();
     const email = String(formData.get("email") || "").trim();
     const telefono = String(formData.get("telefono") || "").trim();
     const password = employeePassword.value;
@@ -227,10 +223,6 @@ async function saveEmployee(event) {
 
     if (!nombre) {
         setFormMessage("Ingresa el nombre del empleado.");
-        return;
-    }
-    if (!isEditing && username.length < 4) {
-        setFormMessage("El usuario debe tener al menos 4 caracteres.");
         return;
     }
     if (!email || !document.getElementById("employeeEmail").validity.valid) {
@@ -262,7 +254,7 @@ async function saveEmployee(event) {
     };
     const payload = isEditing
         ? {...details, ...(password ? {password} : {})}
-        : {...details, username, password};
+        : {...details, password};
 
     saveEmployeeButton.disabled = true;
     saveEmployeeButton.textContent = isEditing ? "Guardando..." : "Creando...";

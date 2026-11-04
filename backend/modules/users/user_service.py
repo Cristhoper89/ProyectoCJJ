@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
+from uuid import UUID, uuid4
 from modules.users.user_schema import UserCreate
 from core.security import hash_password
 from core.logger import logger
@@ -12,6 +12,19 @@ from modules.users.user_schema import UserUpdate
 class UserService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
+
+    async def _resolve_username(self, username: str | None) -> str:
+        if username is not None:
+            return username
+
+        while True:
+            generated_username = f"usuario_{uuid4().hex}"
+            result = await self.db.execute(
+                text("SELECT id FROM users WHERE username = :username;"),
+                {"username": generated_username}
+            )
+            if not result.first():
+                return generated_username
 
     # Obtener todos los usuarios registrados
     async def get_all_users(self) -> list[dict]:
@@ -27,12 +40,13 @@ class UserService:
 
     # Crear un usuario desde el panel de administración
     async def create_user(self, user_data: UserCreate) -> dict:
-        logger.info(f"SQL Nativo: Registrando usuario {user_data.username}")
+        username = await self._resolve_username(user_data.username)
+        logger.info(f"SQL Nativo: Registrando usuario {username}")
 
         # Verificar que el usuario o correo no existan
         dup = await self.db.execute(
             text("SELECT id FROM users WHERE username = :username OR email = :email;"),
-            {"username": user_data.username, "email": user_data.email}
+            {"username": username, "email": user_data.email}
         )
 
         if dup.first():
@@ -65,7 +79,7 @@ class UserService:
             result = await self.db.execute(
                 query,
                 {
-                    "username": user_data.username,
+                    "username": username,
                     "email": user_data.email,
                     "nombre": user_data.nombre,
                     "telefono": user_data.telefono,
@@ -90,12 +104,13 @@ class UserService:
 
     # Registrar un nuevo cliente
     async def register_user(self, user_data: UserCreate) -> dict:
-        logger.info(f"SQL Nativo: Registrando usuario {user_data.username}")
+        username = await self._resolve_username(user_data.username)
+        logger.info(f"SQL Nativo: Registrando usuario {username}")
 
         # Verificar que el usuario o correo no existan
         dup = await self.db.execute(
             text("SELECT id FROM users WHERE username = :username OR email = :email;"),
-            {"username": user_data.username, "email": user_data.email}
+            {"username": username, "email": user_data.email}
         )
 
         if dup.first():
@@ -136,7 +151,7 @@ class UserService:
             result = await self.db.execute(
                 query,
                 {
-                    "username": user_data.username,
+                    "username": username,
                     "email": user_data.email,
                     "nombre": user_data.nombre,
                     "telefono": user_data.telefono,
