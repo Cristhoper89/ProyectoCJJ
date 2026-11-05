@@ -2,7 +2,8 @@
 // LOGIN
 // ======================================================
 
-const API_URL = "http://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
+const API_URL = "https://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io"; // web
+//const API_URL = "http://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io"; // local
 const API_URL_STORAGE_KEY = "api_base_url";
 
 if (localStorage.getItem(API_URL_STORAGE_KEY) !== API_URL) {

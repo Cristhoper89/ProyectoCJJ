@@ -1,4 +1,4 @@
-const CUSTOMERS_API_URL = "http://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
+const CUSTOMERS_API_URL = "https://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
 
 const customersTable = document.getElementById("customersTable");
 const customerSearch = document.getElementById("customerSearch");

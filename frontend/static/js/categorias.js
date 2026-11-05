@@ -1,4 +1,4 @@
-const API_URL = "http://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
+const API_URL = "https://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
 
 // ======================================================
 // ELEMENTOS
