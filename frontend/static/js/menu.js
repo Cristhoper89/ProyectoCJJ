@@ -1,4 +1,4 @@
-const MENU_API_URL = "https://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
+const MENU_API_URL = "https://serviciocontigo.io/api";
 const MENU_HTML_CACHE_KEY = "cabana_menu_html";
 const MENU_USER_CACHE_KEY = "cabana_menu_user";
 const menuModules = {

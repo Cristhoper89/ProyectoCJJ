@@ -1,4 +1,4 @@
-const PEDIDOS_API_URL = "https://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
+const PEDIDOS_API_URL = "https://serviciocontigo.io/api";
 
 let pedidos = [];
 let tabActivo = "pendientes";

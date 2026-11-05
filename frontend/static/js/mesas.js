@@ -4,7 +4,7 @@
 // Mesa -> Movimiento -> Mesa Consumo
 // ======================================================
 
-const API_URL = "https://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
+const API_URL = "https://serviciocontigo.io/api";
 const API_URL_STORAGE_KEY = "api_base_url";
 
 if (localStorage.getItem(API_URL_STORAGE_KEY) !== API_URL) {

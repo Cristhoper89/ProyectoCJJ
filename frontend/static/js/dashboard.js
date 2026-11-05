@@ -1,4 +1,4 @@
-const API_URL = "https://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
+const API_URL = "https://serviciocontigo.io/api";
 const token = localStorage.getItem("access_token");
 const MENU_HTML_CACHE_KEY = "cabana_menu_html";
 const MENU_USER_CACHE_KEY = "cabana_menu_user";

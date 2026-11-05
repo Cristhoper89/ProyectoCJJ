@@ -1,4 +1,4 @@
-const EMPLOYEES_API_URL = "https://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
+const EMPLOYEES_API_URL = "https://serviciocontigo.io/api";
 const STAFF_ROLES = new Set(["Cocina", "Cajero", "Mesero"]);
 
 const employeesTable = document.getElementById("employeesTable");

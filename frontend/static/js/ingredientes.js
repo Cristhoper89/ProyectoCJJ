@@ -1,4 +1,4 @@
-const INGREDIENTES_API_URL = "https://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io";
+const INGREDIENTES_API_URL = "https://serviciocontigo.io/api";
 
 const ingredientesList = document.getElementById("ingredientesList");
 const ingredientesMessage = document.getElementById("ingredientesMessage");
