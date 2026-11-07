@@ -14,8 +14,8 @@ async def read_empresas(
     db: AsyncSession = Depends(get_db), 
     current_user: dict = Depends(get_current_user)
 ):
-    """Acceso restringido: Solo Administradores puede ver los datos de empresa."""
-    if current_user["role_name"] != "Administrador":
+    """Permite consultar los datos del negocio al personal que los usa en comprobantes."""
+    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     service = EmpresaService(db)
     return await service.get_empresas()

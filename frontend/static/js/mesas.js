@@ -46,6 +46,9 @@ const campoSubtotal = document.getElementById("campoSubtotal");
 const campoPropina = document.getElementById("campoPropina");
 const btnQuitarPropina = document.getElementById("btnQuitarPropina");
 const campoDomicilio = document.getElementById("campoDomicilio");
+const domicilioDatos = document.getElementById("domicilioDatos");
+const domicilioNombre = document.getElementById("domicilioNombre");
+const domicilioTelefono = document.getElementById("domicilioTelefono");
 const campoTotal = document.getElementById("campoTotal");
 
 const btnCancelarPedido = document.getElementById("btnCancelarPedido");
@@ -87,6 +90,8 @@ let productoIngredientes = [];
 let consumos = [];
 let movimientos = [];
 let empresa = null;
+let operador = null;
+let datosComprobanteCargados = false;
 
 let mesaActual = null;
 let movimientoActual = null;
@@ -357,13 +362,31 @@ function resultado(pedido, porDefecto) {
     return pedido.status === "fulfilled" ? pedido.value : porDefecto;
 }
 
-async function cargarEmpresa() {
-    try {
-        const data = await api("/empresas/");
+async function cargarDatosComprobante() {
+    if (datosComprobanteCargados) { return; }
+
+    const [empresaResult, operadorResult] = await Promise.allSettled([
+        api("/empresas/"),
+        api("/auth/me")
+    ]);
+
+    if (empresaResult.status === "fulfilled") {
+        const data = empresaResult.value;
         empresa = Array.isArray(data) && data.length ? data[0] : null;
-    } catch (error) {
+    } else {
         empresa = null;
+        console.error("No se pudieron cargar los datos de la empresa para el comprobante.", empresaResult.reason);
     }
+
+    if (operadorResult.status === "fulfilled") {
+        operador = operadorResult.value;
+    } else {
+        operador = null;
+        console.error("No se pudo cargar el usuario que imprime el comprobante.", operadorResult.reason);
+    }
+
+    datosComprobanteCargados =
+        empresaResult.status === "fulfilled" && operadorResult.status === "fulfilled";
 }
 
 let cargaEnCurso = null;
@@ -461,7 +484,7 @@ async function ejecutarCarga(soloEstado) {
         mostrarMesas(filtroMesas());
     }
 
-    const fallo = pedidos.find(pedido => pedido.status === "rejected");
+    const fallo = resultados.find(pedido => pedido.status === "rejected");
     if (fallo) {
         mostrarAviso(
             "No se pudo cargar todo",
@@ -469,7 +492,7 @@ async function ejecutarCarga(soloEstado) {
         );
     }
 
-    await cargarEmpresa();
+    await cargarDatosComprobante();
 }
 
 // ======================================================
@@ -730,6 +753,9 @@ function abrirPedido(mesaId) {
     const referencia = movimientoActual || movimientoDeMesa(mesa);
     campoPropina.value = Number(referencia && referencia.propina) || 0;
     campoDomicilio.value = Number(referencia && referencia.domicilio) || 0;
+    domicilioNombre.value = "";
+    domicilioTelefono.value = "";
+    actualizarDatosDomicilio();
 
     pedidoMesaNombre.textContent = nombreMesa(mesa);
     pedidoEstadoBadge.className = "estado-mesa-badge " + (mesa.estado ? "ocupada" : "disponible");
@@ -747,6 +773,9 @@ function cerrarPedidoFn() {
     mesaActual = null;
     movimientoActual = null;
     descuentos = {};
+    domicilioNombre.value = "";
+    domicilioTelefono.value = "";
+    actualizarDatosDomicilio();
     cerrarConfigModal();
 }
 
@@ -1278,12 +1307,18 @@ campoPropina.addEventListener("change", () => {
 
 campoDomicilio.addEventListener("input", () => {
     campoTotal.textContent = formatearPrecio(calcularTotal());
+    actualizarDatosDomicilio();
 });
 
 campoDomicilio.addEventListener("change", () => {
     refrescarResumen();
+    actualizarDatosDomicilio();
     mostrarMesas(filtroMesas());
 });
+
+function actualizarDatosDomicilio() {
+    domicilioDatos.hidden = valorInput(campoDomicilio) <= 0;
+}
 
 // ======================================================
 // CANCELAR PEDIDO
@@ -1343,10 +1378,12 @@ btnFinalizarCuenta.addEventListener("click", async () => {
 
     guardarEstadoBotones(true);
 
+    const comprobante = capturarDatosComprobante();
+
     try {
         // Los descuentos se aplican sobre el subtotal de cada línea.
-        for (const linea of lineasMesaActual()) {
-            const porcentaje = porcentajeLinea(linea);
+        for (const linea of comprobante.lineas) {
+            const porcentaje = linea.descuentoPorcentaje;
             const cantidad = Number(linea.cantidad) || 0;
             const unidad = Number(linea.precio_unitario) || 0;
             if (porcentaje <= 0 || cantidad <= 0 || unidad <= 0) { continue; }
@@ -1369,90 +1406,211 @@ btnFinalizarCuenta.addEventListener("click", async () => {
             });
         }
 
-        await api(`/mesas/${mesaActual.id}/finalizar`, "POST", {
+        const resultadoCierre = await api(`/mesas/${mesaActual.id}/finalizar`, "POST", {
             total,
             propina,
             domicilio,
             metodo: "Efectivo"
         });
-
-        cerrarPedidoFn();
-        await cargarTodo();
+        comprobante.referencia = comprobante.referencia || (resultadoCierre && resultadoCierre.id);
+        comprobante.fecha = new Date();
     } catch (error) {
         console.error(error);
         manejarError(error, "No se pudo finalizar la cuenta.");
-    } finally {
         guardarEstadoBotones(false);
+        return;
     }
+
+    cerrarPedidoFn();
+
+    try {
+        await construirComprobante(comprobante);
+        cuentaModal.classList.add("active");
+        await imprimirComprobante();
+    } catch (error) {
+        console.error("La cuenta se finalizó, pero no se pudo abrir la impresión.", error);
+        mostrarAviso(
+            "Cuenta finalizada",
+            "La cuenta se cerró correctamente, pero no se pudo abrir la impresión automática."
+        );
+    }
+
+    await cargarTodo();
+    guardarEstadoBotones(false);
 });
 
 // ======================================================
 // IMPRIMIR CUENTA
 // ======================================================
 
-async function construirComprobante() {
-    if (!mesaActual) { return; }
+function capturarDatosComprobante() {
+    const mesa = mesaActual;
+    const movimiento = movimientoActual || movimientoDeMesa(mesa);
+    const lineas = lineasMesaActual().map(linea => ({
+        ...linea,
+        descuentoPorcentaje: porcentajeLinea(linea),
+        totalConDescuento: totalLinea(linea)
+    }));
+    const propina = valorInput(campoPropina);
+    const domicilio = valorInput(campoDomicilio);
 
-    const lineas = lineasMesaActual();
+    return {
+        empresa: empresa ? { ...empresa } : null,
+        operador: operador ? { ...operador } : null,
+        mesa: nombreMesa(mesa),
+        lineas,
+        subtotal: lineas.reduce((suma, linea) => suma + (Number(linea.subtotal) || 0), 0),
+        descuento: lineas.reduce((suma, linea) => (
+            suma + (Number(linea.subtotal) || 0) - linea.totalConDescuento
+        ), 0),
+        propina,
+        domicilio,
+        total: redondear(lineas.reduce((suma, linea) => suma + linea.totalConDescuento, 0) + propina + domicilio),
+        cliente: "CLIENTES EN GENERAL",
+        domicilioNombre: domicilio > 0 ? domicilioNombre.value.trim() : "",
+        domicilioTelefono: domicilio > 0 ? domicilioTelefono.value.trim() : "",
+        metodo: "Efectivo",
+        fecha: new Date(),
+        referencia: movimiento && movimiento.id
+    };
+}
 
-    const ahora = new Date();
-    const fecha = ahora.toLocaleDateString("es-CO");
-    const hora = ahora.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
-
-    const filas = lineas.map(linea => {
+async function construirComprobante(datos = capturarDatosComprobante()) {
+    const filas = datos.lineas.map(linea => {
         const producto = productos.find(item => item.id === linea.id_producto);
-        const porcentaje = porcentajeLinea(linea);
-        const descuento = (Number(linea.subtotal) || 0) - totalLinea(linea);
+        const cantidad = Number(linea.cantidad) || 0;
+        const descripcion = producto ? producto.nombre : `Producto ${linea.id_producto}`;
+        const notas = linea.notas ? `<small>${esc(linea.notas)}</small>` : "";
         return `
-            <tr>
-                <td>${producto ? esc(producto.nombre) : `Producto ${linea.id_producto}`}${linea.notas ? `<br><small>${esc(linea.notas)}</small>` : ""}</td>
-                <td class="texto-centro">${linea.cantidad}</td>
-                <td class="texto-derecha">${formatearPrecio(linea.precio_unitario)}</td>
-                <td class="texto-derecha">${porcentaje > 0 ? `${formatearPrecio(descuento)}` : "—"}</td>
-                <td class="texto-derecha">${formatearPrecio(totalLinea(linea))}</td>
-            </tr>
+            <div class="recibo-producto">
+                <div>
+                    <strong>${cantidad} x ${esc(descripcion)}</strong>
+                    ${notas}
+                </div>
+                <strong>${formatearPrecio(linea.totalConDescuento)}</strong>
+            </div>
         `;
     }).join("");
 
+    const ahora = datos.fecha instanceof Date ? datos.fecha : new Date(datos.fecha);
+    const datosEmpresa = datos.empresa || {};
+    const datosOperador = datos.operador || {};
+    const direccionDomicilio = datos.domicilio > 0
+        ? `
+            <div class="recibo-seccion">
+                <strong>DATOS DOMICILIO</strong>
+                ${datos.domicilioNombre ? `<span>Recibe: ${esc(datos.domicilioNombre)}</span>` : ""}
+                ${datos.domicilioTelefono ? `<span>Teléfono: ${esc(datos.domicilioTelefono)}</span>` : ""}
+            </div>
+        `
+        : "";
+
     comprobanteImpresion.innerHTML = `
-        <div class="comprobante-cabecera">
-            <h2>${empresa && empresa.nombre ? esc(empresa.nombre) : "RESTAURANTE"}</h2>
-            ${empresa && empresa.direccion ? `<p>${esc(empresa.direccion)}</p>` : ""}
-            ${empresa && empresa.telefono ? `<p>Tel: ${esc(empresa.telefono)}</p>` : ""}
-            ${empresa && empresa.NIT ? `<p>NIT: ${esc(empresa.NIT)}</p>` : ""}
-        </div>
+        <article class="recibo-termico">
+            <header class="recibo-cabecera">
+                <h2>${datosEmpresa.nombre ? esc(datosEmpresa.nombre) : "RESTAURANTE"}</h2>
+                ${datosEmpresa.direccion ? `<span>${esc(datosEmpresa.direccion)}</span>` : ""}
+                ${datosEmpresa.telefono ? `<span>Tel: ${esc(datosEmpresa.telefono)}</span>` : ""}
+                ${datosEmpresa.NIT ? `<span>NIT: ${esc(datosEmpresa.NIT)}</span>` : ""}
+                ${datosEmpresa.correo ? `<span>${esc(datosEmpresa.correo)}</span>` : ""}
+                <strong>COMPROBANTE DE VENTA</strong>
+                <span>INFORMATIVO - NO FISCAL</span>
+            </header>
 
-        <div class="comprobante-datos">
-            <p><strong>${esc(nombreMesa(mesaActual))}</strong></p>
-            <p>Fecha: ${fecha} — ${hora}</p>
-        </div>
+            <section class="recibo-seccion">
+                <div class="recibo-par">
+                    <span>Referencia interna</span>
+                    <strong>${datos.referencia ? `#${esc(datos.referencia)}` : "—"}</strong>
+                </div>
+                <div class="recibo-par">
+                    <span>Mesa</span>
+                    <strong>${esc(datos.mesa)}</strong>
+                </div>
+                <div class="recibo-par">
+                    <span>Fecha de expedición</span>
+                    <strong>${ahora.toLocaleString("es-CO")}</strong>
+                </div>
+                <div class="recibo-par">
+                    <span>Tipo de pago</span>
+                    <strong>CONTADO</strong>
+                </div>
+                <div class="recibo-par">
+                    <span>Método de pago</span>
+                    <strong>${esc(datos.metodo)}</strong>
+                </div>
+                <div class="recibo-par">
+                    <span>Cliente</span>
+                    <strong>${esc(datos.cliente)}</strong>
+                </div>
+            </section>
 
-        <table class="comprobante-tabla">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th class="texto-centro">Cant.</th>
-                    <th class="texto-derecha">P. Unit.</th>
-                    <th class="texto-derecha">Desc.</th>
-                    <th class="texto-derecha">Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${filas}
-            </tbody>
-        </table>
+            <section class="recibo-seccion">
+                <strong>DETALLE DE PRODUCTOS</strong>
+                ${filas || `<span>Sin productos registrados</span>`}
+            </section>
 
-        <div class="comprobante-totales">
-            <p><span>Subtotal</span><strong>${formatearPrecio(calcularSubtotal())}</strong></p>
-            <p><span>Propina</span><strong>${formatearPrecio(valorInput(campoPropina))}</strong></p>
-            <p><span>Domicilio</span><strong>${formatearPrecio(valorInput(campoDomicilio))}</strong></p>
-            <p class="comprobante-total"><span>Total</span><strong>${formatearPrecio(calcularTotal())}</strong></p>
-        </div>
+            <section class="recibo-totales">
+                <div class="recibo-par">
+                    <span>Subtotal</span>
+                    <strong>${formatearPrecio(datos.subtotal)}</strong>
+                </div>
+                ${datos.descuento > 0 ? `
+                    <div class="recibo-par">
+                        <span>Descuento</span>
+                        <strong>-${formatearPrecio(datos.descuento)}</strong>
+                    </div>
+                ` : ""}
+                <div class="recibo-par">
+                    <span>Propina</span>
+                    <strong>${formatearPrecio(datos.propina)}</strong>
+                </div>
+                <div class="recibo-par">
+                    <span>Domicilio</span>
+                    <strong>${formatearPrecio(datos.domicilio)}</strong>
+                </div>
+                <div class="recibo-par recibo-total">
+                    <span>TOTAL</span>
+                    <strong>${formatearPrecio(datos.total)}</strong>
+                </div>
+            </section>
 
-        <div class="comprobante-pie">
-            <p>¡Gracias por su visita!</p>
-        </div>
+            ${direccionDomicilio}
+
+            <footer class="recibo-pie">
+                <strong>ORIGINAL</strong>
+                <span>Impreso: ${ahora.toLocaleString("es-CO")}</span>
+                <span>Impreso por: ${esc(datosOperador.nombre || datosOperador.username || "Personal")}</span>
+                <span>Este comprobante es informativo y no es una factura electrónica.</span>
+                <span>¡Gracias por su visita!</span>
+            </footer>
+        </article>
     `;
+}
+
+function ajustarPaginaImpresion() {
+    let estilo = document.getElementById("paginaReciboTermico");
+    if (!estilo) {
+        estilo = document.createElement("style");
+        estilo.id = "paginaReciboTermico";
+        document.head.appendChild(estilo);
+    }
+
+    const alturaMm = Math.max(50, Math.ceil(comprobanteImpresion.scrollHeight * 25.4 / 96 + 2));
+    estilo.textContent = `@media print { @page { size: 80mm ${alturaMm}mm; margin: 0; } }`;
+}
+
+function imprimirComprobante() {
+    return new Promise((resolve, reject) => {
+        requestAnimationFrame(() => {
+            try {
+                ajustarPaginaImpresion();
+                window.print();
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        });
+    });
 }
 
 async function imprimirCuenta() {
@@ -1464,7 +1622,7 @@ async function imprimirCuenta() {
     }
 
     try {
-        await construirComprobante();
+        await construirComprobante(capturarDatosComprobante());
         cuentaModal.classList.add("active");
     } catch (error) {
         console.error(error);
@@ -1475,7 +1633,10 @@ async function imprimirCuenta() {
 btnImprimirCuenta.addEventListener("click", imprimirCuenta);
 
 btnImprimirCuentaFinal.addEventListener("click", () => {
-    window.print();
+    imprimirComprobante().catch(error => {
+        console.error(error);
+        manejarError(error, "No se pudo abrir la impresión.");
+    });
 });
 
 btnCerrarCuenta.addEventListener("click", () => {

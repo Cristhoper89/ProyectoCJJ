@@ -1291,6 +1291,44 @@ body {
 
 }
 
+.domicilio-datos {
+
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+
+}
+
+.domicilio-datos[hidden] {
+
+    display: none;
+
+}
+
+.domicilio-datos label {
+
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #B8B1A8;
+    font-size: 12px;
+
+}
+
+.domicilio-datos input {
+
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #4A3D31;
+    border-radius: 8px;
+    background: #1D1A17;
+    color: #F5F5F5;
+    font: inherit;
+
+}
+
 .total-editable-control button {
 
     width: 40px;
@@ -1632,130 +1670,157 @@ body {
 /* COMPROBANTE */
 /* ====================================================== */
 
-.comprobante-cabecera {
-
-    text-align: center;
-    border-bottom: 2px solid #1D1A17;
-    padding-bottom: 12px;
-    margin-bottom: 14px;
-
-}
-
-.comprobante-cabecera h2 {
-
-    margin: 0 0 4px;
-    font-size: 18px;
-    letter-spacing: 1px;
-
-}
-
-.comprobante-cabecera p {
-
-    margin: 2px 0;
-    font-size: 12px;
-    color: #4a4a4a;
-
-}
-
-.comprobante-datos {
-
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    font-size: 13px;
-
-}
-
-.comprobante-datos p {
-
-    margin: 0;
-
-}
-
-.comprobante-tabla {
+.recibo-termico {
 
     width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 14px;
+    max-width: 74mm;
+    margin: 0 auto;
+    color: #000;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    line-height: 1.3;
 
 }
 
-.comprobante-tabla th {
+.recibo-cabecera {
 
-    background: #1D1A17;
-    color: #F5F5F5;
-    font-size: 11px;
-    padding: 8px 6px;
-    text-align: left;
-
-}
-
-.comprobante-tabla td {
-
-    padding: 8px 6px;
-    border-top: 1px solid #ccc;
-    font-size: 12px;
-    color: #1D1A17;
-
-}
-
-.texto-centro {
-
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #000;
     text-align: center;
+    overflow-wrap: anywhere;
 
 }
 
-.texto-derecha {
+.recibo-cabecera h2 {
 
+    margin: 0 0 3px;
+    font-size: 14px;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+
+}
+
+.recibo-cabecera strong {
+
+    margin-top: 5px;
+    font-size: 11px;
+
+}
+
+.recibo-seccion {
+
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 7px 0;
+    border-bottom: 1px dashed #777;
+    overflow-wrap: anywhere;
+
+}
+
+.recibo-seccion > strong {
+
+    margin-bottom: 2px;
+    font-size: 10px;
+
+}
+
+.recibo-par {
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+
+}
+
+.recibo-par > :first-child {
+
+    flex: 1 1 auto;
+
+}
+
+.recibo-par > :last-child {
+
+    flex: 0 0 auto;
+    max-width: 58%;
     text-align: right;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
 
 }
 
-.comprobante-totales {
-
-    border-top: 2px solid #1D1A17;
-    padding-top: 10px;
-    margin-bottom: 14px;
-
-}
-
-.comprobante-totales p {
+.recibo-producto {
 
     display: flex;
     justify-content: space-between;
-    margin: 5px 0;
+    gap: 8px;
+    padding: 5px 0;
+    border-top: 1px dotted #aaa;
+    overflow-wrap: anywhere;
+
+}
+
+.recibo-producto > div {
+
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+}
+
+.recibo-producto > strong:last-child {
+
+    flex: 0 0 auto;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+
+}
+
+.recibo-producto small {
+
+    font-size: 9px;
+
+}
+
+.recibo-totales {
+
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 0;
+    border-bottom: 1px dashed #777;
+
+}
+
+.recibo-total {
+
+    margin-top: 3px;
+    padding-top: 6px;
+    border-top: 1px solid #000;
     font-size: 13px;
 
 }
 
-.comprobante-total {
+.recibo-pie {
 
-    font-size: 17px !important;
-    margin-top: 8px !important;
-    border-top: 1px dashed #1D1A17;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     padding-top: 8px;
-
-}
-
-.comprobante-total strong {
-
-    color: #C28E3F;
-
-}
-
-.comprobante-pie {
-
     text-align: center;
-    border-top: 1px dashed #1D1A17;
-    padding-top: 12px;
-    color: #4a4a4a;
-    font-size: 12px;
+    overflow-wrap: anywhere;
 
 }
 
-.comprobante-pie p {
+.recibo-pie strong {
 
-    margin: 0;
+    font-size: 10px;
 
 }
 
@@ -1805,38 +1870,99 @@ body {
 
 @media print {
 
+    @page {
+
+        size: 80mm auto;
+        margin: 0;
+
+    }
+
+    html,
+    body {
+
+        width: 80mm !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: #fff !important;
+
+    }
+
     body * {
 
-        visibility: hidden;
+        visibility: hidden !important;
 
     }
 
     .print-area,
     .print-area * {
 
-        visibility: visible;
-
-    }
-
-    .print-area {
-
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        max-height: none;
-        overflow: visible;
-        background: #fff;
-        color: #000;
-        padding: 20px;
+        visibility: visible !important;
 
     }
 
     .modal-overlay.active {
 
-        display: block;
-        position: static;
-        background: none;
+        display: block !important;
+        position: static !important;
+        width: 80mm !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: #fff !important;
+
+    }
+
+    .cuenta-modal {
+
+        display: block !important;
+        position: static !important;
+        width: 80mm !important;
+        max-width: none !important;
+        max-height: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+
+    }
+
+    .cuenta-acciones {
+
+        display: none !important;
+
+    }
+
+    .print-area {
+
+        display: block !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 80mm !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 3mm !important;
+        overflow: visible !important;
+        background: #fff !important;
+        color: #000 !important;
+
+    }
+
+    .recibo-termico {
+
+        width: 100% !important;
+        max-width: 74mm !important;
 
     }
 
