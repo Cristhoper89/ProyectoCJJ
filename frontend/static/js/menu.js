@@ -5,9 +5,13 @@ const menuModules = {
 	admin: [
 		["Mesa", "layout-grid", "/mesas"], ["Caja", "wallet-cards", "/caja"],
 		["Categorías", "tags", "/categorias"], ["Perfil", "user-round", "/dashboard"],
-		["Movimientos", "arrow-left-right", "/movimientos"], ["Productos", "package", "/productos"],
-		["Opciones de productos", "tags", "/opciones-productos"],
-		["Ingredientes", "carrot", "/ingredientes"], ["Proveedores", "truck", null], ["Empleados", "users-round", "/usuarios"],
+		["Movimientos", "arrow-left-right", "/movimientos"],
+		["Productos", "package", null, [
+			["Productos", "package", "/productos"],
+			["Opciones de productos", "tags", "/opciones-productos"],
+			["Ingredientes", "carrot", "/ingredientes"]
+		]],
+		["Empleados", "users-round", "/usuarios"],
 		["Clientes", "contact-round", "/clientes"], ["Estadística", "chart-no-axes-combined", "/reportes"],
 		["Pedidos", "clipboard-list", "/pedidos"], ["Carta", "book-open", null],
 		["Configuración", "settings", "/configuracion"]
@@ -15,11 +19,50 @@ const menuModules = {
 	cajero: [
 		["Mesa", "layout-grid", "/mesas"], ["Perfil", "user-round", "/dashboard"],
 		["Movimientos", "arrow-left-right", "/movimientos"], ["Caja", "wallet-cards", "/caja"],
-		["Categorías", "tags", "/categorias"], ["Productos", "package", "/productos"],
-		["Opciones de productos", "tags", "/opciones-productos"],
-		["Ingredientes", "carrot", "/ingredientes"]
+		["Categorías", "tags", "/categorias"],
+		["Productos", "package", null, [
+			["Productos", "package", "/productos"],
+			["Opciones de productos", "tags", "/opciones-productos"],
+			["Ingredientes", "carrot", "/ingredientes"]
+		]]
 	]
 };
+
+function renderMenuItem([name, icon, href, children], currentPath) {
+	if (children) {
+		const isActive = children.some(([, , childHref]) => childHref === currentPath);
+		return `
+			<details class="nav-group">
+				<summary class="nav-item ${isActive ? "active" : ""}" aria-label="${name}">
+					<i data-lucide="${icon}"></i><span>${name}</span><i class="nav-chevron" data-lucide="chevron-down"></i>
+				</summary>
+				<div class="nav-dropdown">
+					${children.map(([childName, childIcon, childHref]) => `
+						<a class="nav-dropdown-item ${childHref === currentPath ? "active" : ""}" href="${childHref}">
+							<i data-lucide="${childIcon}"></i><span>${childName}</span>
+						</a>
+					`).join("")}
+				</div>
+			</details>
+		`;
+	}
+
+	return `
+		<a class="nav-item ${href === currentPath ? "active" : ""} ${href ? "" : "is-coming-soon"}" href="${href || "#"}" ${href ? "" : "data-coming-soon=\"true\""}>
+			<i data-lucide="${icon}"></i><span>${name}</span>${href ? "" : "<small>Próximamente</small>"}
+		</a>
+	`;
+}
+
+function positionOpenDropdown(group) {
+	const summary = group.querySelector("summary");
+	const dropdown = group.querySelector(".nav-dropdown");
+	if (!summary || !dropdown) return;
+	const bounds = summary.getBoundingClientRect();
+	const left = Math.max(8, Math.min(bounds.left, window.innerWidth - dropdown.offsetWidth - 8));
+	dropdown.style.top = `${bounds.bottom + 6}px`;
+	dropdown.style.left = `${left}px`;
+}
 
 function renderMenu(user) {
 	const role = user?.role_name?.toLowerCase() === "cajero" ? "cajero" : "admin";
@@ -27,11 +70,12 @@ function renderMenu(user) {
 	if (!sideNav) return;
 	const currentPath = window.location.pathname;
 
-	sideNav.innerHTML = menuModules[role].map(([name, icon, href]) => `
-		<a class="nav-item ${href === currentPath ? "active" : ""} ${href ? "" : "is-coming-soon"}" href="${href || "#"}" ${href ? "" : "data-coming-soon=\"true\""}>
-			<i data-lucide="${icon}"></i><span>${name}</span>${href ? "" : "<small>Próximamente</small>"}
-		</a>
-	`).join("");
+	sideNav.innerHTML = menuModules[role].map(item => renderMenuItem(item, currentPath)).join("");
+	sideNav.querySelectorAll(".nav-group").forEach(group => {
+		group.addEventListener("toggle", () => {
+			if (group.open) positionOpenDropdown(group);
+		});
+	});
 	lucide.createIcons();
 }
 
