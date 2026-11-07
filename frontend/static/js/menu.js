@@ -3,8 +3,13 @@ const MENU_HTML_CACHE_KEY = "cabana_menu_html";
 const MENU_USER_CACHE_KEY = "cabana_menu_user";
 const menuModules = {
 	admin: [
-		["Mesa", "layout-grid", "/mesas"], ["Caja", "wallet-cards", "/caja"],
-		["Categorías", "tags", "/categorias"], ["Perfil", "user-round", "/dashboard"],
+		["Perfil", "user-round", "/perfil"],
+		["Caja", "wallet-cards", null, [
+			["Historial de cajas", "history", "/cajas"],
+			["Caja actual", "wallet-cards", "/caja"],
+			["Cerrar y abrir caja", "lock-keyhole", "/cierre-caja"]
+		]],
+		["Mesa", "layout-grid", "/mesas"], ["Categorías", "tags", "/categorias"],
 		["Movimientos", "arrow-left-right", "/movimientos"],
 		["Productos", "package", null, [
 			["Productos", "package", "/productos"],
@@ -17,8 +22,13 @@ const menuModules = {
 		["Configuración", "settings", "/configuracion"]
 	],
 	cajero: [
-		["Mesa", "layout-grid", "/mesas"], ["Perfil", "user-round", "/dashboard"],
-		["Movimientos", "arrow-left-right", "/movimientos"], ["Caja", "wallet-cards", "/caja"],
+		["Perfil", "user-round", "/perfil"],
+		["Caja", "wallet-cards", null, [
+			["Historial de cajas", "history", "/cajas"],
+			["Caja actual", "wallet-cards", "/caja"],
+			["Cerrar y abrir caja", "lock-keyhole", "/cierre-caja"]
+		]],
+		["Mesa", "layout-grid", "/mesas"], ["Movimientos", "arrow-left-right", "/movimientos"],
 		["Categorías", "tags", "/categorias"],
 		["Productos", "package", null, [
 			["Productos", "package", "/productos"],
@@ -68,7 +78,7 @@ function renderMenu(user) {
 	const role = user?.role_name?.toLowerCase() === "cajero" ? "cajero" : "admin";
 	const sideNav = document.getElementById("sideNav");
 	if (!sideNav) return;
-	const currentPath = window.location.pathname;
+	const currentPath = `${window.location.pathname}${window.location.hash}`;
 
 	sideNav.innerHTML = menuModules[role].map(item => renderMenuItem(item, currentPath)).join("");
 	sideNav.querySelectorAll(".nav-group").forEach(group => {

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cerrar y abrir caja | Cabaña</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
+    <link rel="stylesheet" href="../static/css/modules/caja.css?v=4">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+        <main class="caja-page">
+            <header class="caja-header">
+                <div>
+                    <span class="eyebrow" id="cashFlowKicker">Gestión de turnos</span>
+                    <h1 id="cashFlowTitle">Cerrar y abrir caja</h1>
+                    <p id="cashFlowSubtitle">Consulta el turno actual o inicia una caja nueva.</p>
+                </div>
+                <a class="btn-secondary" href="/caja"><i data-lucide="wallet-cards"></i>Caja actual</a>
+            </header>
+
+            <p class="caja-message" id="cashFlowMessage" role="status" aria-live="polite"></p>
+            <p class="caja-message" id="cashFlowLoading">Cargando datos de caja...</p>
+            <button class="btn-secondary" id="cashFlowRetry" type="button" hidden>Reintentar</button>
+
+            <section class="caja-panel caja-flow-panel" id="closeCashPanel" hidden>
+                <span class="eyebrow">Cierre de turno</span>
+                <h2 id="closeCashHeading">Cerrar caja</h2>
+                <p class="caja-flow-copy" id="closeCashDescription"></p>
+                <div class="caja-flow-summary">
+                    <div><span>Ingresos</span><strong id="closeCashIncome">$0</strong></div>
+                    <div><span>Egresos y gastos</span><strong id="closeCashExpenses">$0</strong></div>
+                    <div><span>Propinas separadas</span><strong id="closeCashTips">$0</strong></div>
+                </div>
+                <div class="caja-flow-balance">
+                    <span>Balance esperado en sistema</span>
+                    <strong id="closeCashBalance">$0</strong>
+                </div>
+                <p class="caja-flow-note">Al cerrar, esta caja quedará cerrada. La siguiente caja se abre manualmente cuando estés listo.</p>
+                <div class="caja-flow-actions">
+                    <button class="btn-danger" id="confirmCloseCash" type="button">Cerrar caja</button>
+                </div>
+            </section>
+
+            <section class="caja-panel caja-flow-panel" id="openCashPanel" hidden>
+                <span class="eyebrow">Nuevo turno</span>
+                <h2>Abrir una caja</h2>
+                <p class="caja-flow-copy">No hay una caja abierta. Ingresa el balance inicial para comenzar el turno.</p>
+                <form class="caja-flow-form" id="openCashForm" novalidate>
+                    <label class="caja-form-field" for="openingBalance">
+                        Balance inicial
+                        <span><b>$</b><input id="openingBalance" name="balance_inicial" type="text" inputmode="numeric" autocomplete="off" placeholder="50.000" required></span>
+                    </label>
+                    <p class="caja-flow-error" id="openCashError" role="alert"></p>
+                    <div class="caja-flow-actions">
+                        <button class="btn-primary" id="confirmOpenCash" type="submit">Abrir caja</button>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </div>
+    <script>lucide.createIcons();</script>
+    <script src="../static/js/menu.js?v=11"></script>
+    <script src="../static/js/cierre-caja.js?v=1"></script>
+</body>
+</html>

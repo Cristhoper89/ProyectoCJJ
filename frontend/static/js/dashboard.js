@@ -13,8 +13,13 @@ let toastTimeout;
 
 const modules = {
 	admin: [
-		["Mesa", "layout-grid", "/mesas"], ["Caja", "wallet-cards", "/caja"],
-		["Categorías", "tags", "/categorias"], ["Perfil", "user-round", "/dashboard"],
+		["Perfil", "user-round", "/perfil"],
+		["Caja", "wallet-cards", null, [
+			["Historial de cajas", "history", "/cajas"],
+			["Caja actual", "wallet-cards", "/caja"],
+			["Cerrar y abrir caja", "lock-keyhole", "/cierre-caja"]
+		]],
+		["Mesa", "layout-grid", "/mesas"], ["Categorías", "tags", "/categorias"],
 		["Movimientos", "arrow-left-right", "/movimientos"],
 		["Productos", "package", null, [
 			["Productos", "package", "/productos"],
@@ -27,8 +32,13 @@ const modules = {
 		["Configuración", "settings", "/configuracion"]
 	],
 	cajero: [
-		["Mesa", "layout-grid", "/mesas"], ["Perfil", "user-round", "/dashboard"],
-		["Movimientos", "arrow-left-right", "/movimientos"], ["Caja", "wallet-cards", "/caja"],
+		["Perfil", "user-round", "/perfil"],
+		["Caja", "wallet-cards", null, [
+			["Historial de cajas", "history", "/cajas"],
+			["Caja actual", "wallet-cards", "/caja"],
+			["Cerrar y abrir caja", "lock-keyhole", "/cierre-caja"]
+		]],
+		["Mesa", "layout-grid", "/mesas"], ["Movimientos", "arrow-left-right", "/movimientos"],
 		["Categorías", "tags", "/categorias"],
 		["Productos", "package", null, [
 			["Productos", "package", "/productos"],
@@ -109,7 +119,7 @@ function setUser(user){
 	const role = user.role_name.toLowerCase() === "cajero" ? "cajero" : "admin";
 	const availableModules = modules[role];
 	const firstName = user.username || "Usuario";
-	const currentPath = window.location.pathname;
+	const currentPath = `${window.location.pathname}${window.location.hash}`;
 	document.getElementById("userName").textContent = firstName;
 	document.getElementById("userRole").textContent = user.role_name;
 	document.getElementById("userAvatar").textContent = firstName.slice(0, 2).toUpperCase();

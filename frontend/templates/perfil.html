@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil | Cabaña</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
+    <link rel="stylesheet" href="../static/css/modules/perfil.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+        <main class="dashboard-main profile-main">
+            <section class="profile-page">
+                <header class="profile-heading">
+                    <span class="eyebrow">Mi cuenta</span>
+                    <h1>Perfil</h1>
+                    <p>Consulta y actualiza tus datos personales.</p>
+                </header>
+
+                <div class="profile-message" id="profileMessage" role="status" aria-live="polite"></div>
+                <div class="profile-loading" id="profileLoading">Cargando perfil...</div>
+                <button class="profile-retry" id="profileRetry" type="button" hidden>Reintentar</button>
+
+                <section class="profile-card" id="profileCard" hidden aria-label="Datos del perfil">
+                    <header class="profile-identity">
+                        <div class="profile-avatar"><i data-lucide="user-round"></i></div>
+                        <div class="profile-identity-copy">
+                            <h2 id="profileDisplayName"></h2>
+                            <span id="profileUsername"></span>
+                        </div>
+                        <span class="profile-status" id="profileStatus"></span>
+                    </header>
+
+                    <form id="profileForm" novalidate>
+                        <div class="profile-fields">
+                            <label class="profile-field" for="profileName">
+                                <span><i data-lucide="user-round"></i>Nombre completo</span>
+                                <strong class="profile-value" id="profileNameValue"></strong>
+                                <input id="profileName" name="nombre" type="text" maxlength="100" autocomplete="name" hidden>
+                            </label>
+                            <label class="profile-field" for="profileEmail">
+                                <span><i data-lucide="mail"></i>Correo electrónico</span>
+                                <strong class="profile-value" id="profileEmailValue"></strong>
+                                <input id="profileEmail" name="email" type="email" maxlength="254" autocomplete="email" hidden>
+                            </label>
+                            <label class="profile-field" for="profilePhone">
+                                <span><i data-lucide="phone"></i>Teléfono</span>
+                                <strong class="profile-value" id="profilePhoneValue"></strong>
+                                <input id="profilePhone" name="telefono" type="tel" maxlength="10" autocomplete="tel" hidden>
+                            </label>
+                        </div>
+
+                        <div class="profile-details">
+                            <div><span><i data-lucide="at-sign"></i>Usuario</span><strong id="profileUsernameDetail"></strong></div>
+                            <div><span><i data-lucide="shield-check"></i>Rol</span><strong id="profileRole"></strong></div>
+                            <div><span><i data-lucide="calendar-days"></i>Miembro desde</span><strong id="profileCreatedAt"></strong></div>
+                            <div><span><i data-lucide="calendar-days"></i>Último acceso</span><strong id="profileLastLogin"></strong></div>
+                        </div>
+
+                        <footer class="profile-actions">
+                            <button class="profile-button profile-button-secondary" id="cancelProfileEdit" type="button" hidden>Cancelar</button>
+                            <button class="profile-button profile-button-secondary" id="editProfile" type="button">
+                                <i data-lucide="pencil"></i>Editar perfil
+                            </button>
+                            <button class="profile-button profile-button-primary" id="saveProfile" type="submit" hidden>
+                                <i data-lucide="check"></i>Guardar cambios
+                            </button>
+                        </footer>
+                    </form>
+                </section>
+            </section>
+        </main>
+    </div>
+    <script>lucide.createIcons();</script>
+    <script src="../static/js/menu.js?v=11"></script>
+    <script src="../static/js/perfil.js?v=1"></script>
+</body>
+</html>

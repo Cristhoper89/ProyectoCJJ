@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de cajas | Cabaña</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
+    <link rel="stylesheet" href="../static/css/modules/caja.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+        <main class="caja-page">
+            <header class="caja-header">
+                <div>
+                    <span class="eyebrow">Control financiero</span>
+                    <h1>Historial de cajas</h1>
+                    <p>Consulta los turnos registrados y sus balances.</p>
+                </div>
+                <a class="btn-primary" href="/caja"><i data-lucide="wallet-cards"></i>Caja actual</a>
+            </header>
+
+            <p class="caja-message" id="historyMessage" role="status" aria-live="polite"></p>
+            <section class="caja-panel caja-history">
+                <div class="panel-heading">
+                    <div><span class="eyebrow">Turnos</span><h2>Cajas registradas</h2></div>
+                    <i data-lucide="history"></i>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Caja</th><th>Fecha</th><th>Inicial</th><th>Ingresos</th><th>Gastos</th><th>Propinas</th><th>Final</th><th>Estado</th></tr></thead>
+                        <tbody id="historyTable"><tr><td colspan="8" class="loading">Cargando historial...</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script>lucide.createIcons();</script>
+    <script src="../static/js/menu.js?v=11"></script>
+    <script src="../static/js/historial-cajas.js?v=1"></script>
+</body>
+</html>
