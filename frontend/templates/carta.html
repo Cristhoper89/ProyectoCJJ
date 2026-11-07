@@ -7,11 +7,15 @@
     <title>Nuestra carta | La Cabaña</title>
     <link rel="stylesheet" href="../static/css/base/variables.css">
     <link rel="stylesheet" href="../static/css/base/global.css">
-    <link rel="stylesheet" href="../static/css/modules/carta.css?v=1">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
+    <link rel="stylesheet" href="../static/css/modules/carta.css?v=5">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="carta-preview-body">
-    <main class="carta-page">
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+        <main class="dashboard-main">
+        <div class="carta-page">
         <header class="carta-header">
             <a class="carta-brand" href="/dashboard" aria-label="Volver al panel de administración">
                 <span class="carta-brand-mark"><i data-lucide="utensils"></i></span>
@@ -69,7 +73,9 @@
             <span class="footer-separator"></span>
             <span>Buenos momentos, buenos sabores.</span>
         </footer>
-    </main>
+        </div>
+        </main>
+    </div>
 
     <dialog class="carta-product-dialog" id="cartaProductDialog" aria-labelledby="dialogProductName">
         <button class="dialog-close" id="closeProductDialog" type="button" aria-label="Cerrar detalle">
@@ -86,6 +92,7 @@
     </dialog>
 
     <script>lucide.createIcons();</script>
+    <script src="../static/js/menu.js?v=13"></script>
     <script src="../static/js/carta.js?v=1"></script>
 </body>
 </html>

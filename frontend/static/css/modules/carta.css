@@ -3,13 +3,20 @@
 }
 
 .carta-preview-body {
-    height: auto;
-    min-height: 100vh;
-    overflow-x: hidden;
-    overflow-y: auto;
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
     background: #1d1a17;
     color: #f5ebdd;
     font-family: "Manrope", sans-serif;
+}
+
+.carta-preview-body .dashboard-main {
+    height: calc(100vh - 72px);
+}
+
+.carta-preview-body .carta-page {
+    min-height: 100%;
 }
 
 .carta-page {
@@ -567,6 +574,8 @@
 
 .carta-product-dialog {
     position: fixed;
+    inset: 0;
+    margin: auto;
     width: min(680px, calc(100% - 32px));
     max-height: min(820px, calc(100% - 32px));
     overflow: auto;
@@ -703,6 +712,19 @@
 
     .carta-hero-copy {
         max-width: 58%;
+    }
+}
+
+@media (max-width: 760px) {
+    .carta-preview-body {
+        height: auto;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .carta-preview-body .dashboard-main {
+        height: auto;
+        overflow: visible;
     }
 }
 
