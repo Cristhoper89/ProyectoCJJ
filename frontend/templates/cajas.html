@@ -7,14 +7,14 @@
     <link rel="stylesheet" href="../static/css/base/variables.css">
     <link rel="stylesheet" href="../static/css/base/global.css">
     <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
-    <link rel="stylesheet" href="../static/css/modules/caja.css">
+    <link rel="stylesheet" href="../static/css/modules/caja.css?v=5">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
     <div class="dashboard-shell">
         <div id="menu-container"></div>
-        <main class="caja-page">
-            <header class="caja-header">
+        <main class="cajas-page">
+            <header class="cajas-header">
                 <div>
                     <span class="eyebrow">Control financiero</span>
                     <h1>Historial de cajas</h1>
@@ -24,15 +24,49 @@
             </header>
 
             <p class="caja-message" id="historyMessage" role="status" aria-live="polite"></p>
-            <section class="caja-panel caja-history">
-                <div class="panel-heading">
-                    <div><span class="eyebrow">Turnos</span><h2>Cajas registradas</h2></div>
-                    <i data-lucide="history"></i>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead><tr><th>Caja</th><th>Fecha</th><th>Inicial</th><th>Ingresos</th><th>Gastos</th><th>Propinas</th><th>Final</th><th>Estado</th></tr></thead>
-                        <tbody id="historyTable"><tr><td colspan="8" class="loading">Cargando historial...</td></tr></tbody>
+            <section class="cajas-tools" aria-label="Buscar y filtrar cajas">
+                <label class="search-box" for="cajaSearch">
+                    <i data-lucide="search"></i>
+                    <input id="cajaSearch" type="search" placeholder="Buscar por número de caja..." autocomplete="off">
+                </label>
+                <label class="cajas-filter" for="cajaRange">
+                    <span>Periodo</span>
+                    <select id="cajaRange">
+                        <option value="month">Último mes</option>
+                        <option value="today">Hoy</option>
+                        <option value="week">Última semana</option>
+                        <option value="all">Todo el historial</option>
+                    </select>
+                </label>
+                <label class="cajas-filter" for="cajaStatusFilter">
+                    <span>Estado</span>
+                    <select id="cajaStatusFilter">
+                        <option value="all">Todos</option>
+                        <option value="abierta">Abiertas</option>
+                        <option value="cerrada">Cerradas</option>
+                    </select>
+                </label>
+                <span class="cajas-count" id="cajaCount" aria-live="polite"></span>
+            </section>
+
+            <section class="cajas-card">
+                <div class="cajas-table-wrap">
+                    <table class="cajas-table">
+                        <thead>
+                            <tr>
+                                <th>Caja</th>
+                                <th>Fecha</th>
+                                <th>Inicial</th>
+                                <th>Ingresos</th>
+                                <th>Gastos</th>
+                                <th>Propinas</th>
+                                <th>Final</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTable">
+                            <tr><td colspan="8" class="loading">Cargando historial...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </section>
@@ -40,6 +74,6 @@
     </div>
     <script>lucide.createIcons();</script>
     <script src="../static/js/menu.js?v=11"></script>
-    <script src="../static/js/historial-cajas.js?v=1"></script>
+    <script src="../static/js/historial-cajas.js?v=2"></script>
 </body>
 </html>

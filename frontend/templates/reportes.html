@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadística | Cabaña</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
+    <link rel="stylesheet" href="../static/css/modules/reportes.css?v=1">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+        <main class="dashboard-main statistics-main">
+            <div class="statistics-page">
+                <header class="statistics-header">
+                    <div>
+                        <span class="eyebrow">Resumen de ventas</span>
+                        <h1>Estadística</h1>
+                        <p id="statisticsSubtitle">Histórico completo</p>
+                    </div>
+                    <button class="statistics-refresh" id="statisticsRefresh" type="button" aria-label="Actualizar estadísticas">
+                        <i data-lucide="refresh-cw"></i>
+                        <span>Actualizar</span>
+                    </button>
+                </header>
+
+                <div class="statistics-message" id="statisticsMessage" role="status" aria-live="polite"></div>
+                <div class="statistics-loading" id="statisticsLoading">Cargando estadísticas...</div>
+                <section class="statistics-content" id="statisticsContent" hidden>
+                    <div class="statistics-toolbar">
+                        <div class="period-selector" role="group" aria-label="Periodo de estadísticas">
+                            <button type="button" data-period="all" aria-pressed="true">Todo</button>
+                            <button type="button" data-period="week" aria-pressed="false">Semana</button>
+                            <button type="button" data-period="month" aria-pressed="false">Mes</button>
+                            <button type="button" data-period="year" aria-pressed="false">Año</button>
+                        </div>
+                        <span class="statistics-period-note" id="statisticsPeriodNote"></span>
+                    </div>
+
+                    <section class="statistics-metrics" aria-label="Indicadores de venta">
+                        <article class="statistics-metric metric-income">
+                            <div class="metric-heading"><span>Ingresos del periodo</span><i data-lucide="banknote"></i></div>
+                            <strong id="metricRevenue">$0</strong>
+                            <small id="metricSalesCount">0 ventas registradas</small>
+                        </article>
+                        <article class="statistics-metric">
+                            <div class="metric-heading"><span>Venta promedio</span><i data-lucide="receipt"></i></div>
+                            <strong id="metricAverageSale">$0</strong>
+                            <small>Por venta registrada</small>
+                        </article>
+                        <article class="statistics-metric">
+                            <div class="metric-heading"><span>Ingreso diario promedio</span><i data-lucide="calendar-days"></i></div>
+                            <strong id="metricDailyAverage">$0</strong>
+                            <small id="metricDailyHint">Promedio diario</small>
+                        </article>
+                        <article class="statistics-metric">
+                            <div class="metric-heading"><span>Crecimiento de ventas</span><span class="metric-icon" id="growthIconContainer"><i data-lucide="trending-up"></i></span></div>
+                            <strong id="metricGrowth">0%</strong>
+                            <small>Frente al periodo anterior equivalente</small>
+                        </article>
+                    </section>
+
+                    <section class="statistics-panel statistics-chart-panel">
+                        <header class="statistics-panel-heading">
+                            <div>
+                                <span class="eyebrow">Tendencia</span>
+                                <h2 id="chartTitle">Promedio de venta por periodo</h2>
+                                <p id="chartSubtitle">Promedio de cada venta registrada</p>
+                            </div>
+                            <span class="chart-unit" id="chartUnit">AÑOS</span>
+                        </header>
+                        <div class="statistics-chart-scroll">
+                            <div class="statistics-chart" id="statisticsChart" aria-label="Gráfico de promedio de ventas"></div>
+                        </div>
+                    </section>
+
+                    <div class="statistics-analysis-grid">
+                        <section class="statistics-panel">
+                            <header class="statistics-panel-heading">
+                                <div>
+                                    <span class="eyebrow">Distribución</span>
+                                    <h2>Ingresos por categoría</h2>
+                                    <p>Participación sobre los ingresos del periodo</p>
+                                </div>
+                            </header>
+                            <div class="category-revenue-list" id="categoryRevenueList"></div>
+                        </section>
+
+                        <section class="statistics-panel">
+                            <header class="statistics-panel-heading">
+                                <div>
+                                    <span class="eyebrow">Líderes</span>
+                                    <h2>Productos más vendidos</h2>
+                                    <p>Unidades vendidas durante el periodo</p>
+                                </div>
+                            </header>
+                            <div class="top-products" id="topProducts"></div>
+                        </section>
+                    </div>
+
+                    <section class="statistics-panel category-leaders-panel">
+                        <header class="statistics-panel-heading">
+                            <div>
+                                <span class="eyebrow">Rendimiento por categoría</span>
+                                <h2>Producto más vendido por categoría</h2>
+                                <p>Producto líder y unidades vendidas en cada categoría</p>
+                            </div>
+                        </header>
+                        <div class="statistics-table-wrap">
+                            <table class="statistics-table">
+                                <thead>
+                                    <tr><th>Categoría</th><th>Producto líder</th><th>Unidades</th><th>Ingresos</th><th>Participación</th></tr>
+                                </thead>
+                                <tbody id="categoryLeadersTable"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                    <p class="statistics-footnote" id="statisticsFootnote"></p>
+                </section>
+            </div>
+        </main>
+    </div>
+    <script>lucide.createIcons();</script>
+    <script src="../static/js/menu.js?v=11"></script>
+    <script src="../static/js/reportes.js?v=1"></script>
+</body>
+</html>

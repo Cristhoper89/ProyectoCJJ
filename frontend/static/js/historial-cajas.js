@@ -1,5 +1,9 @@
 const CAJAS_HISTORY_API_URL = "https://serviciocontigo.io/api";
 
+let cajaHistory = [];
+let cajaMovements = [];
+let cajaExpenses = [];
+
 function historyMoney(value) {
 	const amount = Number(value ?? 0);
 	return new Intl.NumberFormat("es-CO", {
@@ -22,6 +26,74 @@ function historyDate(value) {
 		: date.toLocaleString("es-CO", {day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"});
 }
 
+function matchesCajaRange(value, range) {
+	if (range === "all" || !value) return true;
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return true;
+	const start = new Date();
+	start.setHours(0, 0, 0, 0);
+	if (range === "week") start.setDate(start.getDate() - 6);
+	if (range === "month") start.setMonth(start.getMonth() - 1);
+	return date >= start;
+}
+
+function renderCajaHistory() {
+	const search = document.getElementById("cajaSearch").value.trim().toLowerCase();
+	const range = document.getElementById("cajaRange").value;
+	const statusFilter = document.getElementById("cajaStatusFilter").value;
+	const visibleCajas = cajaHistory.filter(caja => {
+		const status = String(caja.estado ?? "").trim().toLowerCase() === "abierta" ? "abierta" : "cerrada";
+		return (statusFilter === "all" || status === statusFilter)
+			&& matchesCajaRange(caja.fecha, range)
+			&& (!search || String(caja.id).includes(search));
+	});
+
+	document.getElementById("cajaCount").textContent = `${visibleCajas.length} ${visibleCajas.length === 1 ? "caja" : "cajas"}`;
+	const table = document.getElementById("historyTable");
+	if (!visibleCajas.length) {
+		table.innerHTML = `<tr><td colspan="8" class="loading">${cajaHistory.length ? "No hay cajas que coincidan con los filtros." : "No hay cajas registradas."}</td></tr>`;
+		return;
+	}
+
+	table.innerHTML = visibleCajas.map(caja => {
+		const isOpen = String(caja.estado ?? "").trim().toLowerCase() === "abierta";
+		const sales = cajaMovements.filter(movimiento => (
+			Number(movimiento.id_caja) === Number(caja.id)
+			&& movimiento.estado !== false
+			&& historyNumber(movimiento.total) > 0
+		));
+		const expensesForCaja = cajaExpenses.filter(gasto => Number(gasto.id_caja) === Number(caja.id));
+		const income = sales.length
+			? sales.reduce((total, movimiento) => total + historyNumber(movimiento.total), 0)
+			: historyNumber(caja.ingresos_efectivo)
+				+ historyNumber(caja.ingresos_tarjeta)
+				+ historyNumber(caja.ingresos_transferencia);
+		const expenses = Math.max(
+			expensesForCaja.reduce((total, gasto) => total + historyNumber(gasto.valor), 0),
+			historyNumber(caja.egresos_efectivo)
+				+ historyNumber(caja.egresos_tarjeta)
+				+ historyNumber(caja.egresos_transferencia)
+		);
+		const tips = sales.length
+			? sales.reduce((total, movimiento) => total + historyNumber(movimiento.propina), 0)
+			: historyNumber(caja.total_propinas);
+		const opening = historyNumber(caja.balance_inicial);
+		const finalBalance = caja.balance_final == null
+			? opening + income - expenses - tips
+			: historyNumber(caja.balance_final);
+		return `<tr>
+			<td><strong>#${historyNumber(caja.id)}</strong></td>
+			<td>${historyDate(caja.fecha)}</td>
+			<td>${historyMoney(opening)}</td>
+			<td>${historyMoney(income)}</td>
+			<td>${historyMoney(expenses)}</td>
+			<td>${historyMoney(tips)}</td>
+			<td>${historyMoney(finalBalance)}</td>
+			<td><span class="status-badge ${isOpen ? "open" : "closed"}">${isOpen ? "Abierta" : "Cerrada"}</span></td>
+		</tr>`;
+	}).join("");
+}
+
 async function loadCajaHistory() {
 	const token = localStorage.getItem("access_token");
 	if (!token) {
@@ -29,7 +101,6 @@ async function loadCajaHistory() {
 		return;
 	}
 
-	const table = document.getElementById("historyTable");
 	const message = document.getElementById("historyMessage");
 	try {
 		const [cajas, movimientos, gastos] = await Promise.all([
@@ -40,54 +111,14 @@ async function loadCajaHistory() {
 		if (!Array.isArray(cajas) || !Array.isArray(movimientos) || !Array.isArray(gastos)) {
 			throw new Error("El historial de cajas devolvió datos con un formato no válido.");
 		}
-
-		const orderedCajas = cajas.slice().sort((first, second) => historyNumber(second.id) - historyNumber(first.id));
-		if (!orderedCajas.length) {
-			table.innerHTML = '<tr><td colspan="8" class="loading">No hay cajas registradas.</td></tr>';
-			return;
-		}
-
-		table.innerHTML = orderedCajas.map(caja => {
-			const isOpen = String(caja.estado ?? "").trim().toLowerCase() === "abierta";
-			const cajaMovimientos = movimientos.filter(movimiento => (
-				Number(movimiento.id_caja) === Number(caja.id)
-				&& movimiento.estado !== false
-				&& historyNumber(movimiento.total) > 0
-			));
-			const cajaGastos = gastos.filter(gasto => Number(gasto.id_caja) === Number(caja.id));
-			const income = cajaMovimientos.length
-				? cajaMovimientos.reduce((total, movimiento) => total + historyNumber(movimiento.total), 0)
-				: historyNumber(caja.ingresos_efectivo)
-					+ historyNumber(caja.ingresos_tarjeta)
-					+ historyNumber(caja.ingresos_transferencia);
-			const expenses = Math.max(
-				cajaGastos.reduce((total, gasto) => total + historyNumber(gasto.valor), 0),
-				historyNumber(caja.egresos_efectivo)
-				+ historyNumber(caja.egresos_tarjeta)
-				+ historyNumber(caja.egresos_transferencia)
-			);
-			const tips = cajaMovimientos.length
-				? cajaMovimientos.reduce((total, movimiento) => total + historyNumber(movimiento.propina), 0)
-				: historyNumber(caja.total_propinas);
-			const opening = historyNumber(caja.balance_inicial);
-			const finalBalance = caja.balance_final == null
-				? opening + income - expenses - tips
-				: historyNumber(caja.balance_final);
-			return `<tr>
-				<td>#${historyNumber(caja.id)}</td>
-				<td>${historyDate(caja.fecha)}</td>
-				<td>${historyMoney(opening)}</td>
-				<td>${historyMoney(income)}</td>
-				<td>${historyMoney(expenses)}</td>
-				<td>${historyMoney(tips)}</td>
-				<td>${historyMoney(finalBalance)}</td>
-				<td><span class="status-badge ${isOpen ? "open" : "closed"}">${isOpen ? "Abierta" : "Cerrada"}</span></td>
-			</tr>`;
-		}).join("");
+		cajaHistory = cajas.slice().sort((first, second) => historyNumber(second.id) - historyNumber(first.id));
+		cajaMovements = movimientos;
+		cajaExpenses = gastos;
+		renderCajaHistory();
 	} catch (error) {
 		message.textContent = error instanceof Error ? error.message : "No fue posible cargar el historial de cajas.";
 		message.className = "caja-message error";
-		table.innerHTML = '<tr><td colspan="8" class="loading">No se pudo cargar el historial.</td></tr>';
+		document.getElementById("historyTable").innerHTML = '<tr><td colspan="8" class="loading">No se pudo cargar el historial.</td></tr>';
 	}
 }
 
@@ -111,5 +142,9 @@ async function requestHistoryData(path, token) {
 	}
 	return data;
 }
+
+document.getElementById("cajaSearch").addEventListener("input", renderCajaHistory);
+document.getElementById("cajaRange").addEventListener("change", renderCajaHistory);
+document.getElementById("cajaStatusFilter").addEventListener("change", renderCajaHistory);
 
 loadCajaHistory();

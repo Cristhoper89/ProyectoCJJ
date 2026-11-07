@@ -86,7 +86,6 @@ function setCashFlowMessage(message, type = "") {
 
 function renderCashFlow() {
 	document.getElementById("cashFlowLoading").hidden = true;
-	document.getElementById("cashFlowRetry").hidden = true;
 	setCashFlowMessage("");
 
 	if (activeCash && cashSummary) {
@@ -119,7 +118,6 @@ async function loadCashFlow() {
 	document.getElementById("cashFlowLoading").hidden = false;
 	document.getElementById("closeCashPanel").hidden = true;
 	document.getElementById("openCashPanel").hidden = true;
-	document.getElementById("cashFlowRetry").hidden = true;
 	setCashFlowMessage("");
 	try {
 		const [cajas, movimientos, gastos] = await Promise.all([
@@ -137,7 +135,6 @@ async function loadCashFlow() {
 		renderCashFlow();
 	} catch (error) {
 		document.getElementById("cashFlowLoading").hidden = true;
-		document.getElementById("cashFlowRetry").hidden = false;
 		setCashFlowMessage(error instanceof Error ? error.message : "No fue posible cargar los datos de caja.", "error");
 	}
 }
@@ -209,7 +206,6 @@ async function openCash(event) {
 
 document.getElementById("confirmCloseCash").addEventListener("click", closeActiveCash);
 document.getElementById("openCashForm").addEventListener("submit", openCash);
-document.getElementById("cashFlowRetry").addEventListener("click", loadCashFlow);
 
 if (window.lucide) window.lucide.createIcons();
 loadCashFlow();
