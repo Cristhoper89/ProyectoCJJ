@@ -1426,7 +1426,9 @@ btnFinalizarCuenta.addEventListener("click", async () => {
     try {
         await construirComprobante(comprobante);
         cuentaModal.classList.add("active");
-        await imprimirComprobante();
+        if (!empresa || empresa.impresion_automatica !== false) {
+            await imprimirComprobante();
+        }
     } catch (error) {
         console.error("La cuenta se finalizó, pero no se pudo abrir la impresión.", error);
         mostrarAviso(

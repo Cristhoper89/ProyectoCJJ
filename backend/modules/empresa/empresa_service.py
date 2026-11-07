@@ -10,7 +10,11 @@ class EmpresaService:
 
     async def get_empresas(self) -> list[dict]:
         logger.info("SQL Nativo: Consultando todas las empresas.")
-        query = text("SELECT id, nombre, \"NIT\", telefono, direccion, correo FROM empresa ORDER BY id ASC;")
+        query = text("""
+            SELECT id, nombre, "NIT", telefono, direccion, correo, impresion_automatica
+            FROM empresa
+            ORDER BY id ASC;
+        """)
         result = await self.db.execute(query)
         return [dict(row) for row in result.mappings().all()]
 
@@ -45,6 +49,10 @@ class EmpresaService:
         if empresa_update.direccion is not None:
             update_fields.append("direccion = :direccion")
             params["direccion"] = empresa_update.direccion
+
+        if empresa_update.impresion_automatica is not None:
+            update_fields.append("impresion_automatica = :impresion_automatica")
+            params["impresion_automatica"] = empresa_update.impresion_automatica
         
         if not update_fields:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No se enviaron datos para actualizar.")
@@ -54,7 +62,7 @@ class EmpresaService:
             UPDATE empresa 
             SET {', '.join(update_fields)} 
             WHERE id = :id 
-            RETURNING id, nombre, \"NIT\", telefono, direccion, correo;
+            RETURNING id, nombre, \"NIT\", telefono, direccion, correo, impresion_automatica;
         """
         
         try:

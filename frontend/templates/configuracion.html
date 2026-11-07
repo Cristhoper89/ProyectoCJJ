@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración | Cabaña</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
+    <link rel="stylesheet" href="../static/css/modules/configuracion.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+        <main class="dashboard-main configuration-main">
+            <section class="configuration-page">
+                <header class="configuration-heading">
+                    <span class="eyebrow">Datos del negocio</span>
+                    <h1>Configuración</h1>
+                    <p>Administra la información de tu empresa y las preferencias de impresión.</p>
+                </header>
+
+                <div id="configurationMessage" class="configuration-message" role="status" aria-live="polite"></div>
+                <div id="configurationLoading" class="configuration-state">Cargando configuración...</div>
+                <section id="configurationRestricted" class="configuration-state" hidden>
+                    <i data-lucide="shield-alert"></i>
+                    <h2>Acceso restringido</h2>
+                    <p>Solo un administrador puede consultar y editar la configuración del negocio.</p>
+                </section>
+                <section id="configurationEmpty" class="configuration-state" hidden>
+                    <i data-lucide="building-2"></i>
+                    <h2>No hay datos de empresa</h2>
+                    <p>No se encontró una empresa para configurar.</p>
+                </section>
+                <button id="configurationRetry" class="configuration-button secondary" type="button" hidden>Reintentar</button>
+
+                <form id="configurationForm" class="configuration-card" hidden novalidate>
+                    <div class="configuration-section-heading">
+                        <div class="configuration-icon"><i data-lucide="building-2"></i></div>
+                        <div>
+                            <h2>Información de la empresa</h2>
+                            <p>Estos datos aparecen en los comprobantes de venta.</p>
+                        </div>
+                    </div>
+
+                    <div class="configuration-fields">
+                        <label class="configuration-field">
+                            <span>Nombre de la empresa</span>
+                            <input id="companyName" name="nombre" type="text" maxlength="255" autocomplete="organization" required>
+                        </label>
+                        <label class="configuration-field">
+                            <span>NIT</span>
+                            <input id="companyNit" name="NIT" type="text" maxlength="255" required>
+                        </label>
+                        <label class="configuration-field">
+                            <span>Dirección</span>
+                            <input id="companyAddress" name="direccion" type="text" maxlength="255" autocomplete="street-address" required>
+                        </label>
+                        <label class="configuration-field">
+                            <span>Teléfono</span>
+                            <input id="companyPhone" name="telefono" type="tel" maxlength="255" autocomplete="tel" required>
+                        </label>
+                        <label class="configuration-field configuration-field-wide">
+                            <span>Correo electrónico</span>
+                            <input id="companyEmail" name="correo" type="email" maxlength="255" autocomplete="email" required>
+                        </label>
+                    </div>
+
+                    <div class="configuration-setting">
+                        <div class="configuration-setting-icon"><i data-lucide="printer"></i></div>
+                        <div class="configuration-setting-copy">
+                            <strong>Impresión automática</strong>
+                            <span>Abre el diálogo de impresión cuando se finaliza una cuenta. Si se desactiva, el comprobante seguirá disponible para imprimir manualmente.</span>
+                        </div>
+                        <label class="configuration-switch">
+                            <input id="automaticPrint" name="impresion_automatica" type="checkbox" role="switch">
+                            <span class="configuration-switch-track" aria-hidden="true"></span>
+                            <span class="visually-hidden">Impresión automática al finalizar una cuenta</span>
+                        </label>
+                    </div>
+
+                    <footer class="configuration-actions">
+                        <button id="cancelConfiguration" class="configuration-button secondary" type="button" hidden>Cancelar</button>
+                        <button id="editConfiguration" class="configuration-button secondary" type="button">
+                            <i data-lucide="pencil"></i>Editar configuración
+                        </button>
+                        <button id="saveConfiguration" class="configuration-button primary" type="submit" hidden>
+                            <i data-lucide="check"></i>Guardar cambios
+                        </button>
+                    </footer>
+                </form>
+            </section>
+        </main>
+    </div>
+    <script>lucide.createIcons();</script>
+    <script src="../static/js/menu.js?v=13"></script>
+    <script src="../static/js/configuracion.js?v=1"></script>
+</body>
+</html>

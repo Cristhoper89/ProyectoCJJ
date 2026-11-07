@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Building2, Check, Mail, MapPin, Phone, RotateCcw, Save, X } from 'lucide-react-native';
+import { Building2, Check, Mail, MapPin, Phone, Printer, RotateCcw, Save, X } from 'lucide-react-native';
 import HeaderNavbar from '../components/HeaderNavbar';
 import { apiRequest, getAccessToken } from '../constants/api';
 
@@ -23,6 +23,7 @@ type Empresa = {
   telefono: string;
   NIT: string;
   correo: string;
+  impresion_automatica: boolean;
 };
 
 type PerfilUsuario = {
@@ -48,6 +49,7 @@ const campos: {
 
 export default function ConfiguracionScreen() {
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
+  const [impresionAutomatica, setImpresionAutomatica] = useState(true);
   const [form, setForm] = useState<Record<CampoEmpresa, string>>({
     nombre: '',
     direccion: '',
@@ -82,6 +84,7 @@ export default function ConfiguracionScreen() {
       const currentCompany = companies[0] || null;
       setEmpresa(currentCompany);
       if (currentCompany) {
+        setImpresionAutomatica(currentCompany.impresion_automatica ?? true);
         setForm({
           nombre: currentCompany.nombre || '',
           direccion: currentCompany.direccion || '',
@@ -103,6 +106,7 @@ export default function ConfiguracionScreen() {
 
   const startEditing = () => {
     if (!empresa) return;
+    setImpresionAutomatica(empresa.impresion_automatica ?? true);
     setForm({
       nombre: empresa.nombre || '',
       direccion: empresa.direccion || '',
@@ -115,6 +119,7 @@ export default function ConfiguracionScreen() {
 
   const cancelEditing = () => {
     if (empresa) {
+      setImpresionAutomatica(empresa.impresion_automatica ?? true);
       setForm({
         nombre: empresa.nombre || '',
         direccion: empresa.direccion || '',
@@ -149,9 +154,13 @@ export default function ConfiguracionScreen() {
       setSaving(true);
       const updated = await apiRequest<Empresa>(`/empresas/${empresa.id}`, {
         method: 'PUT',
-        body: JSON.stringify(updatedForm),
+        body: JSON.stringify({
+          ...updatedForm,
+          impresion_automatica: impresionAutomatica,
+        }),
       });
       setEmpresa(updated);
+      setImpresionAutomatica(updated.impresion_automatica ?? true);
       setForm({
         nombre: updated.nombre,
         direccion: updated.direccion,
@@ -160,7 +169,7 @@ export default function ConfiguracionScreen() {
         correo: updated.correo,
       });
       setEditing(false);
-      Alert.alert('Configuración guardada', 'Los datos de la empresa se actualizaron correctamente.');
+      Alert.alert('Configuración guardada', 'La configuración de la empresa se actualizó correctamente.');
     } catch (requestError) {
       Alert.alert('No se pudo guardar', requestError instanceof Error ? requestError.message : 'Intenta nuevamente.');
     } finally {
@@ -225,6 +234,31 @@ export default function ConfiguracionScreen() {
                   </View>
                 );
               })}
+              <View style={[styles.field, styles.printSetting]}>
+                <View style={styles.printSettingText}>
+                  <View style={styles.fieldHeader}>
+                    <Printer size={17} color="#F0B35A" />
+                    <Text style={styles.label}>Impresión automática</Text>
+                  </View>
+                  <Text style={styles.settingDescription}>
+                    Abrir el diálogo de impresión al finalizar una cuenta.
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: impresionAutomatica, disabled: !editing || saving }}
+                  accessibilityLabel="Impresión automática al finalizar una cuenta"
+                  onPress={() => setImpresionAutomatica((current) => !current)}
+                  disabled={!editing || saving}
+                  style={[
+                    styles.toggle,
+                    impresionAutomatica && styles.toggleOn,
+                    (!editing || saving) && styles.toggleDisabled,
+                  ]}
+                >
+                  <View style={[styles.toggleThumb, impresionAutomatica && styles.toggleThumbOn]} />
+                </Pressable>
+              </View>
             </View>
 
             {editing ? (
@@ -269,6 +303,14 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#32281F', borderColor: '#45382E', borderWidth: 1, borderRadius: 16, padding: 17 },
   field: { marginBottom: 18 },
   lastField: { marginBottom: 0 },
+  printSetting: { marginTop: 22, marginBottom: 0, paddingTop: 18, borderTopWidth: 1, borderTopColor: '#45382E', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  printSettingText: { flex: 1 },
+  settingDescription: { color: '#A99A8B', fontSize: 12, lineHeight: 18 },
+  toggle: { width: 50, height: 30, padding: 3, borderRadius: 16, backgroundColor: '#51463D', justifyContent: 'center' },
+  toggleOn: { backgroundColor: '#D8A85B' },
+  toggleDisabled: { opacity: 0.75 },
+  toggleThumb: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#F5EBDD' },
+  toggleThumbOn: { alignSelf: 'flex-end' },
   fieldHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   label: { color: '#D9D0C8', fontSize: 13, fontWeight: '700' },
   input: { minHeight: 48, backgroundColor: '#251F1B', borderWidth: 1, borderColor: '#5A4838', borderRadius: 9, color: '#F5EBDD', fontSize: 15, paddingHorizontal: 12, paddingVertical: 10 },

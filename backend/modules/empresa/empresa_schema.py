@@ -8,6 +8,7 @@ class EmpresaBase(BaseModel):
     telefono: str = Field(..., description="Teléfono de la empresa")
     NIT: str = Field(..., description="NIT de la empresa")
     correo: str = Field(..., description="Correo electrónico de la empresa")
+    impresion_automatica: bool = Field(True, description="Imprimir automáticamente al finalizar una cuenta")
 
 class EmpresaCreate(EmpresaBase):
     pass
@@ -23,3 +24,4 @@ class EmpresaUpdate(BaseModel):
     telefono: Optional[str] = Field(None, description="Teléfono de la empresa")
     NIT: Optional[str] = Field(None, description="NIT de la empresa")
     correo: Optional[str] = Field(None, description="Correo electrónico de la empresa")
+    impresion_automatica: Optional[bool] = Field(None, description="Imprimir automáticamente al finalizar una cuenta")
