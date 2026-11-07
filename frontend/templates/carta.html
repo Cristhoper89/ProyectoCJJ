@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1d1a17">
+    <title>Nuestra carta | La Cabaña</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/carta.css?v=1">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="carta-preview-body">
+    <main class="carta-page">
+        <header class="carta-header">
+            <a class="carta-brand" href="/dashboard" aria-label="Volver al panel de administración">
+                <span class="carta-brand-mark"><i data-lucide="utensils"></i></span>
+                <span>
+                    <span class="carta-brand-eyebrow">LA CABAÑA</span>
+                    <strong>Nuestra carta</strong>
+                </span>
+            </a>
+            <span class="preview-badge"><i data-lucide="eye"></i> Vista previa cliente</span>
+        </header>
+
+        <section class="carta-hero">
+            <div class="carta-hero-copy">
+                <span class="carta-kicker">HECHO PARA DISFRUTAR</span>
+                <h1>Sabores para disfrutar</h1>
+                <p>Descubre nuestros platos, preparados con ingredientes seleccionados y mucho sabor.</p>
+            </div>
+            <div class="carta-hero-art" aria-hidden="true">
+                <span class="hero-orbit hero-orbit-one"></span>
+                <span class="hero-orbit hero-orbit-two"></span>
+                <i data-lucide="salad"></i>
+                <span class="hero-spark hero-spark-one">✦</span>
+                <span class="hero-spark hero-spark-two">✦</span>
+            </div>
+        </section>
+
+        <section class="carta-controls" aria-label="Buscar y filtrar la carta">
+            <label class="carta-search" for="cartaSearch">
+                <i data-lucide="search"></i>
+                <input id="cartaSearch" type="search" placeholder="Buscar un plato..." autocomplete="off">
+                <kbd>/</kbd>
+            </label>
+            <div class="carta-categories" id="cartaCategories" role="group" aria-label="Categorías de la carta"></div>
+        </section>
+
+        <section class="carta-results">
+            <header class="carta-results-heading">
+                <div>
+                    <span class="carta-kicker">NUESTRO MENÚ</span>
+                    <h2 id="cartaSectionTitle">Todos los platos</h2>
+                </div>
+                <span id="cartaProductCount" class="carta-product-count"></span>
+            </header>
+            <p class="carta-message" id="cartaMessage" role="status" aria-live="polite"></p>
+            <div class="carta-loading" id="cartaLoading">
+                <span class="carta-spinner" aria-hidden="true"></span>
+                <span>Cargando nuestra carta...</span>
+            </div>
+            <div class="carta-product-grid" id="cartaProductGrid"></div>
+        </section>
+
+        <footer class="carta-footer">
+            <span class="footer-brand-mark"><i data-lucide="utensils"></i></span>
+            <span>LA CABAÑA</span>
+            <span class="footer-separator"></span>
+            <span>Buenos momentos, buenos sabores.</span>
+        </footer>
+    </main>
+
+    <dialog class="carta-product-dialog" id="cartaProductDialog" aria-labelledby="dialogProductName">
+        <button class="dialog-close" id="closeProductDialog" type="button" aria-label="Cerrar detalle">
+            <i data-lucide="x"></i>
+        </button>
+        <div class="dialog-product-image" id="dialogProductImage"></div>
+        <div class="dialog-product-copy">
+            <span class="dialog-category" id="dialogProductCategory"></span>
+            <h2 id="dialogProductName"></h2>
+            <p class="dialog-description" id="dialogProductDescription"></p>
+            <strong class="dialog-price" id="dialogProductPrice"></strong>
+            <div class="dialog-details" id="dialogProductDetails"></div>
+        </div>
+    </dialog>
+
+    <script>lucide.createIcons();</script>
+    <script src="../static/js/carta.js?v=1"></script>
+</body>
+</html>

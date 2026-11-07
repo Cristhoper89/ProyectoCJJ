@@ -1,0 +1,862 @@
+* {
+    box-sizing: border-box;
+}
+
+.carta-preview-body {
+    height: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #1d1a17;
+    color: #f5ebdd;
+    font-family: "Manrope", sans-serif;
+}
+
+.carta-page {
+    width: min(100% - 64px, 1280px);
+    margin: 0 auto;
+}
+
+.carta-header {
+    display: flex;
+    min-height: 82px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    border-bottom: 1px solid #3c332b;
+}
+
+.carta-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.carta-brand-mark,
+.footer-brand-mark {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    flex: none;
+    place-items: center;
+    border-radius: 12px;
+    background: #d8a85b;
+    color: #1d1a17;
+}
+
+.carta-brand-mark svg,
+.footer-brand-mark svg {
+    width: 20px;
+    height: 20px;
+}
+
+.carta-brand-eyebrow,
+.carta-brand strong {
+    display: block;
+}
+
+.carta-brand-eyebrow {
+    margin-bottom: 3px;
+    color: #d8a85b;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+}
+
+.carta-brand strong {
+    font-size: 15px;
+}
+
+.preview-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 13px;
+    border: 1px solid #55432e;
+    border-radius: 22px;
+    color: #d8a85b;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.preview-badge svg {
+    width: 15px;
+    height: 15px;
+}
+
+.carta-hero {
+    position: relative;
+    display: flex;
+    min-height: 285px;
+    align-items: center;
+    overflow: hidden;
+    margin: 34px 0 30px;
+    padding: 44px clamp(28px, 6vw, 78px);
+    border: 1px solid #4b3b2b;
+    border-radius: 18px;
+    background:
+        radial-gradient(ellipse at 82% 55%, rgb(216 168 91 / 17%), transparent 36%),
+        linear-gradient(110deg, #34281d 0%, #2c231c 53%, #382a1e 100%);
+}
+
+.carta-hero-copy {
+    position: relative;
+    z-index: 1;
+    max-width: 610px;
+}
+
+.carta-kicker {
+    color: #d8a85b;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.7px;
+}
+
+.carta-hero h1 {
+    margin: 11px 0 10px;
+    color: #f7efe5;
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+}
+
+.carta-hero p {
+    max-width: 490px;
+    margin: 0;
+    color: #c3b6a8;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.carta-hero-art {
+    position: absolute;
+    top: 50%;
+    right: clamp(35px, 11vw, 150px);
+    display: grid;
+    width: 210px;
+    height: 210px;
+    place-items: center;
+    transform: translateY(-50%);
+}
+
+.carta-hero-art > i {
+    z-index: 1;
+    display: grid;
+    width: 128px;
+    height: 128px;
+    place-items: center;
+    border: 1px solid rgb(216 168 91 / 40%);
+    border-radius: 50%;
+    background: linear-gradient(145deg, #4a3825, #2b231c);
+    color: #e6bd79;
+    box-shadow: 0 15px 40px rgb(0 0 0 / 24%), inset 0 0 30px rgb(216 168 91 / 8%);
+}
+
+.carta-hero-art > i svg {
+    width: 62px;
+    height: 62px;
+    stroke-width: 1.2;
+}
+
+.hero-orbit {
+    position: absolute;
+    width: 185px;
+    height: 185px;
+    border: 1px solid rgb(216 168 91 / 16%);
+    border-radius: 50%;
+}
+
+.hero-orbit-two {
+    width: 210px;
+    height: 210px;
+    border-style: dashed;
+    border-color: rgb(216 168 91 / 13%);
+}
+
+.hero-spark {
+    position: absolute;
+    z-index: 2;
+    color: #f0c77f;
+}
+
+.hero-spark-one {
+    top: 18px;
+    right: 24px;
+    font-size: 25px;
+}
+
+.hero-spark-two {
+    bottom: 23px;
+    left: 18px;
+    font-size: 17px;
+}
+
+.carta-controls {
+    margin-bottom: 39px;
+}
+
+.carta-search {
+    display: flex;
+    width: min(100%, 590px);
+    height: 48px;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 0 14px;
+    border: 1px solid #4a3d31;
+    border-radius: 9px;
+    background: #2d2620;
+    color: #b8b1a8;
+}
+
+.carta-search > svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    color: #d8a85b;
+}
+
+.carta-search input {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #f5ebdd;
+    font: inherit;
+    font-size: 13px;
+}
+
+.carta-search input::placeholder {
+    color: #9c9287;
+}
+
+.carta-search kbd {
+    display: grid;
+    width: 23px;
+    height: 23px;
+    flex: none;
+    place-items: center;
+    border: 1px solid #53473d;
+    border-radius: 5px;
+    color: #9c9287;
+    font: inherit;
+    font-size: 11px;
+}
+
+.carta-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.carta-category-chip {
+    min-height: 37px;
+    padding: 0 16px;
+    border: 1px solid #45382e;
+    border-radius: 22px;
+    background: #32281f;
+    color: #b8b1a8;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+
+.carta-category-chip:hover {
+    border-color: #9b7643;
+    color: #f5ebdd;
+}
+
+.carta-category-chip.selected {
+    border-color: #d8a85b;
+    background: #d8a85b;
+    color: #1d1a17;
+}
+
+.carta-results {
+    min-height: 300px;
+}
+
+.carta-results-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.carta-results-heading h2 {
+    margin: 5px 0 0;
+    color: #f5ebdd;
+    font-size: 23px;
+    font-weight: 800;
+}
+
+.carta-product-count {
+    padding-bottom: 3px;
+    color: #9c9287;
+    font-size: 12px;
+}
+
+.carta-message {
+    color: #ef8b7e;
+    font-size: 13px;
+}
+
+.carta-loading {
+    display: flex;
+    min-height: 220px;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #b8b1a8;
+    font-size: 13px;
+}
+
+.carta-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #574631;
+    border-top-color: #d8a85b;
+    border-radius: 50%;
+    animation: carta-spin .8s linear infinite;
+}
+
+@keyframes carta-spin {
+    to { transform: rotate(360deg); }
+}
+
+.carta-product-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.carta-product-card {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+    border: 1px solid #45382e;
+    border-radius: 14px;
+    background: #30271f;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 7px 22px rgb(0 0 0 / 10%);
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.carta-product-card:hover,
+.carta-product-card:focus-visible {
+    transform: translateY(-3px);
+    border-color: #87663c;
+    outline: none;
+    box-shadow: 0 14px 28px rgb(0 0 0 / 18%);
+}
+
+.carta-card-image-wrap {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    aspect-ratio: 1.65;
+    background: #251f1a;
+}
+
+.carta-product-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .4s ease;
+}
+
+.carta-product-card:hover .carta-product-image {
+    transform: scale(1.035);
+}
+
+.carta-image-placeholder {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    min-height: 115px;
+    place-items: center;
+    background:
+        radial-gradient(circle at center, rgb(216 168 91 / 12%), transparent 45%),
+        linear-gradient(145deg, #362b20, #241f1a);
+    color: #b28a51;
+}
+
+.carta-image-placeholder svg {
+    width: 40px;
+    height: 40px;
+    stroke-width: 1.25;
+}
+
+.carta-card-category {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    padding: 6px 10px;
+    border: 1px solid rgb(255 255 255 / 13%);
+    border-radius: 20px;
+    background: rgb(29 26 23 / 78%);
+    color: #f1d5a5;
+    font-size: 10px;
+    font-weight: 700;
+    backdrop-filter: blur(8px);
+}
+
+.carta-card-copy {
+    display: flex;
+    min-height: 137px;
+    flex: 1;
+    flex-direction: column;
+    padding: 17px 18px 15px;
+}
+
+.carta-card-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.carta-card-title-row strong {
+    color: #f5ebdd;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
+.carta-card-price {
+    flex: none;
+    color: #e5b96f;
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.carta-card-description {
+    display: -webkit-box;
+    overflow: hidden;
+    margin-top: 9px;
+    color: #b8b1a8;
+    font-size: 11px;
+    line-height: 1.65;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.carta-card-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: auto;
+    padding-top: 15px;
+    color: #d8a85b;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.carta-card-more svg {
+    width: 13px;
+    height: 13px;
+}
+
+.carta-empty {
+    grid-column: 1 / -1;
+    display: flex;
+    min-height: 250px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    border: 1px dashed #504234;
+    border-radius: 14px;
+    text-align: center;
+}
+
+.carta-empty-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 50%;
+    background: #3b3024;
+    color: #d8a85b;
+}
+
+.carta-empty-icon svg {
+    width: 21px;
+    height: 21px;
+}
+
+.carta-empty h3 {
+    margin: 15px 0 6px;
+    color: #f5ebdd;
+    font-size: 16px;
+}
+
+.carta-empty p {
+    max-width: 400px;
+    margin: 0;
+    color: #a99f94;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.carta-retry {
+    margin-top: 17px;
+    padding: 9px 14px;
+    border: 1px solid #765b37;
+    border-radius: 7px;
+    background: #443522;
+    color: #f0c77f;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.carta-footer {
+    display: flex;
+    min-height: 92px;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 62px;
+    border-top: 1px solid #3c332b;
+    color: #b8b1a8;
+    font-size: 10px;
+    letter-spacing: .5px;
+}
+
+.footer-brand-mark {
+    width: 27px;
+    height: 27px;
+    border-radius: 8px;
+}
+
+.footer-brand-mark svg {
+    width: 14px;
+    height: 14px;
+}
+
+.carta-footer > span:nth-child(2) {
+    color: #e0c18c;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.footer-separator {
+    width: 1px;
+    height: 15px;
+    margin: 0 3px;
+    background: #594a3a;
+}
+
+.carta-product-dialog {
+    position: fixed;
+    width: min(680px, calc(100% - 32px));
+    max-height: min(820px, calc(100% - 32px));
+    overflow: auto;
+    padding: 0;
+    border: 1px solid #5b4934;
+    border-radius: 16px;
+    background: #30271f;
+    color: #f5ebdd;
+    box-shadow: 0 24px 90px rgb(0 0 0 / 55%);
+}
+
+.carta-product-dialog::backdrop {
+    background: rgb(15 13 11 / 78%);
+    backdrop-filter: blur(4px);
+}
+
+.dialog-close {
+    position: absolute;
+    z-index: 2;
+    top: 13px;
+    right: 13px;
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border: 1px solid rgb(255 255 255 / 18%);
+    border-radius: 50%;
+    background: rgb(29 26 23 / 72%);
+    color: #f5ebdd;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+}
+
+.dialog-close svg {
+    width: 18px;
+    height: 18px;
+}
+
+.dialog-product-image {
+    height: 280px;
+    overflow: hidden;
+    background: #251f1a;
+}
+
+.dialog-product-image > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.dialog-product-image .carta-image-placeholder {
+    height: 100%;
+}
+
+.dialog-product-copy {
+    padding: 25px 30px 30px;
+}
+
+.dialog-category {
+    color: #d8a85b;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.dialog-product-copy h2 {
+    margin: 6px 0 9px;
+    font-size: 26px;
+    line-height: 1.2;
+}
+
+.dialog-description {
+    margin: 0;
+    color: #b8b1a8;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.dialog-price {
+    display: block;
+    margin-top: 18px;
+    color: #e5b96f;
+    font-size: 21px;
+}
+
+.dialog-details {
+    display: grid;
+    gap: 17px;
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px solid #514235;
+}
+
+.dialog-detail-section h3 {
+    margin: 0 0 10px;
+    color: #f5ebdd;
+    font-size: 12px;
+}
+
+.ingredient-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ingredient-chips li {
+    padding: 7px 10px;
+    border: 1px solid #514235;
+    border-radius: 20px;
+    background: #382e24;
+    color: #c8bbaa;
+    font-size: 11px;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+@media (max-width: 1000px) {
+    .carta-product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .carta-hero-art {
+        right: 35px;
+        transform: translateY(-50%) scale(.82);
+        transform-origin: center right;
+    }
+
+    .carta-hero-copy {
+        max-width: 58%;
+    }
+}
+
+@media (max-width: 620px) {
+    .carta-page {
+        width: calc(100% - 32px);
+    }
+
+    .carta-header {
+        min-height: 70px;
+    }
+
+    .carta-brand-mark {
+        width: 38px;
+        height: 38px;
+    }
+
+    .preview-badge {
+        gap: 6px;
+        padding: 8px 10px;
+        font-size: 9px;
+    }
+
+    .preview-badge svg {
+        width: 13px;
+        height: 13px;
+    }
+
+    .carta-hero {
+        min-height: 215px;
+        margin: 20px 0 22px;
+        padding: 27px 22px;
+        border-radius: 14px;
+    }
+
+    .carta-hero h1 {
+        max-width: 300px;
+        font-size: 29px;
+        letter-spacing: -.7px;
+    }
+
+    .carta-hero p {
+        max-width: 315px;
+        font-size: 12px;
+    }
+
+    .carta-hero-art {
+        right: -69px;
+        opacity: .35;
+        transform: translateY(-50%) scale(.75);
+    }
+
+    .carta-hero-copy {
+        max-width: 100%;
+    }
+
+    .carta-controls {
+        margin-bottom: 30px;
+    }
+
+    .carta-search {
+        width: 100%;
+    }
+
+    .carta-categories {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 5px;
+        scrollbar-width: none;
+    }
+
+    .carta-categories::-webkit-scrollbar {
+        display: none;
+    }
+
+    .carta-category-chip {
+        flex: none;
+        min-height: 35px;
+        padding: 0 14px;
+    }
+
+    .carta-results-heading h2 {
+        font-size: 20px;
+    }
+
+    .carta-product-grid {
+        grid-template-columns: 1fr;
+        gap: 13px;
+    }
+
+    .carta-product-card {
+        display: grid;
+        grid-template-columns: minmax(110px, 36%) minmax(0, 1fr);
+        min-height: 142px;
+    }
+
+    .carta-card-image-wrap {
+        height: 100%;
+        min-height: 142px;
+        aspect-ratio: auto;
+    }
+
+    .carta-card-category {
+        bottom: 8px;
+        left: 8px;
+        padding: 5px 7px;
+        font-size: 8px;
+    }
+
+    .carta-card-copy {
+        min-height: 142px;
+        padding: 13px 12px 11px;
+    }
+
+    .carta-card-title-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .carta-card-title-row strong {
+        font-size: 13px;
+    }
+
+    .carta-card-price {
+        font-size: 12px;
+    }
+
+    .carta-card-description {
+        margin-top: 5px;
+        font-size: 10px;
+        line-height: 1.45;
+    }
+
+    .carta-card-more {
+        padding-top: 7px;
+        font-size: 9px;
+    }
+
+    .carta-footer {
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 40px;
+        font-size: 9px;
+    }
+
+    .dialog-product-image {
+        height: 210px;
+    }
+
+    .dialog-product-copy {
+        padding: 21px 20px 24px;
+    }
+
+    .dialog-product-copy h2 {
+        font-size: 22px;
+    }
+}
