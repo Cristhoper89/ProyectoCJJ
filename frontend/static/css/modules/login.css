@@ -201,6 +201,39 @@
 }
 
 /* =====================================================
+   AUTOFILL DEL NAVEGADOR
+   Chrome rellena los campos guardados con fondo blanco.
+   Se conserva el mismo fondo oscuro del diseño.
+===================================================== */
+
+.input-box input:-webkit-autofill,
+.input-box input:-webkit-autofill:hover,
+.input-box input:-webkit-autofill:focus,
+.input-box input:-webkit-autofill:active{
+
+    -webkit-text-fill-color:#FFFFFF !important;
+
+    -webkit-box-shadow:0 0 0 1000px #2D2620 inset !important;
+
+    box-shadow:0 0 0 1000px #2D2620 inset !important;
+
+    caret-color:#FFFFFF;
+
+    transition:background-color 5000s ease-in-out 0s;
+
+}
+
+.input-box input:autofill{
+
+    background-color:#2D2620;
+
+    color:#FFFFFF;
+
+    caret-color:#FFFFFF;
+
+}
+
+/* =====================================================
    OJO
 ===================================================== */
 

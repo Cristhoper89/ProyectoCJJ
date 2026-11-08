@@ -1,0 +1,760 @@
+/* ====================================================== */
+/* CONFIGURACIÓN DE MESAS */
+/* Lógica de la app móvil con el diseño del panel web.    */
+/* ====================================================== */
+
+.mesa-config-page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 38px 42px 56px;
+    color: var(--color-text);
+}
+
+/* ====================================================== */
+/* ENCABEZADO */
+/* ====================================================== */
+
+.mesa-config-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 26px;
+}
+
+.mesa-config-header h1 {
+    margin-top: 8px;
+    font-size: 28px;
+}
+
+.mesa-config-header p {
+    margin-top: 8px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+}
+
+/* ====================================================== */
+/* BOTONES */
+/* ====================================================== */
+
+.mesa-config-button {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.mesa-config-button svg {
+    width: 16px;
+}
+
+.mesa-config-button.primary {
+    background: var(--color-primary);
+    color: var(--color-background);
+}
+
+.mesa-config-button.primary:hover {
+    filter: brightness(1.08);
+}
+
+.mesa-config-button.secondary {
+    border-color: var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+}
+
+.mesa-config-button.secondary:hover {
+    background: rgba(255, 255, 255, .05);
+}
+
+.mesa-config-button.danger {
+    background: var(--color-danger);
+    color: #fff;
+}
+
+.mesa-config-button.danger:hover {
+    filter: brightness(1.08);
+}
+
+.mesa-config-button:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+.mesa-config-retry {
+    margin-bottom: 16px;
+}
+
+/* ====================================================== */
+/* RESUMEN */
+/* ====================================================== */
+
+.mesa-config-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.mesa-config-summary-card {
+    padding: 17px 19px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-card);
+}
+
+.mesa-config-summary-card span,
+.mesa-config-summary-card strong {
+    display: block;
+}
+
+.mesa-config-summary-card span {
+    color: var(--color-text-secondary);
+    font-size: 11px;
+}
+
+.mesa-config-summary-card strong {
+    margin-top: 7px;
+    font-size: 22px;
+}
+
+/* ====================================================== */
+/* HERRAMIENTAS: BUSCADOR, FILTROS Y CONTADOR */
+/* ====================================================== */
+
+.mesa-config-tools {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.mesa-config-search {
+    min-height: 44px;
+    flex: 1 1 240px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 13px;
+    border: 1px solid var(--color-border);
+    border-radius: 9px;
+    background: var(--color-card);
+}
+
+.mesa-config-search svg {
+    width: 17px;
+    flex: 0 0 auto;
+    color: var(--color-text-secondary);
+}
+
+.mesa-config-search input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 12px;
+}
+
+.mesa-config-search input::placeholder {
+    color: var(--color-placeholder);
+}
+
+.mesa-config-filters {
+    display: inline-flex;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-card);
+}
+
+.mesa-config-filter {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.mesa-config-filter:hover {
+    color: var(--color-primary);
+}
+
+.mesa-config-filter.active {
+    background: var(--color-primary);
+    color: var(--color-background);
+}
+
+.mesa-config-counter {
+    margin-left: auto;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+}
+
+/* ====================================================== */
+/* MENSAJES Y ESTADOS */
+/* ====================================================== */
+
+.mesa-config-message {
+    display: none;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    font-size: 12px;
+}
+
+.mesa-config-message.visible {
+    display: block;
+}
+
+.mesa-config-message.success {
+    border-color: rgba(53, 201, 121, .3);
+    background: rgba(53, 201, 121, .08);
+    color: #67D99A;
+}
+
+.mesa-config-message.error {
+    border-color: rgba(231, 76, 60, .35);
+    background: rgba(231, 76, 60, .08);
+    color: #F09385;
+}
+
+.mesa-config-state {
+    padding: 28px;
+    border: 1px solid var(--color-border);
+    border-radius: 13px;
+    background: var(--color-card);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    text-align: center;
+}
+
+.mesa-config-state[hidden] {
+    display: none;
+}
+
+.mesa-config-state svg {
+    width: 26px;
+    color: var(--color-primary);
+}
+
+.mesa-config-state h2 {
+    margin-top: 10px;
+    color: var(--color-text);
+    font-size: 17px;
+}
+
+.mesa-config-state p {
+    margin-top: 7px;
+}
+
+/* ====================================================== */
+/* TABLA */
+/* ====================================================== */
+
+.mesa-config-card {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 13px;
+    background: var(--color-card);
+}
+
+.mesa-config-card[hidden] {
+    display: none;
+}
+
+.mesa-config-table-wrap {
+    overflow-x: auto;
+}
+
+.mesa-config-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.mesa-config-table th {
+    padding: 14px 18px;
+    background: rgba(0, 0, 0, .12);
+    color: var(--color-text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.mesa-config-table td {
+    padding: 15px 18px;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text);
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+.mesa-config-table tbody tr:hover {
+    background: rgba(255, 255, 255, .025);
+}
+
+.mesa-config-name {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.mesa-config-name-icon {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 9px;
+    background: rgba(216, 168, 91, .12);
+    color: var(--color-primary);
+}
+
+.mesa-config-name-icon svg {
+    width: 16px;
+}
+
+.mesa-config-name strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.mesa-config-name small {
+    display: block;
+    margin-top: 3px;
+    color: var(--color-text-secondary);
+    font-size: 10px;
+}
+
+.mesa-config-tag {
+    display: inline-flex;
+    padding: 5px 9px;
+    border: 1px solid rgba(216, 168, 91, .24);
+    border-radius: 20px;
+    color: var(--color-primary);
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.mesa-config-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.mesa-config-status::before {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #45C982;
+    content: "";
+}
+
+.mesa-config-status.ocupada::before {
+    background: #D98672;
+}
+
+.mesa-config-actions-heading,
+.mesa-config-actions-cell {
+    text-align: right;
+}
+
+.mesa-config-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 7px;
+}
+
+.mesa-config-icon-button {
+    width: 34px;
+    height: 34px;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.mesa-config-icon-button:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.mesa-config-icon-button.danger:hover {
+    border-color: var(--color-danger);
+    color: #EF8B7E;
+}
+
+.mesa-config-icon-button svg {
+    width: 15px;
+}
+
+.mesa-config-placeholder {
+    height: 110px;
+    color: var(--color-text-secondary) !important;
+    text-align: center;
+}
+
+/* ====================================================== */
+/* MODALES */
+/* ====================================================== */
+
+.mesa-config-modal-overlay,
+.mesa-config-confirm-overlay,
+.mesa-config-qr-overlay {
+    position: fixed;
+    z-index: 20;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
+    background: rgba(0, 0, 0, .68);
+}
+
+.mesa-config-modal-overlay.open,
+.mesa-config-confirm-overlay.open,
+.mesa-config-qr-overlay.open {
+    display: flex;
+}
+
+.mesa-config-modal,
+.mesa-config-qr {
+    width: min(100%, 520px);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    padding: 25px;
+    border: 1px solid var(--color-border);
+    border-radius: 15px;
+    background: var(--color-background);
+    box-shadow: var(--shadow-card);
+}
+
+.mesa-config-qr {
+    width: min(100%, 460px);
+    text-align: center;
+}
+
+.mesa-config-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 22px;
+}
+
+.mesa-config-modal-header h2 {
+    margin-top: 8px;
+    font-size: 20px;
+}
+
+.mesa-config-modal-header p {
+    margin-top: 6px;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+}
+
+/* Formulario */
+
+.mesa-config-field {
+    display: grid;
+    gap: 7px;
+    color: var(--color-text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.mesa-config-field input {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 11px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-card);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 12px;
+}
+
+.mesa-config-field input:focus {
+    border-color: var(--color-primary);
+}
+
+.mesa-config-types {
+    margin-top: 18px;
+    padding: 0;
+    border: 0;
+}
+
+.mesa-config-types legend {
+    margin-bottom: 8px;
+    color: var(--color-text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.mesa-config-type-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.mesa-config-type {
+    position: relative;
+}
+
+.mesa-config-type input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.mesa-config-type span {
+    display: flex;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: 9px;
+    background: var(--color-card);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.mesa-config-type span svg {
+    width: 16px;
+}
+
+.mesa-config-type span:hover {
+    border-color: var(--color-primary);
+}
+
+.mesa-config-type input:checked + span {
+    border-color: var(--color-primary);
+    background: rgba(216, 168, 91, .14);
+    color: var(--color-primary);
+}
+
+.mesa-config-type input:focus-visible + span {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.mesa-config-form-message {
+    display: none;
+    margin-top: 15px;
+    padding: 10px 12px;
+    border: 1px solid rgba(231, 76, 60, .35);
+    border-radius: 8px;
+    background: rgba(231, 76, 60, .08);
+    color: #F09385;
+    font-size: 11px;
+}
+
+.mesa-config-form-message.visible {
+    display: block;
+}
+
+.mesa-config-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 22px;
+}
+
+/* Confirmación */
+
+.mesa-config-confirm {
+    width: min(100%, 420px);
+    padding: 25px;
+    border: 1px solid var(--color-border);
+    border-radius: 15px;
+    background: var(--color-background);
+    box-shadow: var(--shadow-card);
+    text-align: center;
+}
+
+.mesa-config-confirm-icon {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: rgba(231, 76, 60, .12);
+    color: #EF8B7E;
+}
+
+.mesa-config-confirm-icon svg {
+    width: 21px;
+}
+
+.mesa-config-confirm h2 {
+    font-size: 17px;
+}
+
+.mesa-config-confirm p {
+    margin-top: 8px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.mesa-config-confirm .mesa-config-modal-actions {
+    justify-content: center;
+}
+
+/* Código QR */
+
+.mesa-config-qr-frame {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    margin: 4px auto 0;
+    padding: 18px;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.mesa-config-qr-frame canvas,
+.mesa-config-qr-frame img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.mesa-config-qr-hint {
+    margin-top: 16px;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+/* ====================================================== */
+/* FOCO */
+/* ====================================================== */
+
+.mesa-config-button:focus-visible,
+.mesa-config-filter:focus-visible,
+.mesa-config-icon-button:focus-visible,
+.mesa-config-search input:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ====================================================== */
+/* RESPONSIVE */
+/* ====================================================== */
+
+@media (max-width: 900px) {
+    .mesa-config-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .mesa-config-page {
+        padding: 27px 18px 42px;
+    }
+
+    .mesa-config-header {
+        align-items: flex-start;
+    }
+
+    .mesa-config-header h1 {
+        font-size: 24px;
+    }
+
+    .mesa-config-summary {
+        gap: 8px;
+    }
+
+    .mesa-config-summary-card {
+        padding: 13px;
+    }
+
+    .mesa-config-summary-card span {
+        min-height: 27px;
+        font-size: 9px;
+    }
+
+    .mesa-config-summary-card strong {
+        font-size: 19px;
+    }
+}
+
+@media (max-width: 560px) {
+    .mesa-config-header {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .mesa-config-header .mesa-config-button {
+        width: 100%;
+    }
+
+    .mesa-config-tools {
+        align-items: stretch;
+    }
+
+    .mesa-config-filters {
+        display: flex;
+        width: 100%;
+    }
+
+    .mesa-config-filter {
+        flex: 1;
+    }
+
+    .mesa-config-counter {
+        margin-left: 0;
+    }
+
+    .mesa-config-table {
+        min-width: 640px;
+    }
+
+    .mesa-config-modal,
+    .mesa-config-qr {
+        padding: 20px 16px;
+    }
+
+    .mesa-config-modal-actions .mesa-config-button {
+        flex: 1;
+        padding: 0 10px;
+    }
+}

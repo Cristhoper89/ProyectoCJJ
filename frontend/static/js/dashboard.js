@@ -23,7 +23,10 @@ const modules = {
 			["Caja actual", "wallet-cards", "/caja"],
 			["Cerrar y abrir caja", "lock-keyhole", "/cierre-caja"]
 		]],
-		["Mesa", "layout-grid", "/mesas"], ["Categorías", "tags", "/categorias"],
+		["Mesa", "layout-grid", null, [
+			["Mesas", "layout-grid", "/mesas"],
+			["Configuración de mesas", "qr-code", "/configuracion-mesas"]
+		]], ["Categorías", "tags", "/categorias"],
 		["Movimientos", "arrow-left-right", "/movimientos"],
 		["Productos", "package", null, [
 			["Productos", "package", "/productos"],
@@ -41,7 +44,10 @@ const modules = {
 			["Caja actual", "wallet-cards", "/caja"],
 			["Cerrar y abrir caja", "lock-keyhole", "/cierre-caja"]
 		]],
-		["Mesa", "layout-grid", "/mesas"], ["Movimientos", "arrow-left-right", "/movimientos"],
+		["Mesa", "layout-grid", null, [
+			["Mesas", "layout-grid", "/mesas"],
+			["Configuración de mesas", "qr-code", "/configuracion-mesas"]
+		]], ["Movimientos", "arrow-left-right", "/movimientos"],
 		["Categorías", "tags", "/categorias"],
 		["Productos", "package", null, [
 			["Productos", "package", "/productos"],

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de mesas | Cabaña</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
+    <link rel="stylesheet" href="../static/css/modules/configuracion-mesas.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+
+        <main class="dashboard-main">
+            <div class="mesa-config-page">
+                <header class="mesa-config-header">
+                    <div>
+                        <span class="eyebrow">Configuración</span>
+                        <h1>Mesas</h1>
+                        <p>Administra mesas, barras y sus códigos QR.</p>
+                    </div>
+                    <button class="mesa-config-button primary" id="nuevaMesa" type="button">
+                        <i data-lucide="plus"></i>
+                        Nueva mesa
+                    </button>
+                </header>
+
+                <section class="mesa-config-summary" aria-label="Resumen de mesas">
+                    <div class="mesa-config-summary-card">
+                        <span>Total registradas</span>
+                        <strong id="totalMesas">—</strong>
+                    </div>
+                    <div class="mesa-config-summary-card">
+                        <span>Mesas</span>
+                        <strong id="totalMesasTipo">—</strong>
+                    </div>
+                    <div class="mesa-config-summary-card">
+                        <span>Barras</span>
+                        <strong id="totalBarras">—</strong>
+                    </div>
+                    <div class="mesa-config-summary-card">
+                        <span>Disponibles</span>
+                        <strong id="totalDisponibles">—</strong>
+                    </div>
+                </section>
+
+                <div id="mesaConfigMessage" class="mesa-config-message" role="status" aria-live="polite"></div>
+                <div id="mesaConfigLoading" class="mesa-config-state">Cargando mesas...</div>
+                <section id="mesaConfigRestricted" class="mesa-config-state" hidden>
+                    <i data-lucide="shield-alert"></i>
+                    <h2>Acceso restringido</h2>
+                    <p>Solo un administrador o un cajero pueden configurar las mesas y barras.</p>
+                </section>
+                <button id="mesaConfigRetry" class="mesa-config-button secondary mesa-config-retry" type="button" hidden>
+                    Reintentar
+                </button>
+
+                <section class="mesa-config-tools" aria-label="Filtros de mesas">
+                    <label class="mesa-config-search">
+                        <i data-lucide="search"></i>
+                        <input id="buscarMesa" type="search" placeholder="Buscar mesa..." autocomplete="off">
+                    </label>
+                    <div class="mesa-config-filters" role="tablist" aria-label="Filtrar por tipo">
+                        <button class="mesa-config-filter active" type="button" role="tab" aria-selected="true" data-filter="todas">Todas</button>
+                        <button class="mesa-config-filter" type="button" role="tab" aria-selected="false" data-filter="mesa">Mesas</button>
+                        <button class="mesa-config-filter" type="button" role="tab" aria-selected="false" data-filter="barra">Barras</button>
+                    </div>
+                    <span class="mesa-config-counter" id="mesaCounter"></span>
+                </section>
+
+                <section class="mesa-config-card" id="mesaConfigCard" hidden>
+                    <div class="mesa-config-table-wrap">
+                        <table class="mesa-config-table">
+                            <thead>
+                                <tr>
+                                    <th>Mesa</th>
+                                    <th>Tipo</th>
+                                    <th>Estado</th>
+                                    <th class="mesa-config-actions-heading">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mesasTabla">
+                                <tr><td colspan="4" class="mesa-config-placeholder">Cargando mesas...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL CREAR / EDITAR MESA -->
+    <div class="mesa-config-modal-overlay" id="mesaModal" aria-hidden="true">
+        <section class="mesa-config-modal" role="dialog" aria-modal="true" aria-labelledby="mesaModalTitle">
+            <header class="mesa-config-modal-header">
+                <div>
+                    <span class="eyebrow" id="mesaModalEyebrow">Nuevo registro</span>
+                    <h2 id="mesaModalTitle">Nueva mesa</h2>
+                    <p id="mesaModalDescription">Registra una mesa o barra para el servicio.</p>
+                </div>
+                <button class="mesa-config-icon-button" id="cerrarMesaModal" type="button" aria-label="Cerrar">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+
+            <form id="mesaForm" novalidate>
+                <label class="mesa-config-field" for="mesaNombre">
+                    Nombre
+                    <input id="mesaNombre" name="nombre" type="text" maxlength="100" placeholder="Ej. Mesa terraza" autocomplete="off" required>
+                </label>
+
+                <fieldset class="mesa-config-types" id="mesaTipoField">
+                    <legend>Tipo</legend>
+                    <div class="mesa-config-type-options">
+                        <label class="mesa-config-type">
+                            <input type="radio" name="tipoMesa" value="mesa" checked>
+                            <span><i data-lucide="utensils"></i>Mesa</span>
+                        </label>
+                        <label class="mesa-config-type">
+                            <input type="radio" name="tipoMesa" value="barra">
+                            <span><i data-lucide="beer"></i>Barra</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <p id="mesaFormMessage" class="mesa-config-form-message" role="alert"></p>
+
+                <footer class="mesa-config-modal-actions">
+                    <button class="mesa-config-button secondary" id="cancelarMesaModal" type="button">Cancelar</button>
+                    <button class="mesa-config-button primary" id="guardarMesa" type="submit">Crear mesa</button>
+                </footer>
+            </form>
+        </section>
+    </div>
+
+    <!-- MODAL CONFIRMAR ELIMINACIÓN -->
+    <div class="mesa-config-confirm-overlay" id="mesaConfirmModal" aria-hidden="true">
+        <section class="mesa-config-confirm" role="dialog" aria-modal="true" aria-labelledby="mesaConfirmTitle">
+            <div class="mesa-config-confirm-icon"><i data-lucide="trash-2"></i></div>
+            <h2 id="mesaConfirmTitle">Eliminar mesa</h2>
+            <p id="mesaConfirmMessage"></p>
+            <footer class="mesa-config-modal-actions">
+                <button class="mesa-config-button secondary" id="cancelarConfirmar" type="button">Cancelar</button>
+                <button class="mesa-config-button danger" id="confirmarEliminar" type="button">Eliminar</button>
+            </footer>
+        </section>
+    </div>
+
+    <!-- MODAL CÓDIGO QR -->
+    <div class="mesa-config-qr-overlay" id="qrModal" aria-hidden="true">
+        <section class="mesa-config-qr" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+            <header class="mesa-config-modal-header">
+                <div>
+                    <span class="eyebrow">Código de mesa</span>
+                    <h2 id="qrModalTitle">Mesa</h2>
+                    <p>Escanea para abrir la carta de esta mesa.</p>
+                </div>
+                <button class="mesa-config-icon-button" id="cerrarQrModal" type="button" aria-label="Cerrar QR">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+
+            <div class="mesa-config-qr-frame" id="qrCanvas"></div>
+            <p class="mesa-config-qr-hint">Imprime este código y colócalo en la mesa para abrir su carta.</p>
+
+            <footer class="mesa-config-modal-actions">
+                <button class="mesa-config-button secondary" id="descargarQr" type="button">
+                    <i data-lucide="download"></i>
+                    Descargar
+                </button>
+                <button class="mesa-config-button primary" id="imprimirQr" type="button">
+                    <i data-lucide="printer"></i>
+                    Imprimir QR
+                </button>
+            </footer>
+        </section>
+    </div>
+
+    <script src="../static/js/configuracion-mesas.js?v=1"></script>
+    <script src="../static/js/menu.js?v=14"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
