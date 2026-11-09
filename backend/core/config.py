@@ -10,6 +10,9 @@ class Settings:
     SECRET_KEY: str = os.getenv("SECRET_KEY", "fallback_secret_key_por_defecto")
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    CLOUDINARY_CLOUD_NAME: str = os.getenv("CLOUDINARY_CLOUD_NAME", "")
+    CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY", "")
+    CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
 
     # Verificar que la URL de la base de datos esté configurada
     def __init__(self) -> None:

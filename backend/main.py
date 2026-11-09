@@ -1,5 +1,4 @@
 import asyncio
-import cloudinary
 
 
 from contextlib import asynccontextmanager, suppress
@@ -8,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from core.cloudinary import configure_cloudinary
 from core.database import engine
 
 from modules.metodos_pagos.metodo_pago_router import router as metodo_pago_router
@@ -33,6 +33,7 @@ from core.logger import logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    configure_cloudinary()
     try:
         async with engine.begin() as conn:
             await conn.execute(text("ALTER TABLE mesa ADD COLUMN IF NOT EXISTS nombre VARCHAR(100);"))
@@ -120,13 +121,3 @@ app.include_router(opciones_router)
 app.include_router(pedido_router)
 app.include_router(carta_router)
 app.include_router(mesa_realtime_router)
-
-
-
-# Configuration       
-cloudinary.config( 
-    cloud_name = "erqxtjqx", 
-    api_key = "544669296561498", 
-    api_secret = "TSyfX9BR4CrDBM1ChAstjxMGnW4", # Click 'View API Keys' above to copy your API secret
-    secure=True
-)
