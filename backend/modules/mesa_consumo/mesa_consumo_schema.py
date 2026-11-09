@@ -10,7 +10,7 @@ class MesaIngredienteAccion(BaseModel):
 class MesaCBase(BaseModel):
     id_producto: Optional[int] = Field(None, description="ID del producto asociado a la mesa")
     id_mov: Optional[int] = Field(None, description="ID del movimiento asociado")
-    cantidad: Optional[int] = Field(None, description="Cantidad de productos asociados a la mesa")
+    cantidad: Optional[int] = Field(None, gt=0, description="Cantidad de productos asociados a la mesa")
     precio_unitario: Optional[float] = Field(None, description="Precio unitario del producto asociado a la mesa")
     descuento: Optional[float] = Field(None, description="Descuento aplicado al producto")
     subtotal: Optional[float] = Field(None, description="Subtotal del producto asociado a la mesa")
@@ -28,7 +28,7 @@ class MesaResponse(MesaCBase):
 class MesaUpdate(BaseModel):
     id_producto: Optional[int] = Field(None, description="ID del producto asociado a la mesa")
     id_mov: Optional[int] = Field(None, description="ID del movimiento asociado")
-    cantidad: Optional[int] = Field(None, description="Cantidad de productos asociados a la mesa")
+    cantidad: Optional[int] = Field(None, gt=0, description="Cantidad de productos asociados a la mesa")
     precio_unitario: Optional[float] = Field(None, description="Precio unitario del producto asociado a la mesa")
     descuento: Optional[float] = Field(None, description="Descuento aplicado al producto")
     subtotal: Optional[float] = Field(None, description="Subtotal del producto asociado a la mesa")

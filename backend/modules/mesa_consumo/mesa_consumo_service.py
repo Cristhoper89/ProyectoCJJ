@@ -42,8 +42,8 @@ class MesaCService:
         cantidad = mesaC_data.cantidad or 1
         precio_unitario = float(producto.precio)
         descuento = round(float(mesaC_data.descuento or 0), 2)
-        subtotal = self._calc_subtotal(precio_unitario, cantidad, descuento)
         preparado = False if producto.preparacion else None
+        cantidades = [1] * cantidad if producto.preparacion else [cantidad]
 
         query = text(f"""
             INSERT INTO mesa_consumo (
@@ -58,33 +58,39 @@ class MesaCService:
         """)
 
         try:
-            result = await self.db.execute(query, {
-                "id_producto": mesaC_data.id_producto,
-                "id_mov": mesaC_data.id_mov,
-                "cantidad": cantidad,
-                "precio_unitario": precio_unitario,
-                "subtotal": subtotal,
-                "preparado": preparado,
-                "notas": mesaC_data.notas,
-                "descuento": descuento,
-            })
-            consumo = result.mappings().first()
-            for ingrediente in mesaC_data.ingredientes:
-                await self.db.execute(
-                    text("""
-                        INSERT INTO mesa_consumo_ingredientes (id_mesa_consumo, id_ingrediente, accion)
-                        VALUES (
-                            :id_mesa_consumo,
-                            :id_ingrediente,
-                            CAST(:accion AS tipo_accion)
-                        );
-                    """),
-                    {
-                        "id_mesa_consumo": consumo["id"],
-                        "id_ingrediente": ingrediente.id_ingrediente,
-                        "accion": ingrediente.accion,
-                    },
-                )
+            consumo = None
+            for cantidad_detalle in cantidades:
+                result = await self.db.execute(query, {
+                    "id_producto": mesaC_data.id_producto,
+                    "id_mov": mesaC_data.id_mov,
+                    "cantidad": cantidad_detalle,
+                    "precio_unitario": precio_unitario,
+                    "subtotal": self._calc_subtotal(precio_unitario, cantidad_detalle, descuento),
+                    "preparado": preparado,
+                    "notas": mesaC_data.notas,
+                    "descuento": descuento,
+                })
+                detalle = result.mappings().first()
+                if consumo is None:
+                    consumo = detalle
+
+                for ingrediente in mesaC_data.ingredientes:
+                    await self.db.execute(
+                        text("""
+                            INSERT INTO mesa_consumo_ingredientes (id_mesa_consumo, id_ingrediente, accion)
+                            VALUES (
+                                :id_mesa_consumo,
+                                :id_ingrediente,
+                                CAST(:accion AS tipo_accion)
+                            );
+                        """),
+                        {
+                            "id_mesa_consumo": detalle["id"],
+                            "id_ingrediente": ingrediente.id_ingrediente,
+                            "accion": ingrediente.accion,
+                        },
+                    )
+
             await self.db.commit()
             return dict(consumo)
         except Exception as e:
@@ -95,25 +101,22 @@ class MesaCService:
     async def update_mesaC(self, target_mesa_id: int, mesa_update: MesaUpdate, current_user: dict) -> dict:
         logger.info(f"Usuario '{current_user['username']}' intenta modificar el consumo ID: {target_mesa_id}")
 
-        # Verificar que el consumo objetivo realmente exista en PostgreSQL
-        check = await self.db.execute(
-            text("SELECT id FROM mesa_consumo WHERE id = :id;"),
-            {"id": target_mesa_id}
-        )
-        if not check.first():
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El consumo a modificar no existe.")
-
-        # Cargar el precio original del producto para recalcular el subtotal
+        # Cargar y bloquear el consumo para recalcularlo sin perder actualizaciones concurrentes.
         current_row = await self.db.execute(
             text("""
-                SELECT mc.precio_unitario, mc.cantidad, mc.descuento, p.precio AS producto_precio
+                SELECT mc.id, mc.id_producto, mc.id_mov, mc.precio_unitario,
+                       mc.cantidad, mc.descuento, mc.preparado, mc.notas,
+                       p.precio AS producto_precio, p.preparacion
                 FROM mesa_consumo mc
                 LEFT JOIN productos p ON p.id = mc.id_producto
-                WHERE mc.id = :id;
+                WHERE mc.id = :id
+                FOR UPDATE OF mc;
             """),
             {"id": target_mesa_id}
         )
         row = current_row.first()
+        if not row:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El consumo a modificar no existe.")
 
         base_precio = float(row.producto_precio) if (row and row.producto_precio is not None) else (float(row.precio_unitario) if row and row.precio_unitario is not None else 0)
         current_cantidad = int(row.cantidad) if row and row.cantidad is not None else 1
@@ -176,6 +179,62 @@ class MesaCService:
                             "accion": ingrediente.accion,
                         },
                     )
+
+            if row.preparacion and new_cantidad > 1:
+                modifier_result = await self.db.execute(
+                    text("""
+                        SELECT id_ingrediente, accion::text AS accion
+                        FROM mesa_consumo_ingredientes
+                        WHERE id_mesa_consumo = :id;
+                    """),
+                    {"id": target_mesa_id}
+                )
+                modifiers = modifier_result.mappings().all()
+                unit_subtotal = self._calc_subtotal(base_precio, 1, new_descuento)
+                first_detail = await self.db.execute(text(f"""
+                    UPDATE mesa_consumo
+                    SET cantidad = 1, subtotal = :subtotal
+                    WHERE id = :id
+                    RETURNING {MESA_CONSUMO_COLUMNS};
+                """), {"id": target_mesa_id, "subtotal": unit_subtotal})
+                consumo = first_detail.mappings().one()
+
+                for _ in range(1, new_cantidad):
+                    inserted = await self.db.execute(text("""
+                        INSERT INTO mesa_consumo (
+                            id_producto, id_mov, cantidad, precio_unitario,
+                            subtotal, preparado, notas, descuento
+                        )
+                        VALUES (
+                            :id_producto, :id_mov, 1, :precio_unitario,
+                            :subtotal, :preparado, :notas, :descuento
+                        )
+                        RETURNING id;
+                    """), {
+                        "id_producto": row.id_producto,
+                        "id_mov": mesa_update.id_mov if mesa_update.id_mov is not None else row.id_mov,
+                        "precio_unitario": base_precio,
+                        "subtotal": unit_subtotal,
+                        "preparado": row.preparado,
+                        "notas": mesa_update.notas if mesa_update.notas is not None else row.notas,
+                        "descuento": new_descuento,
+                    })
+                    new_id = inserted.scalar_one()
+
+                    for modifier in modifiers:
+                        await self.db.execute(text("""
+                            INSERT INTO mesa_consumo_ingredientes (
+                                id_mesa_consumo, id_ingrediente, accion
+                            )
+                            VALUES (
+                                :id_mesa_consumo, :id_ingrediente,
+                                CAST(:accion AS tipo_accion)
+                            );
+                        """), {
+                            "id_mesa_consumo": new_id,
+                            "id_ingrediente": modifier["id_ingrediente"],
+                            "accion": modifier["accion"],
+                        })
 
             await self.db.commit()
             return dict(consumo)

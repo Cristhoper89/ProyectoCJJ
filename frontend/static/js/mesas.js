@@ -101,6 +101,7 @@ let accionConfirmar = null;
 
 let configProducto = null;
 let configCantidad = 0;
+let configLineaId = null;
 let configIngredientes = {};
 let configGrupos = [];
 let configOpciones = {};
@@ -982,7 +983,7 @@ function accionesDeIngredientes(producto, configuracion) {
     }));
 }
 
-async function registrarProducto(producto, cantidad, configuracion = null) {
+async function registrarProducto(producto, cantidad, configuracion = null, lineaObjetivoId = null) {
     if (!mesaActual) { return; }
 
     const nuevaCantidad = Math.max(0, Math.floor(cantidad));
@@ -1018,6 +1019,60 @@ async function registrarProducto(producto, cantidad, configuracion = null) {
 
         const existentes = lineasDeMovimiento(idMov).filter(linea => linea.id_producto === producto.id);
         const notas = notasDeConfiguracion(configuracion);
+
+        if (producto.preparacion) {
+            const cantidadActual = existentes.reduce(
+                (suma, linea) => suma + (Number(linea.cantidad) || 0),
+                0
+            );
+            const acciones = accionesDeIngredientes(producto, configuracion);
+
+            if (configuracion && lineaObjetivoId) {
+                const lineaObjetivo = existentes.find(linea => linea.id === lineaObjetivoId);
+                if (!lineaObjetivo) {
+                    throw new Error("No se encontró el detalle que se intenta configurar.");
+                }
+
+                await api(`/mesasC/${lineaObjetivo.id}`, "PUT", {
+                    cantidad: Number(lineaObjetivo.cantidad) || 1,
+                    subtotal: Number(producto.precio || 0) * (Number(lineaObjetivo.cantidad) || 1),
+                    notas: notas || null,
+                    ingredientes: acciones
+                });
+            } else if (nuevaCantidad > cantidadActual) {
+                await api("/mesasC/", "POST", {
+                    id_producto: producto.id,
+                    id_mov: idMov,
+                    cantidad: nuevaCantidad - cantidadActual,
+                    notas: notas || null,
+                    ingredientes: acciones
+                });
+            } else if (nuevaCantidad < cantidadActual) {
+                let cantidadRestante = cantidadActual - nuevaCantidad;
+                for (const linea of [...existentes].reverse()) {
+                    if (cantidadRestante <= 0) { break; }
+
+                    const cantidadLinea = Number(linea.cantidad) || 0;
+                    if (cantidadLinea <= cantidadRestante) {
+                        await api(`/mesasC/${linea.id}`, "DELETE");
+                        cantidadRestante -= cantidadLinea;
+                    } else {
+                        await api(`/mesasC/${linea.id}`, "PUT", {
+                            cantidad: cantidadLinea - cantidadRestante,
+                            subtotal: Number(linea.precio_unitario || producto.precio || 0) * (cantidadLinea - cantidadRestante)
+                        });
+                        cantidadRestante = 0;
+                    }
+                }
+            }
+
+            consumos = await api("/mesasC/");
+            cerrarConfigModal();
+            refrescarResumen();
+            mostrarMesas(filtroMesas());
+            actualizarTiempos();
+            return;
+        }
 
         if (nuevaCantidad === 0) {
             for (const linea of existentes) {
@@ -1163,6 +1218,7 @@ async function abrirConfigModal(linea) {
 
         configProducto = producto;
         configCantidad = Number(linea.cantidad) || 0;
+        configLineaId = linea.id;
         configGrupos = Array.isArray(grupos) ? grupos : [];
         configIngredientes = Object.fromEntries(
             productoIngredientes
@@ -1187,6 +1243,7 @@ async function abrirConfigModal(linea) {
 function cerrarConfigModal() {
     if (configModal) { configModal.classList.remove("active"); }
     configProducto = null;
+    configLineaId = null;
     configGrupos = [];
     configOpciones = {};
 }
@@ -1218,7 +1275,7 @@ btnGuardarConfig.addEventListener("click", async () => {
         grupos: configGrupos,
         opciones: configOpciones
     };
-    await registrarProducto(producto, cantidad, configuracion);
+    await registrarProducto(producto, cantidad, configuracion, configLineaId);
 });
 
 cerrarConfig.addEventListener("click", cerrarConfigModal);
@@ -1251,11 +1308,17 @@ pedidoLineas.addEventListener("click", async event => {
     boton.disabled = true;
 
     const cantidadActual = Number(linea.cantidad) || 0;
-    const cantidad = accion === "mas"
-        ? cantidadActual + 1
-        : accion === "menos"
-            ? cantidadActual - 1
-            : 0;
+    const cantidad = producto.preparacion
+        ? accion === "mas"
+            ? cantidadProductoEnMesa(producto.id) + 1
+            : accion === "menos"
+                ? Math.max(0, cantidadProductoEnMesa(producto.id) - 1)
+                : 0
+        : accion === "mas"
+            ? cantidadActual + 1
+            : accion === "menos"
+                ? cantidadActual - 1
+                : 0;
 
     await registrarProducto(producto, cantidad);
 });

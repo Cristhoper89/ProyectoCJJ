@@ -307,7 +307,60 @@ export default function MesaScreen() {
         return;
       }
 
-      if (existingLines.length > 0) {
+      if (product.preparacion) {
+        const currentQuantity = existingLines.reduce(
+          (sum, line) => sum + (Number(line.cantidad) || 0),
+          0,
+        );
+
+        if (selectedIngredients && existingLines.length > 0) {
+          const targetLine = existingLines[0];
+          await apiRequest(`/mesasC/${targetLine.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              cantidad: Number(targetLine.cantidad) || 1,
+              subtotal: Number(product.precio || 0) * (Number(targetLine.cantidad) || 1),
+              notas: optionNotes || targetLine.notas || null,
+              ingredientes: ingredientActions,
+            }),
+          });
+        }
+
+        if (quantity > currentQuantity) {
+          await apiRequest('/mesasC/', {
+            method: 'POST',
+            body: JSON.stringify({
+              id_producto: product.id,
+              id_mov: movementId,
+              cantidad: quantity - currentQuantity,
+              notas: optionNotes || null,
+              ingredientes: ingredientActions,
+            }),
+          });
+        } else if (quantity < currentQuantity) {
+          let quantityToRemove = currentQuantity - quantity;
+          for (const line of [...existingLines].reverse()) {
+            if (quantityToRemove <= 0) break;
+            const lineQuantity = Number(line.cantidad) || 0;
+            if (lineQuantity <= quantityToRemove) {
+              await apiRequest(`/mesasC/${line.id}`, { method: 'DELETE' });
+              quantityToRemove -= lineQuantity;
+            } else {
+              const nextQuantity = lineQuantity - quantityToRemove;
+              await apiRequest(`/mesasC/${line.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                  cantidad: nextQuantity,
+                  subtotal: Number(line.precio_unitario || product.precio || 0) * nextQuantity,
+                }),
+              });
+              quantityToRemove = 0;
+            }
+          }
+        }
+
+        setConsumos(await apiRequest<Consumo[]>('/mesasC/'));
+      } else if (existingLines.length > 0) {
         const targetLine = existingLines[0];
         const totalPrice = Number(product.precio || 0) * quantity;
         await apiRequest(`/mesasC/${targetLine.id}`, { method: 'PUT', body: JSON.stringify({ cantidad: quantity, subtotal: totalPrice, notas: optionNotes || targetLine.notas || null }) });

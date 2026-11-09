@@ -326,6 +326,52 @@ class MesaService:
             logger.error(f"Error crítico al cerrar la mesa: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
         
+    async def _decrementar_stock_productos(self, movement_ids: list[int]) -> None:
+        if not movement_ids:
+            return
+
+        locked_movement_ids = (await self.db.execute(text("""
+            SELECT id
+            FROM movimiento
+            WHERE id = ANY(:movement_ids)
+            ORDER BY id
+            FOR UPDATE;
+        """), {"movement_ids": movement_ids})).scalars().all()
+        if not locked_movement_ids:
+            return
+
+        consumed_products = (await self.db.execute(text("""
+            SELECT id_producto, SUM(cantidad)::INTEGER AS cantidad
+            FROM mesa_consumo
+            WHERE id_mov = ANY(:movement_ids)
+            GROUP BY id_producto
+            ORDER BY id_producto;
+        """), {"movement_ids": locked_movement_ids})).mappings().all()
+        if not consumed_products:
+            return
+
+        product_ids = [row["id_producto"] for row in consumed_products]
+        await self.db.execute(text("""
+            SELECT id
+            FROM productos
+            WHERE id = ANY(:product_ids)
+            ORDER BY id
+            FOR UPDATE;
+        """), {"product_ids": product_ids})
+
+        await self.db.execute(text("""
+            UPDATE productos AS p
+            SET cantidad = p.cantidad - consumed.cantidad
+            FROM (
+                SELECT id_producto, SUM(cantidad)::INTEGER AS cantidad
+                FROM mesa_consumo
+                WHERE id_mov = ANY(:movement_ids)
+                GROUP BY id_producto
+            ) AS consumed
+            WHERE p.id = consumed.id_producto
+              AND p.cantidad IS NOT NULL;
+        """), {"movement_ids": locked_movement_ids})
+
     async def finalizar_mesa(self, mesa_id: int, data: MesaFinalize) -> dict:
         try:
             mesa = (await self.db.execute(text("SELECT id, tipo, id_mov FROM mesa WHERE id = :id FOR UPDATE;"), {"id": mesa_id})).mappings().first()
@@ -339,6 +385,8 @@ class MesaService:
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="La mesa no tiene un movimiento activo asociado.",
                     )
+
+                await self._decrementar_stock_productos([mesa["id_mov"]])
 
                 update_fields = [
                     "estado = TRUE",
@@ -379,6 +427,9 @@ class MesaService:
                             detail="El movimiento no pertenece a esta barra.",
                         )
 
+                await self._decrementar_stock_productos(movement_ids)
+
+                if data.id_movimiento is not None:
                     update_fields = [
                         "estado = TRUE",
                         "propina = :propina",

@@ -313,9 +313,10 @@ class CartaService:
                     notes_parts.append(line.notas.strip())
                 notes = "; ".join(notes_parts) or None
                 price = float(product["precio"] or 0)
-                subtotal = round(price * line.cantidad, 2)
                 prepared = False if product["preparacion"] else None
-                consumption_result = await self.db.execute(text("""
+                quantities = [1] * line.cantidad if product["preparacion"] else [line.cantidad]
+                for detail_quantity in quantities:
+                    consumption_result = await self.db.execute(text("""
                     INSERT INTO mesa_consumo (
                         id_producto, id_mov, cantidad, precio_unitario,
                         subtotal, preparado, notas, descuento
@@ -325,32 +326,32 @@ class CartaService:
                         :subtotal, :prepared, :notes, 0
                     )
                     RETURNING id;
-                """), {
+                    """), {
                     "product_id": line.id_producto,
                     "movement_id": movement["id"],
-                    "quantity": line.cantidad,
+                    "quantity": detail_quantity,
                     "price": price,
-                    "subtotal": subtotal,
+                    "subtotal": round(price * detail_quantity, 2),
                     "prepared": prepared,
                     "notes": notes,
                 })
-                consumption_id = consumption_result.scalar_one()
+                    consumption_id = consumption_result.scalar_one()
 
-                for ingredient_id in ingredient_ids:
-                    included = ingredient_selections.get(ingredient_id, True)
-                    await self.db.execute(text("""
-                        INSERT INTO mesa_consumo_ingredientes (
-                            id_mesa_consumo, id_ingrediente, accion
-                        )
-                        VALUES (
-                            :consumption_id, :ingredient_id,
-                            CAST(:action AS tipo_accion)
-                        );
-                    """), {
-                        "consumption_id": consumption_id,
-                        "ingredient_id": ingredient_id,
-                        "action": "mantener" if included else "quitar",
-                    })
+                    for ingredient_id in ingredient_ids:
+                        included = ingredient_selections.get(ingredient_id, True)
+                        await self.db.execute(text("""
+                            INSERT INTO mesa_consumo_ingredientes (
+                                id_mesa_consumo, id_ingrediente, accion
+                            )
+                            VALUES (
+                                :consumption_id, :ingredient_id,
+                                CAST(:action AS tipo_accion)
+                            );
+                        """), {
+                            "consumption_id": consumption_id,
+                            "ingredient_id": ingredient_id,
+                            "action": "mantener" if included else "quitar",
+                        })
 
             await self.db.commit()
         except HTTPException:

@@ -78,6 +78,7 @@
 
                         <tr>
                             <th>ID</th>
+                            <th>Imagen</th>
                             <th>Producto</th>
                             <th>Descripción</th>
                             <th>Cantidad</th>
@@ -93,7 +94,7 @@
                     <tbody id="productosTable">
 
                         <tr>
-                            <td colspan="9" class="loading">
+                            <td colspan="10" class="loading">
                                 Cargando productos...
                             </td>
                         </tr>
@@ -218,6 +219,18 @@
 
                 </div>
 
+                <div class="form-group">
+                    <label for="imagenesProductoInput">Imágenes para la carta</label>
+                    <div class="imagenes-producto-actions">
+                        <input type="file" id="imagenesProductoInput" accept="image/*" multiple hidden>
+                        <button type="button" class="btn-secondary" id="btnAgregarImagenes">
+                            <i data-lucide="image-plus"></i>
+                            Agregar imágenes
+                        </button>
+                        <span class="imagenes-producto-ayuda">Selecciona una imagen para marcarla como principal.</span>
+                    </div>
+                    <div id="imagenesProductoLista" class="imagenes-producto-lista"></div>
+                </div>
 
                 <!-- CATEGORÍA -->
 
@@ -235,6 +248,14 @@
 
                     </select>
 
+                </div>
+
+                <div class="opciones-producto-container">
+                    <div class="opciones-producto-header">
+                        <strong>Grupos de opciones</strong>
+                        <span>Elige los grupos disponibles para personalizar este producto.</span>
+                    </div>
+                    <div id="gruposOpcionesLista" class="opciones-producto-lista"></div>
                 </div>
 
 
@@ -361,7 +382,7 @@
         lucide.createIcons();
     </script>
 
-    <script src="../static/js/productos.js?v=2"></script>
+    <script src="../static/js/productos.js?v=3"></script>
     <script src="../static/js/menu.js?v=14"></script>
 
 </body>

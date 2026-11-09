@@ -26,6 +26,10 @@ const categoria = document.getElementById("categoria");
 const preparacion = document.getElementById("preparacion");
 const ingredientesContainer = document.getElementById("ingredientesContainer");
 const ingredientesLista = document.getElementById("ingredientesLista");
+const gruposOpcionesLista = document.getElementById("gruposOpcionesLista");
+const imagenesProductoInput = document.getElementById("imagenesProductoInput");
+const btnAgregarImagenes = document.getElementById("btnAgregarImagenes");
+const imagenesProductoLista = document.getElementById("imagenesProductoLista");
 
 const modalTitle = document.getElementById("modalTitle");
 
@@ -51,6 +55,11 @@ let categorias = [];
 let ingredientes = [];
 let relacionesProductoIngrediente = [];
 let ingredientesSeleccionados = new Set();
+let gruposOpciones = [];
+let gruposOpcionesSeleccionados = new Set();
+let imagenesProducto = [];
+let archivosImagenes = [];
+let imagenPrincipal = null;
 
 let productoSeleccionado = null;
 
@@ -78,6 +87,41 @@ function getHeaders(){
         "Content-Type": "application/json",
         "Authorization": `Bearer ${getToken()}`
     };
+
+}
+
+function escapeHtml(value){
+
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+    })[character]);
+
+}
+
+async function requestApi(path, options = {}){
+
+    const body = options.body;
+    const headers = {
+        "Authorization": `Bearer ${getToken()}`,
+        ...(body instanceof FormData ? {} : body === undefined ? {} : {"Content-Type": "application/json"}),
+        ...options.headers
+    };
+    const response = await fetch(`${API_URL}${path}`, {
+        ...options,
+        headers
+    });
+    const data = response.status === 204 ? null : await response.json();
+
+    if(!response.ok){
+        const detail = data?.detail;
+        throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail || "No fue posible completar la solicitud."));
+    }
+
+    return data;
 
 }
 
@@ -270,11 +314,134 @@ async function sincronizarIngredientes(productoId){
 
 }
 
+async function cargarGruposOpciones(){
+
+    try{
+        gruposOpciones = await requestApi("/grupos-opciones/");
+        renderizarGruposOpciones();
+    }
+    catch(error){
+        console.error(error);
+        gruposOpciones = [];
+        gruposOpcionesLista.innerHTML = `<span class="opciones-producto-vacio">No fue posible cargar los grupos de opciones.</span>`;
+        showMessage(error.message, "error");
+    }
+
+}
+
+function renderizarGruposOpciones(){
+
+    if(gruposOpciones.length === 0){
+        gruposOpcionesLista.innerHTML = `<span class="opciones-producto-vacio">No hay grupos de opciones registrados.</span>`;
+        return;
+    }
+
+    gruposOpcionesLista.innerHTML = gruposOpciones.map(grupo => `
+        <label class="opcion-producto-item">
+            <input type="checkbox" value="${grupo.id}" ${gruposOpcionesSeleccionados.has(grupo.id) ? "checked" : ""}>
+            <span>${escapeHtml(grupo.nombre)}</span>
+        </label>
+    `).join("");
+
+}
+
+async function sincronizarGruposOpciones(productoId){
+
+    const actuales = await requestApi(`/productos/${productoId}/grupos-opciones/`);
+    const actualesIds = actuales.map(grupo => grupo.id);
+    const deseados = [...gruposOpcionesSeleccionados];
+    const eliminaciones = actualesIds
+        .filter(groupId => !deseados.includes(groupId))
+        .map(groupId => requestApi(`/productos/${productoId}/grupos-opciones/${groupId}`, {method: "DELETE"}));
+    const creaciones = deseados
+        .filter(groupId => !actualesIds.includes(groupId))
+        .map(groupId => requestApi("/producto-grupo-opcion/", {
+            method: "POST",
+            body: JSON.stringify({id_producto: Number(productoId), id_grupo_opcion: groupId})
+        }));
+
+    await Promise.all([...eliminaciones, ...creaciones]);
+
+}
+
+function limpiarImagenesTemporales(){
+
+    archivosImagenes.forEach(image => URL.revokeObjectURL(image.previewUrl));
+    archivosImagenes = [];
+
+}
+
+function renderizarImagenesProducto(){
+
+    const savedImages = imagenesProducto.map(image => {
+        const selected = imagenPrincipal?.tipo === "guardada" && imagenPrincipal.id === image.id;
+        return `
+            <button type="button" class="imagen-producto-opcion ${selected ? "selected" : ""}" data-saved-image="${image.id}" aria-label="Elegir imagen guardada como principal">
+                <img src="${escapeHtml(image.url)}" alt="Imagen del producto">
+                ${selected ? "<span>Principal</span>" : ""}
+            </button>
+        `;
+    });
+    const pendingImages = archivosImagenes.map((image, index) => {
+        const selected = imagenPrincipal?.tipo === "pendiente" && imagenPrincipal.index === index;
+        return `
+            <button type="button" class="imagen-producto-opcion ${selected ? "selected" : ""}" data-pending-image="${index}" aria-label="Elegir imagen nueva ${index + 1} como principal">
+                <img src="${image.previewUrl}" alt="Vista previa de imagen">
+                ${selected ? "<span>Principal</span>" : ""}
+            </button>
+        `;
+    });
+
+    imagenesProductoLista.innerHTML = [...savedImages, ...pendingImages].join("");
+
+}
+
+async function cargarImagenesProducto(productoId){
+
+    imagenesProducto = await requestApi(`/productos/${productoId}/imagenes`);
+    const principal = imagenesProducto.find(image => image.es_principal);
+    imagenPrincipal = principal ? {tipo: "guardada", id: principal.id} : null;
+    renderizarImagenesProducto();
+
+}
+
+async function sincronizarImagenesProducto(productoId){
+
+    if(archivosImagenes.length > 0){
+        const formData = new FormData();
+        archivosImagenes.forEach(image => formData.append("files", image.file, image.file.name));
+        const uploaded = await requestApi(`/productos/${productoId}/imagenes`, {
+            method: "POST",
+            body: formData
+        });
+
+        imagenesProducto.push(...uploaded);
+        if(imagenPrincipal?.tipo === "pendiente"){
+            const uploadedPrincipal = uploaded[imagenPrincipal.index];
+            if(uploadedPrincipal){
+                imagenPrincipal = {tipo: "guardada", id: uploadedPrincipal.id};
+            }
+        }
+        limpiarImagenesTemporales();
+        imagenesProductoInput.value = "";
+        renderizarImagenesProducto();
+    }
+
+    if(imagenPrincipal?.tipo === "guardada"){
+        await requestApi(`/productos/${productoId}/imagenes/${imagenPrincipal.id}/principal`, {
+            method: "PATCH"
+        });
+    }
+
+    await cargarImagenesProducto(productoId);
+
+}
+
 async function cargarProductos(){
 
     productosTable.innerHTML = `
         <tr>
-            <td colspan="9" class="loading">
+            <td colspan="10" class="loading">
                 Cargando productos...
             </td>
         </tr>
@@ -297,7 +464,7 @@ async function cargarProductos(){
 
                 productosTable.innerHTML = `
                     <tr>
-                        <td colspan="9" class="loading">
+                        <td colspan="10" class="loading">
                             Sesión expirada.
                         </td>
                     </tr>
@@ -322,7 +489,7 @@ async function cargarProductos(){
 
         productosTable.innerHTML = `
             <tr>
-                <td colspan="9" class="loading">
+                <td colspan="10" class="loading">
                     No fue posible conectar con el servidor.
                 </td>
             </tr>
@@ -343,7 +510,7 @@ function mostrarProductos(lista){
 
         productosTable.innerHTML = `
             <tr>
-                <td colspan="9" class="loading">
+                <td colspan="10" class="loading">
                     No hay productos registrados.
                 </td>
             </tr>
@@ -370,6 +537,14 @@ function mostrarProductos(lista){
         fila.innerHTML = `
 
             <td>${producto.id}</td>
+
+            <td>
+                ${
+                    producto.imagen_url
+                    ? `<img class="product-image-thumb" src="${escapeHtml(producto.imagen_url)}" alt="Imagen de ${escapeHtml(producto.nombre || "producto")}">`
+                    : `<span class="product-image-placeholder"><i data-lucide="image"></i></span>`
+                }
+            </td>
 
             <td>
                 <strong>${producto.nombre || "Sin nombre"}</strong>
@@ -538,14 +713,20 @@ btnNuevoProducto.addEventListener("click",()=>{
 function abrirModal(){
 
     productoForm.reset();
+    limpiarImagenesTemporales();
 
     productoId.value = "";
     ingredientesSeleccionados = new Set();
+    gruposOpcionesSeleccionados = new Set();
+    imagenesProducto = [];
+    imagenPrincipal = null;
 
     modalTitle.textContent = "Registrar producto";
 
     clearMessage();
 
+    renderizarGruposOpciones();
+    renderizarImagenesProducto();
     actualizarVisibilidadIngredientes();
 
     productoModal.classList.add("active");
@@ -560,12 +741,18 @@ function abrirModal(){
 function cerrarProductoModal(){
 
     productoForm.reset();
+    limpiarImagenesTemporales();
 
     productoId.value = "";
     ingredientesSeleccionados = new Set();
+    gruposOpcionesSeleccionados = new Set();
+    imagenesProducto = [];
+    imagenPrincipal = null;
 
     clearMessage();
 
+    renderizarGruposOpciones();
+    renderizarImagenesProducto();
     productoModal.classList.remove("active");
 
 }
@@ -593,32 +780,51 @@ async function editarProducto(id){
     }
 
 
-    productoId.value = producto.id;
+    try{
+        const [currentGroups, currentImages] = await Promise.all([
+            requestApi(`/productos/${producto.id}/grupos-opciones/`),
+            requestApi(`/productos/${producto.id}/imagenes`)
+        ]);
 
-    nombre.value = producto.nombre || "";
+        limpiarImagenesTemporales();
+        productoId.value = producto.id;
 
-    descripcion.value = producto.descripcion || "";
+        nombre.value = producto.nombre || "";
 
-    cantidad.value = producto.cantidad ?? "";
+        descripcion.value = producto.descripcion || "";
 
-    precio.value = producto.precio ?? "";
+        cantidad.value = producto.cantidad ?? "";
 
-    categoria.value = producto.id_categoria ?? "";
+        precio.value = producto.precio ?? "";
 
-    preparacion.checked = producto.preparacion === true;
-    ingredientesSeleccionados = new Set(
-        relacionesProductoIngrediente
-            .filter(relacion => relacion.id_producto === producto.id)
-            .map(relacion => relacion.id_ingrediente)
-    );
+        categoria.value = producto.id_categoria ?? "";
 
+        preparacion.checked = producto.preparacion === true;
+        ingredientesSeleccionados = new Set(
+            relacionesProductoIngrediente
+                .filter(relacion => relacion.id_producto === producto.id)
+                .map(relacion => relacion.id_ingrediente)
+        );
+        gruposOpcionesSeleccionados = new Set(currentGroups.map(group => group.id));
+        gruposOpcionesLista.querySelectorAll("input[type='checkbox']").forEach(input => {
+            input.checked = gruposOpcionesSeleccionados.has(Number(input.value));
+        });
+        imagenesProducto = currentImages;
+        const principal = currentImages.find(image => image.es_principal);
+        imagenPrincipal = principal ? {tipo: "guardada", id: principal.id} : null;
 
-    modalTitle.textContent = "Editar producto";
+        modalTitle.textContent = "Editar producto";
 
-    clearMessage();
+        clearMessage();
 
-    productoModal.classList.add("active");
-    actualizarVisibilidadIngredientes();
+        renderizarGruposOpciones();
+        renderizarImagenesProducto();
+        productoModal.classList.add("active");
+        actualizarVisibilidadIngredientes();
+    }
+    catch(error){
+        alert(error.message || "No fue posible cargar las opciones e imágenes del producto.");
+    }
 
 }
 
@@ -646,6 +852,65 @@ ingredientesLista.addEventListener("change",(event)=>{
     else{
         ingredientesSeleccionados.delete(ingredienteId);
     }
+
+});
+
+gruposOpcionesLista.addEventListener("change", event => {
+
+    if(!event.target.matches("input[type='checkbox']")){
+        return;
+    }
+
+    const groupId = Number(event.target.value);
+    if(event.target.checked){
+        gruposOpcionesSeleccionados.add(groupId);
+    }
+    else{
+        gruposOpcionesSeleccionados.delete(groupId);
+    }
+
+});
+
+btnAgregarImagenes.addEventListener("click", () => imagenesProductoInput.click());
+
+imagenesProductoInput.addEventListener("change", () => {
+
+    const chosenFiles = [...imagenesProductoInput.files];
+    const invalidFile = chosenFiles.find(file => !file.type.startsWith("image/") || file.size > 10 * 1024 * 1024);
+    if(invalidFile){
+        showMessage("Selecciona imágenes válidas de máximo 10 MB cada una.", "error");
+        imagenesProductoInput.value = "";
+        return;
+    }
+
+    const firstNewImage = archivosImagenes.length;
+    archivosImagenes.push(...chosenFiles.map(file => ({
+        file,
+        previewUrl: URL.createObjectURL(file)
+    })));
+    if(chosenFiles.length > 0 && !imagenPrincipal && imagenesProducto.length === 0){
+        imagenPrincipal = {tipo: "pendiente", index: firstNewImage};
+    }
+    imagenesProductoInput.value = "";
+    clearMessage();
+    renderizarImagenesProducto();
+
+});
+
+imagenesProductoLista.addEventListener("click", event => {
+
+    const button = event.target.closest("button[data-saved-image], button[data-pending-image]");
+    if(!button){
+        return;
+    }
+
+    if(button.dataset.savedImage){
+        imagenPrincipal = {tipo: "guardada", id: Number(button.dataset.savedImage)};
+    }
+    else{
+        imagenPrincipal = {tipo: "pendiente", index: Number(button.dataset.pendingImage)};
+    }
+    renderizarImagenesProducto();
 
 });
 
@@ -778,6 +1043,7 @@ productoForm.addEventListener("submit", async (e)=>{
 
     };
 
+    let productoGuardado = false;
 
     try{
 
@@ -833,8 +1099,12 @@ productoForm.addEventListener("submit", async (e)=>{
             return;
         }
 
+        productoGuardado = true;
+        productoId.value = data.id;
+        modalTitle.textContent = "Editar producto";
         await sincronizarIngredientes(data.id);
-
+        await sincronizarGruposOpciones(data.id);
+        await sincronizarImagenesProducto(data.id);
 
         showMessage(
             id
@@ -844,21 +1114,19 @@ productoForm.addEventListener("submit", async (e)=>{
         );
 
 
-        setTimeout(()=>{
-
-            cerrarProductoModal();
-
-            cargarProductos();
-
-        },800);
+        cerrarProductoModal();
+        await cargarProductos();
 
     }
+
     catch(error){
 
         console.error(error);
 
         showMessage(
-            "No fue posible conectar con el servidor.",
+            productoGuardado
+                ? `El producto se guardó, pero no se completó su configuración: ${error.message}`
+                : `No fue posible guardar el producto: ${error.message}`,
             "error"
         );
 
@@ -980,5 +1248,6 @@ confirmarDesactivar.addEventListener("click", async ()=>{
 cargarCategorias();
 cargarIngredientes();
 cargarRelacionesProductoIngrediente();
+cargarGruposOpciones();
 
 cargarProductos();
