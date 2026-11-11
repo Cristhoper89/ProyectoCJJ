@@ -14,7 +14,7 @@ type Ingredient = { id: number; nombre: string; estado?: boolean };
 type ProductIngredient = { id: number; id_producto: number; id_ingrediente: number };
 type Option = { id: number; id_grupo_opcion: number; nombre: string };
 type OptionGroup = { id: number; nombre: string; opciones: Option[] };
-type Consumo = { id: number; id_producto?: number; id_mov?: number | null; cantidad?: number; precio_unitario?: number; subtotal?: number; notas?: string | null };
+type Consumo = { id: number; id_producto?: number; id_mov?: number | null; cantidad?: number; precio_unitario?: number; subtotal?: number; descuento?: number; notas?: string | null };
 type Movimiento = { id: number; estado?: boolean; propina?: number | string; domicilio?: number | string; total?: number | string; id_mesa?: number | null; metodo?: string | null; fecha_hora?: string | null };
 type Linea = Consumo & { descuento: number };
 
@@ -49,7 +49,6 @@ export default function MesaScreen() {
   const [tipPercent, setTipPercent] = useState(DEFAULT_TIP_PERCENT);
   const [discountInput, setDiscountInput] = useState('');
   const [domicilio, setDomicilio] = useState('0');
-  const [discounts, setDiscounts] = useState<Record<number, string>>({});
   const [productQuantities, setProductQuantities] = useState<Record<number, number>>({});
   const [configProduct, setConfigProduct] = useState<Producto | null>(null);
   const [configQuantity, setConfigQuantity] = useState(0);
@@ -158,7 +157,7 @@ export default function MesaScreen() {
       .then((stored) => {
         if (!active) return;
         const parsed = Number(stored);
-        if (Number.isFinite(parsed) && parsed >= 0) {
+        if (stored !== null && Number.isFinite(parsed) && parsed > 0 && parsed <= 100) {
           setTipPercent(parsed);
         } else {
           AsyncStorage.setItem(TIP_CACHE_KEY, String(DEFAULT_TIP_PERCENT)).catch(() => {});
@@ -168,15 +167,22 @@ export default function MesaScreen() {
     return () => { active = false; };
   }, []);
   const activeMovementId = selectedMesa?.tipo === 'barra' ? selectedMovimiento?.id : selectedMesa?.id_mov;
-  const mesaConsumos = useMemo(() => consumos.filter((consumo) => consumo.id_mov === activeMovementId && (consumo.subtotal || 0) > 0), [consumos, activeMovementId]);
+  const mesaConsumos = useMemo(() => consumos.filter((consumo) => consumo.id_mov === activeMovementId), [consumos, activeMovementId]);
   const barMovements = useMemo(
     () => selectedMesa?.tipo === 'barra'
       ? [...movimientos].filter((movement) => movement.id_mesa === selectedMesa.id).reverse()
       : [],
     [movimientos, selectedMesa],
   );
-  const lineas = useMemo<Linea[]>(() => mesaConsumos.map((consumo) => ({ ...consumo, descuento: Math.min(100, Math.max(0, Number(discounts[consumo.id] || 0))) })), [mesaConsumos, discounts]);
-  const subtotal = lineas.reduce((sum, line) => sum + (line.subtotal || 0) * (1 - line.descuento / 100), 0);
+  const lineas = useMemo<Linea[]>(() => mesaConsumos.map((consumo) => {
+    const precio = Number(consumo.precio_unitario) || 0;
+    const descuento = Number(consumo.descuento) || 0;
+    return {
+      ...consumo,
+      descuento: precio > 0 ? Math.min(100, Math.max(0, descuento / precio * 100)) : 0,
+    };
+  }), [mesaConsumos]);
+  const subtotal = lineas.reduce((sum, line) => sum + (Number(line.subtotal) || 0), 0);
   const total = subtotal + propina + Math.max(0, Number(domicilio) || 0);
   // Mientras el usuario no edite la propina, se mantiene el 10% del subtotal.
   useEffect(() => {
@@ -185,9 +191,9 @@ export default function MesaScreen() {
   }, [selectedMesa, autoTip, tipPercent, subtotal]);
 
   const getMovementTotal = (movement: Movimiento) => {
-    const movementLines = consumos.filter((consumo) => consumo.id_mov === movement.id && (consumo.subtotal || 0) > 0);
+    const movementLines = consumos.filter((consumo) => consumo.id_mov === movement.id);
     const movementSubtotal = movementLines.length > 0
-      ? movementLines.reduce((sum, line) => sum + (Number(line.subtotal) || 0) * (1 - Math.min(100, Math.max(0, Number(discounts[line.id] || 0))) / 100), 0)
+      ? movementLines.reduce((sum, line) => sum + (Number(line.subtotal) || 0), 0)
       : Math.max(0, (Number(movement.total) || 0) - (Number(movement.propina) || 0) - (Number(movement.domicilio) || 0));
     const isSelected = selectedMovimiento?.id === movement.id;
     return movementSubtotal
@@ -294,7 +300,7 @@ export default function MesaScreen() {
     const quantity = Math.max(0, Math.floor(requestedQuantity));
     // Descuento digitado en el panel de productos para el proximo producto.
     const pendingDiscount = Math.min(100, Math.max(0, Number(discountInput) || 0));
-    let affectedLineIds: number[] = [];
+    const discountPerUnit = round2((Number(product.precio) || 0) * pendingDiscount / 100);
     try {
       setSaving(true);
       let activeMesa = selectedMesa;
@@ -312,6 +318,7 @@ export default function MesaScreen() {
       if (!movementId) throw new Error('La mesa no tiene un movimiento activo.');
 
       const existingLines = mesaConsumos.filter((consumo) => consumo.id_mov === movementId && consumo.id_producto === product.id);
+      const currentQuantity = existingLines.reduce((sum, line) => sum + (Number(line.cantidad) || 0), 0);
       const optionNotes = (selectedGroups || [])
         .map((group) => {
           const optionId = selectedOptions?.[group.id];
@@ -339,16 +346,12 @@ export default function MesaScreen() {
           setConsumos((current) => current.filter((consumo) => !(consumo.id_mov === movementId && consumo.id_producto === product.id)));
         }
         setProductQuantities((current) => ({ ...current, [product.id]: 0 }));
+        setDiscountInput('');
         setConfigProduct(null);
         return;
       }
 
       if (product.preparacion) {
-        const currentQuantity = existingLines.reduce(
-          (sum, line) => sum + (Number(line.cantidad) || 0),
-          0,
-        );
-
         if (selectedIngredients && existingLines.length > 0) {
           const targetLine = existingLines[0];
           await apiRequest(`/mesasC/${targetLine.id}`, {
@@ -369,6 +372,7 @@ export default function MesaScreen() {
               id_producto: product.id,
               id_mov: movementId,
               cantidad: quantity - currentQuantity,
+              descuento: discountPerUnit,
               notas: optionNotes || null,
               ingredientes: ingredientActions,
             }),
@@ -394,39 +398,52 @@ export default function MesaScreen() {
             }
           }
         }
-
-        const refreshedLines = await apiRequest<Consumo[]>('/mesasC/');
-        setConsumos(refreshedLines);
-        affectedLineIds = refreshedLines
-          .filter((consumo) => consumo.id_mov === movementId && consumo.id_producto === product.id)
-          .map((consumo) => consumo.id);
-      } else if (existingLines.length > 0) {
-        const targetLine = existingLines[0];
-        affectedLineIds = [targetLine.id];
-        const totalPrice = Number(product.precio || 0) * quantity;
-        await apiRequest(`/mesasC/${targetLine.id}`, { method: 'PUT', body: JSON.stringify({ cantidad: quantity, subtotal: totalPrice, notas: optionNotes || targetLine.notas || null }) });
-        setConsumos((current) => current.map((consumo) => {
-          if (consumo.id !== targetLine.id) return consumo;
-          return { ...consumo, cantidad: quantity, subtotal: totalPrice, notas: optionNotes || consumo.notas || null };
-        }));
-        if (existingLines.length > 1) {
-          await Promise.all(existingLines.slice(1).map((line) => apiRequest(`/mesasC/${line.id}`, { method: 'DELETE' })));
-          setConsumos((current) => current.filter((consumo) => !existingLines.slice(1).some((line) => line.id === consumo.id)));
+      } else if (quantity > currentQuantity) {
+        const quantityToAdd = quantity - currentQuantity;
+        const matchingLine = existingLines.find((line) => (
+          Math.round((Number(line.descuento) || 0) * 100) === Math.round(discountPerUnit * 100)
+        ));
+        if (matchingLine) {
+          await apiRequest(`/mesasC/${matchingLine.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              cantidad: (Number(matchingLine.cantidad) || 0) + quantityToAdd,
+              notas: optionNotes || matchingLine.notas || null,
+            }),
+          });
+        } else {
+          await apiRequest('/mesasC/', {
+            method: 'POST',
+            body: JSON.stringify({
+              id_producto: product.id,
+              id_mov: movementId,
+              cantidad: quantityToAdd,
+              descuento: discountPerUnit,
+              notas: optionNotes || null,
+              ingredientes: ingredientActions,
+            }),
+          });
         }
-      } else {
-        const newConsumption = await apiRequest<Consumo>('/mesasC/', { method: 'POST', body: JSON.stringify({ id_producto: product.id, id_mov: movementId, cantidad: quantity, notas: optionNotes || null, ingredientes: ingredientActions }) });
-        affectedLineIds = [newConsumption.id];
-        setConsumos((current) => [...current, newConsumption]);
+      } else if (quantity < currentQuantity) {
+        let quantityToRemove = currentQuantity - quantity;
+        for (const line of [...existingLines].reverse()) {
+          if (quantityToRemove <= 0) break;
+          const lineQuantity = Number(line.cantidad) || 0;
+          if (lineQuantity <= quantityToRemove) {
+            await apiRequest(`/mesasC/${line.id}`, { method: 'DELETE' });
+            quantityToRemove -= lineQuantity;
+          } else {
+            await apiRequest(`/mesasC/${line.id}`, {
+              method: 'PUT',
+              body: JSON.stringify({ cantidad: lineQuantity - quantityToRemove }),
+            });
+            quantityToRemove = 0;
+          }
+        }
       }
 
-      // El descuento digitado se aplica al producto recien agregado y luego se limpia.
-      if (pendingDiscount > 0 && affectedLineIds.length > 0) {
-        setDiscounts((current) => {
-          const next = { ...current };
-          affectedLineIds.forEach((id) => { next[id] = String(pendingDiscount); });
-          return next;
-        });
-      }
+      const refreshedLines = await apiRequest<Consumo[]>('/mesasC/');
+      setConsumos(refreshedLines);
       setDiscountInput('');
 
       setProductQuantities((current) => ({ ...current, [product.id]: quantity }));
@@ -442,18 +459,31 @@ export default function MesaScreen() {
     finally { setSaving(false); }
   };
 
+  const updateConsumptionLine = async (line: Linea, action: 'increment' | 'decrement' | 'delete') => {
+    const quantity = Number(line.cantidad) || 0;
+    try {
+      setSaving(true);
+      if (action === 'delete' || (action === 'decrement' && quantity <= 1)) {
+        await apiRequest(`/mesasC/${line.id}`, { method: 'DELETE' });
+      } else {
+        const nextQuantity = action === 'increment' ? quantity + 1 : quantity - 1;
+        await apiRequest(`/mesasC/${line.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ cantidad: nextQuantity }),
+        });
+      }
+      setConsumos(await apiRequest<Consumo[]>('/mesasC/'));
+    } catch (requestError) {
+      Alert.alert('No se pudo actualizar el producto', requestError instanceof Error ? requestError.message : 'Intenta nuevamente.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const saveBill = async (close = false) => {
     if (!selectedMesa) return;
     try {
       setSaving(true);
-      for (const line of lineas) {
-        // El backend recalcula el subtotal a partir del descuento por unidad
-        // ((precio - descuento) * cantidad), así que se envía el monto, no el %.
-        if (line.descuento <= 0) continue;
-        const unitPrice = Number(line.precio_unitario) || 0;
-        const discountAmount = round2(unitPrice * line.descuento / 100);
-        if (discountAmount > 0) await apiRequest(`/mesasC/${line.id}`, { method: 'PUT', body: JSON.stringify({ descuento: discountAmount }) });
-      }
       if (close) {
         await apiRequest(`/mesas/${selectedMesa.id}/finalizar`, {
           method: 'POST',
@@ -492,7 +522,7 @@ export default function MesaScreen() {
   const printBill = async () => {
     if (!selectedMesa) return;
     const displayName = selectedMesa.nombre || (selectedMesa.tipo === 'barra' ? 'Barra' : `Mesa ${selectedMesa.id}`);
-    const rows = lineas.map((line) => `${productos.find((item) => item.id === line.id_producto)?.nombre || `Producto ${line.id_producto}`} x${line.cantidad || 0}: ${money((line.subtotal || 0) * (1 - line.descuento / 100))}`).join('\n');
+    const rows = lineas.map((line) => `${productos.find((item) => item.id === line.id_producto)?.nombre || `Producto ${line.id_producto}`} x${line.cantidad || 0}: ${money(Number(line.subtotal) || 0)}`).join('\n');
     await Print.printAsync({ html: `<h1>Cuenta ${displayName}</h1><pre>${rows}</pre><p>Subtotal: ${money(subtotal)}</p><p>Propina: ${money(propina)}</p><p>Domicilio: ${money(Number(domicilio) || 0)}</p><h2>Total: ${money(total)}</h2>` });
   };
 
@@ -601,7 +631,54 @@ export default function MesaScreen() {
             {categorias.map((category) => <TouchableOpacity key={category.id} style={styles.categoryButton} onPress={() => setSelectedCategory(category)}><Text style={styles.categoryText}>{category.nombre}</Text></TouchableOpacity>)}
           </View>
         </View>}
-        <Text style={styles.sectionTitle}>Detalle de la cuenta</Text><View style={styles.table}><View style={styles.tableHeader}><Text style={[styles.tableCell, styles.itemCell]}>Producto</Text><Text style={styles.tableCell}>Cant.</Text><Text style={styles.tableCell}>Total</Text></View>{lineas.length === 0 ? <Text style={styles.noItems}>Aún no hay productos registrados.</Text> : lineas.map((line) => { const product = productos.find((item) => item.id === line.id_producto); const lineTotal = (line.subtotal || 0) * (1 - line.descuento / 100); return <View style={styles.tableRow} key={line.id}><Text style={[styles.tableCell, styles.itemCell]} numberOfLines={2}>{product?.nombre || `Producto ${line.id_producto}`}</Text><Text style={styles.tableCell}>{line.cantidad || 0}</Text><View><Text style={styles.tableCell}>{money(lineTotal)}</Text>{line.descuento > 0 && <Text style={styles.discountBadge}>-{line.descuento}%</Text>}</View></View>; })}</View>
+        <Text style={styles.sectionTitle}>Detalle de la cuenta</Text>
+        <View style={styles.table}>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableCell, styles.itemCell]}>Producto / total</Text>
+            <Text style={styles.tableCell}>Acciones</Text>
+          </View>
+          {lineas.length === 0
+            ? <Text style={styles.noItems}>Aún no hay productos registrados.</Text>
+            : lineas.map((line) => {
+              const product = productos.find((item) => item.id === line.id_producto);
+              return <View style={styles.tableRow} key={line.id}>
+                <View style={styles.orderLineInfo}>
+                  <Text style={[styles.tableCell, styles.itemCell]} numberOfLines={2}>
+                    {product?.nombre || `Producto ${line.id_producto}`}
+                  </Text>
+                  {line.descuento > 0 && <Text style={[styles.discountBadge, styles.orderDiscountBadge]}>-{line.descuento}%</Text>}
+                  <Text style={styles.orderLineTotal}>{money(Number(line.subtotal) || 0)}</Text>
+                </View>
+                <View style={styles.orderLineActions}>
+                  <TouchableOpacity
+                    style={styles.lineActionButton}
+                    onPress={() => updateConsumptionLine(line, 'decrement')}
+                    disabled={saving}
+                    accessibilityLabel={`Quitar una unidad de ${product?.nombre || 'producto'}`}
+                  >
+                    <Minus size={15} color="#F5EBDD" />
+                  </TouchableOpacity>
+                  <Text style={styles.lineQuantity}>{line.cantidad || 0}</Text>
+                  <TouchableOpacity
+                    style={styles.lineActionButton}
+                    onPress={() => updateConsumptionLine(line, 'increment')}
+                    disabled={saving}
+                    accessibilityLabel={`Agregar una unidad a ${product?.nombre || 'producto'}`}
+                  >
+                    <Plus size={15} color="#F5EBDD" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.lineActionButton, styles.lineDeleteButton]}
+                    onPress={() => updateConsumptionLine(line, 'delete')}
+                    disabled={saving}
+                    accessibilityLabel={`Eliminar ${product?.nombre || 'producto'} con este descuento`}
+                  >
+                    <Trash2 size={15} color="#D98672" />
+                  </TouchableOpacity>
+                </View>
+              </View>;
+            })}
+        </View>
         <View style={styles.totals}><Text style={styles.totalLine}>Subtotal <Text style={styles.amount}>{money(subtotal)}</Text></Text><View style={styles.editLine}><Text style={styles.totalLine}>Propina ({tipPercent}%)</Text><TextInput style={styles.moneyInput} keyboardType="numeric" value={String(propina)} onChangeText={(value) => { setAutoTip(false); setPropina(Number(value) || 0); }} /><TouchableOpacity onPress={() => { setAutoTip(false); setPropina(0); }}><Trash2 size={17} color="#D98672" /></TouchableOpacity></View><View style={styles.editLine}><Text style={styles.totalLine}>Domicilio</Text><TextInput style={styles.moneyInput} keyboardType="numeric" value={domicilio} onChangeText={setDomicilio} /></View><View style={styles.grandTotal}><Text style={styles.grandLabel}>TOTAL A PAGAR</Text><Text style={styles.grandAmount}>{money(total)}</Text></View></View>
       </ScrollView>
       <View style={styles.actions}><TouchableOpacity style={styles.secondaryButton} onPress={cancelOrder} disabled={saving}><Text style={styles.cancelText}>Cancelar</Text></TouchableOpacity><TouchableOpacity style={styles.printButton} onPress={printBill} disabled={saving}><Printer size={18} color="#251D17" /><Text style={styles.printText}>Imprimir</Text></TouchableOpacity><TouchableOpacity style={styles.closeButton} onPress={() => saveBill(true)} disabled={saving}><Text style={styles.closeText}>{saving ? 'Guardando...' : 'Finalizar cuenta'}</Text></TouchableOpacity></View>
@@ -710,6 +787,13 @@ const styles = StyleSheet.create({
   quantityText: { color: '#F5EBDD', minWidth: 28, textAlign: 'center', fontSize: 15, fontWeight: '700' },
   addProductButton: { backgroundColor: '#F0B35A', borderRadius: 5, paddingHorizontal: 12, paddingVertical: 7 },
   addProductText: { color: '#251D17', fontSize: 12, fontWeight: '800' },
+  orderLineInfo: { flex: 1, minWidth: 0 },
+  orderLineTotal: { color: '#E5D8C9', fontSize: 12, textAlign: 'left', marginTop: 4 },
+  orderDiscountBadge: { textAlign: 'left' },
+  orderLineActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  lineActionButton: { width: 30, height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: '#604332', borderRadius: 5 },
+  lineDeleteButton: { marginLeft: 3, backgroundColor: '#45302A' },
+  lineQuantity: { color: '#F5EBDD', minWidth: 20, textAlign: 'center', fontSize: 13, fontWeight: '700' },
   container: { flex: 1, backgroundColor: '#1D1A17' }, grid: { padding: 16, paddingBottom: 30 }, columns: { gap: 12 }, loader: { marginTop: 40 }, mesaCard: { flex: 1, minHeight: 150, backgroundColor: '#32281F', borderRadius: 12, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: '#45382E' }, activeCard: { borderColor: '#F0B35A' }, mesaLabel: { color: '#B8A99A', fontSize: 12, letterSpacing: 1.5 }, mesaNumber: { color: '#F5EBDD', fontSize: 36, fontWeight: '800', marginTop: 5 }, status: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, marginTop: 10, borderRadius: 4 }, statusActive: { backgroundColor: '#604332' }, statusFree: { backgroundColor: '#29483D' }, statusText: { color: '#F5EBDD', fontSize: 10, fontWeight: '700' }, elapsed: { color: '#F0B35A', fontSize: 11, marginTop: 9 }, empty: { alignItems: 'center', padding: 30 }, emptyText: { color: '#B8A99A' }, error: { color: '#E7A28C', textAlign: 'center' }, retry: { marginTop: 15, backgroundColor: '#F0B35A', padding: 10, borderRadius: 6 }, retryText: { color: '#251D17', fontWeight: '700' }, modal: { flex: 1, backgroundColor: '#1D1A17' }, modalHeader: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#45382E' }, modalKicker: { color: '#F0B35A', fontSize: 11, letterSpacing: 1.5 }, modalTitle: { color: '#F5EBDD', fontSize: 27, fontWeight: '800', marginTop: 3 }, activeTime: { paddingHorizontal: 20, paddingTop: 12, flexDirection: 'row', gap: 6, alignItems: 'center' }, activeTimeText: { color: '#C9B9A9' }, modalContent: { padding: 20, paddingBottom: 30 }, sectionTitle: { color: '#F5EBDD', fontSize: 18, fontWeight: '700', marginTop: 22, marginBottom: 12 }, categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 }, categoryButton: { backgroundColor: '#3A3027', borderColor: '#604D3A', borderWidth: 1, borderRadius: 7, padding: 13, minWidth: '46%' }, categoryText: { color: '#F5EBDD', fontWeight: '600' }, backButton: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 12 }, backText: { color: '#F0B35A', fontWeight: '600' }, productRow: { backgroundColor: '#32281F', borderBottomWidth: 1, borderBottomColor: '#4A3B30', padding: 14, flexDirection: 'row', justifyContent: 'space-between' }, productName: { color: '#F5EBDD', fontWeight: '700' }, productDescription: { color: '#AA9C8D', fontSize: 12, marginTop: 4 }, price: { color: '#F0B35A', fontWeight: '700' }, table: { borderWidth: 1, borderColor: '#45382E', borderRadius: 7, overflow: 'hidden' }, tableHeader: { backgroundColor: '#3A3027', padding: 10, flexDirection: 'row', justifyContent: 'space-between' }, tableRow: { padding: 10, borderTopWidth: 1, borderTopColor: '#45382E', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 5 }, tableCell: { color: '#E5D8C9', fontSize: 12, textAlign: 'right', minWidth: 45 }, itemCell: { flex: 1, textAlign: 'left', minWidth: 80 }, noItems: { color: '#998C80', padding: 16, textAlign: 'center' }, discountBadge: { color: '#F0B35A', fontSize: 11, textAlign: 'right', marginTop: 2 }, productDiscountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#45382E' }, productDiscountLabel: { color: '#F5EBDD', fontSize: 15, fontWeight: '600' }, productDiscountControl: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1D1A17', borderWidth: 1, borderColor: '#604D3A', borderRadius: 8, paddingHorizontal: 12, minWidth: 110 }, productDiscountField: { flex: 1, color: '#F5EBDD', fontSize: 16, paddingVertical: 10, textAlign: 'right' }, productDiscountSuffix: { color: '#998C80', fontSize: 15, fontWeight: '600', marginLeft: 4 }, productDiscountHint: { color: '#998C80', fontSize: 12, marginTop: 8 }, totals: { marginTop: 18, gap: 10 }, totalLine: { color: '#C9B9A9', fontSize: 14 }, amount: { color: '#F5EBDD' }, editLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }, moneyInput: { color: '#F5EBDD', backgroundColor: '#32281F', borderWidth: 1, borderColor: '#604D3A', borderRadius: 5, padding: 7, minWidth: 90, textAlign: 'right' }, grandTotal: { borderTopWidth: 1, borderTopColor: '#70583E', paddingTop: 14, marginTop: 5, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, grandLabel: { color: '#F0B35A', fontWeight: '800', letterSpacing: 1 }, grandAmount: { color: '#F0B35A', fontSize: 22, fontWeight: '800' }, actions: { padding: 14, borderTopWidth: 1, borderTopColor: '#45382E', flexDirection: 'row', gap: 7 }, secondaryButton: { padding: 13, justifyContent: 'center' }, cancelText: { color: '#D98672', fontWeight: '700' }, printButton: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#D9C29A', padding: 13, borderRadius: 6 }, printText: { color: '#251D17', fontWeight: '700' }, closeButton: { flex: 1, backgroundColor: '#F0B35A', padding: 13, borderRadius: 6, alignItems: 'center', justifyContent: 'center' }, closeText: { color: '#251D17', fontWeight: '800' },
   mesaCardAlt: { backgroundColor: '#32281F', borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#45382E', overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 4 },
   cardHeader: { paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },

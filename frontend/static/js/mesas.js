@@ -367,8 +367,9 @@ function calcularTotal() {
 
 // Porcentaje de propina guardado en cache (10% por defecto).
 function porcentajePropina() {
-    const cacheado = Number(localStorage.getItem(PROPINA_CACHE_KEY));
-    if (Number.isFinite(cacheado) && cacheado >= 0) {
+    const valorGuardado = localStorage.getItem(PROPINA_CACHE_KEY);
+    const cacheado = Number(valorGuardado);
+    if (valorGuardado !== null && Number.isFinite(cacheado) && cacheado > 0 && cacheado <= 100) {
         return cacheado;
     }
     localStorage.setItem(PROPINA_CACHE_KEY, String(PROPINA_PORCENTAJE_PREDETERMINADO));
