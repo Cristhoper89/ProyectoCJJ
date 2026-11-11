@@ -964,6 +964,95 @@ body {
 
 }
 
+/* Campo de descuento para el proximo producto que se agregue.
+   Se mantiene pegado al fondo del panel para que este siempre a la vista. */
+.producto-descuento {
+
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    margin-top: auto;
+    padding: 14px 0 2px;
+    border-top: 1px solid #45382E;
+    background: #32281F;
+
+}
+
+.producto-descuento label {
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #F5F5F5;
+    font-size: 15px;
+    font-weight: 600;
+
+}
+
+.producto-descuento label svg {
+
+    width: 17px;
+    color: #D8A85B;
+
+}
+
+.producto-descuento-control {
+
+    position: relative;
+    display: flex;
+    align-items: center;
+
+}
+
+.producto-descuento-control input {
+
+    width: 110px;
+    box-sizing: border-box;
+    padding: 11px 34px 11px 14px;
+    border-radius: 10px;
+    border: 1px solid #4A3D31;
+    background: #1D1A17;
+    color: #F5F5F5;
+    font-family: inherit;
+    font-size: 16px;
+    outline: none;
+
+}
+
+.producto-descuento-control input:focus {
+
+    border-color: #D8A85B;
+
+}
+
+.producto-descuento-control input::placeholder {
+
+    color: #9C9287;
+
+}
+
+.producto-descuento-control span {
+
+    position: absolute;
+    right: 14px;
+    color: #9C9287;
+    font-size: 15px;
+    font-weight: 600;
+    pointer-events: none;
+
+}
+
+.producto-descuento small {
+
+    flex: 1 1 100%;
+    color: #9C9287;
+    font-size: 12px;
+
+}
+
 /* ====================================================== */
 /* PANEL RESUMEN */
 /* ====================================================== */
@@ -1531,6 +1620,21 @@ body {
     color: #9C9287;
     font-size: 13px;
     line-height: 1.5;
+
+}
+
+/* Se antepone .linea-nombre para ganarle en especificidad a ".linea-nombre span",
+   que si no pinta el badge con el gris de la linea de precio. */
+.linea-nombre .linea-descuento-badge {
+
+    align-self: flex-start;
+    margin-top: 2px;
+    padding: 2px 9px;
+    border-radius: 20px;
+    background: rgba(216, 168, 91, .15);
+    color: #D8A85B;
+    font-size: 13px;
+    font-weight: 600;
 
 }
 

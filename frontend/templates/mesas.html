@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="../static/css/base/variables.css?v=1">
     <link rel="stylesheet" href="../static/css/base/global.css?v=1">
     <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
-    <link rel="stylesheet" href="../static/css/modules/mesas.css?v=15">
+    <link rel="stylesheet" href="../static/css/modules/mesas.css?v=16">
 
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -297,6 +297,38 @@
 
                 </div>
 
+                <div class="producto-descuento">
+
+                    <label for="descuentoProducto">
+
+                        <i data-lucide="percent"></i>
+
+                        Descuento al agregar
+
+                    </label>
+
+                    <div class="producto-descuento-control">
+
+                        <input
+                            type="number"
+                            id="descuentoProducto"
+                            min="0"
+                            max="100"
+                            step="1"
+                            inputmode="numeric"
+                            placeholder="0"
+                        >
+
+                        <span>%</span>
+
+                    </div>
+
+                    <small>
+                        Se aplica al próximo producto que agregues.
+                    </small>
+
+                </div>
+
             </div>
 
 
@@ -340,7 +372,7 @@
 
                     <div class="total-fila total-editable">
 
-                        <span>
+                        <span id="propinaEtiqueta">
                             Propina (10%)
                         </span>
 
@@ -661,7 +693,7 @@
 
 </div>
 
-<script src="../static/js/mesas.js?v=16"></script>
+<script src="../static/js/mesas.js?v=17"></script>
 
 
 <script>

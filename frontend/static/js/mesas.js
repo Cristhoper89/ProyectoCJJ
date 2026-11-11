@@ -7,6 +7,11 @@
 const API_URL = "https://serviciocontigo.io/api";
 const API_URL_STORAGE_KEY = "api_base_url";
 
+// La propina se calcula automaticamente al abrir el pedido. El porcentaje se
+// cachea en localStorage para no recalcularlo en cada apertura.
+const PROPINA_CACHE_KEY = "mesas_propina_porcentaje";
+const PROPINA_PORCENTAJE_PREDETERMINADO = 10;
+
 if (localStorage.getItem(API_URL_STORAGE_KEY) !== API_URL) {
     localStorage.removeItem("access_token");
     localStorage.setItem(API_URL_STORAGE_KEY, API_URL);
@@ -40,10 +45,12 @@ const btnNuevoMovimiento = document.getElementById("btnNuevoMovimiento");
 
 const categoriasChips = document.getElementById("categoriasChips");
 const productosGrid = document.getElementById("productosGrid");
+const descuentoProducto = document.getElementById("descuentoProducto");
 const pedidoLineas = document.getElementById("pedidoLineas");
 
 const campoSubtotal = document.getElementById("campoSubtotal");
 const campoPropina = document.getElementById("campoPropina");
+const propinaEtiqueta = document.getElementById("propinaEtiqueta");
 const btnQuitarPropina = document.getElementById("btnQuitarPropina");
 const campoDomicilio = document.getElementById("campoDomicilio");
 const domicilioDatos = document.getElementById("domicilioDatos");
@@ -97,6 +104,7 @@ let mesaActual = null;
 let movimientoActual = null;
 let categoriaSeleccionada = null;
 let descuentos = {};
+let propinaAutomatica = true;
 let accionConfirmar = null;
 
 let configProducto = null;
@@ -355,6 +363,29 @@ function calcularTotal() {
     return redondear(calcularSubtotal() + valorInput(campoPropina) + valorInput(campoDomicilio));
 }
 
+// Porcentaje de propina guardado en cache (10% por defecto).
+function porcentajePropina() {
+    const cacheado = Number(localStorage.getItem(PROPINA_CACHE_KEY));
+    if (Number.isFinite(cacheado) && cacheado >= 0) {
+        return cacheado;
+    }
+    localStorage.setItem(PROPINA_CACHE_KEY, String(PROPINA_PORCENTAJE_PREDETERMINADO));
+    return PROPINA_PORCENTAJE_PREDETERMINADO;
+}
+
+// Propina sugerida: 10% del subtotal (ya con descuentos aplicados).
+function propinaAutomaticaValor() {
+    return redondear(calcularSubtotal() * porcentajePropina() / 100);
+}
+
+// Porcentaje digitado en el campo de descuento del panel de productos.
+function porcentajeDescuentoProducto() {
+    let valor = parseFloat(descuentoProducto.value);
+    if (isNaN(valor) || valor < 0) { valor = 0; }
+    if (valor > 100) { valor = 100; }
+    return valor;
+}
+
 // ======================================================
 // CARGAR DATOS
 // ======================================================
@@ -463,7 +494,9 @@ async function ejecutarCarga(soloEstado) {
             movimientoActual = movimientos.find(movimiento => movimiento.id === movimientoId) || movimientoDeMesa(mesaActual);
         }
         const referencia = movimientoActual || movimientoDeMesa(mesaActual);
-        campoPropina.value = Number(referencia && referencia.propina) || 0;
+        if (!propinaAutomatica) {
+            campoPropina.value = Number(referencia && referencia.propina) || 0;
+        }
         campoDomicilio.value = Number(referencia && referencia.domicilio) || 0;
         pedidoMesaNombre.textContent = nombreMesa(mesaActual);
         pedidoEstadoBadge.className = "estado-mesa-badge " + (mesaActual.estado ? "ocupada" : "disponible");
@@ -752,8 +785,10 @@ function abrirPedido(mesaId) {
     movimientoActual = esBarra(mesa) ? movimientoDeMesa(mesa) : null;
 
     const referencia = movimientoActual || movimientoDeMesa(mesa);
-    campoPropina.value = Number(referencia && referencia.propina) || 0;
     campoDomicilio.value = Number(referencia && referencia.domicilio) || 0;
+    // Al abrir el pedido la propina se calcula automaticamente (10% del subtotal).
+    propinaAutomatica = true;
+    descuentoProducto.value = "";
     domicilioNombre.value = "";
     domicilioTelefono.value = "";
     actualizarDatosDomicilio();
@@ -774,6 +809,8 @@ function cerrarPedidoFn() {
     mesaActual = null;
     movimientoActual = null;
     descuentos = {};
+    propinaAutomatica = true;
+    descuentoProducto.value = "";
     domicilioNombre.value = "";
     domicilioTelefono.value = "";
     actualizarDatosDomicilio();
@@ -818,7 +855,8 @@ function renderMovimientosBarra() {
 
 function seleccionarMovimiento(movimiento) {
     movimientoActual = movimiento;
-    campoPropina.value = Number(movimiento.propina) || 0;
+    // Cada movimiento de la barra es una cuenta aparte: recalcula el 10%.
+    propinaAutomatica = true;
     campoDomicilio.value = Number(movimiento.domicilio) || 0;
     refrescarResumen();
     mostrarMesas(filtroMesas());
@@ -850,7 +888,7 @@ async function crearMovimientoBarra() {
 
         movimientos = [...movimientos, movimiento];
         movimientoActual = movimiento;
-        campoPropina.value = 0;
+        propinaAutomatica = true;
         campoDomicilio.value = 0;
 
         renderMovimientosBarra();
@@ -892,6 +930,7 @@ function renderLineas() {
                 <div class="linea-nombre">
                     <strong>${producto ? esc(producto.nombre) : `Producto ${linea.id_producto}`}</strong>
                     <span>${formatearPrecio(linea.precio_unitario)} x ${linea.cantidad}</span>
+                    ${porcentaje > 0 ? `<span class="linea-descuento-badge">Descuento -${porcentaje}%</span>` : ""}
                 </div>
 
                 <strong class="linea-subtotal">
@@ -910,19 +949,6 @@ function renderLineas() {
                     <button type="button" class="step-btn" data-accion="mas" data-id="${linea.id}" title="Agregar uno">
                         <i data-lucide="plus"></i>
                     </button>
-                </div>
-
-                <div class="linea-descuento">
-                    <input
-                        type="number"
-                        class="descuento-input"
-                        data-id="${linea.id}"
-                        min="0"
-                        max="100"
-                        step="1"
-                        placeholder="0"
-                        value="${porcentaje > 0 ? porcentaje : ""}"
-                    >
                 </div>
 
                 ${configurable ? `
@@ -944,6 +970,10 @@ function renderLineas() {
 }
 
 function refrescarResumen() {
+    // Mientras el usuario no edite la propina manualmente, se mantiene el 10%.
+    if (propinaAutomatica) {
+        campoPropina.value = propinaAutomaticaValor();
+    }
     renderLineas();
     campoSubtotal.textContent = formatearPrecio(calcularSubtotal());
     campoTotal.textContent = formatearPrecio(calcularTotal());
@@ -1130,7 +1160,19 @@ async function registrarProducto(producto, cantidad, configuracion = null, linea
 
 async function agregarProducto(producto) {
     if (!mesaActual) { return; }
+
+    const porcentaje = porcentajeDescuentoProducto();
     await registrarProducto(producto, cantidadProductoEnMesa(producto.id) + 1);
+
+    // El descuento digitado se aplica al producto recien agregado y luego se limpia.
+    if (porcentaje > 0) {
+        lineasMesaActual()
+            .filter(linea => linea.id_producto === producto.id)
+            .forEach(linea => { descuentos[linea.id] = porcentaje; });
+    }
+    descuentoProducto.value = "";
+    refrescarResumen();
+    mostrarMesas(filtroMesas());
 }
 
 // ======================================================
@@ -1327,39 +1369,24 @@ pedidoLineas.addEventListener("click", async event => {
 // DESCUENTOS
 // ======================================================
 
-pedidoLineas.addEventListener("input", event => {
-    const input = event.target.closest(".descuento-input");
-    if (!input) { return; }
-
-    const id = Number(input.getAttribute("data-id"));
-    let valor = parseFloat(input.value);
-    if (isNaN(valor) || valor < 0) { valor = 0; }
-    if (valor > 100) { valor = 100; }
-
-    descuentos = { ...descuentos, [id]: valor };
-
-    const linea = lineasMesaActual().find(item => item.id === id);
-    const fila = pedidoLineas.querySelector(`.pedido-linea[data-linea="${id}"] .linea-subtotal`);
-    if (linea && fila) {
-        fila.textContent = formatearPrecio(totalLinea(linea));
-    }
-
-    campoSubtotal.textContent = formatearPrecio(calcularSubtotal());
-    campoTotal.textContent = formatearPrecio(calcularTotal());
-    renderMovimientosBarra();
-});
+// El descuento se digita en el panel de productos (campo "Descuento al
+// agregar") y se aplica al producto en el momento de agregarlo.
 
 // ======================================================
 // PROpina / DOMICILIO
 // ======================================================
 
 btnQuitarPropina.addEventListener("click", () => {
+    // El usuario quita la propina: se desactiva el calculo automatico.
+    propinaAutomatica = false;
     campoPropina.value = 0;
     refrescarResumen();
     mostrarMesas(filtroMesas());
 });
 
 campoPropina.addEventListener("input", () => {
+    // Si el usuario edita la propina, se respeta su valor.
+    propinaAutomatica = false;
     campoTotal.textContent = formatearPrecio(calcularTotal());
 });
 
@@ -1796,6 +1823,11 @@ cancelarMesaModal.addEventListener("click", cerrarMesaModalFn);
 cerrarPedido.addEventListener("click", () => { cerrarPedidoFn(); mostrarMesas(filtroMesas()); });
 btnNuevoMovimiento.addEventListener("click", crearMovimientoBarra);
 cerrarAviso.addEventListener("click", () => { avisoModal.classList.remove("active"); });
+
+// Refleja el porcentaje de propina cacheado en la etiqueta del resumen.
+if (propinaEtiqueta) {
+    propinaEtiqueta.textContent = `Propina (${porcentajePropina()}%)`;
+}
 
 setInterval(actualizarTiempos, 1000);
 cargarTodo();
