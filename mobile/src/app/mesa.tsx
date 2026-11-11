@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator, Alert, FlatList, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as Print from 'expo-print';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,11 +16,7 @@ type OptionGroup = { id: number; nombre: string; opciones: Option[] };
 type Consumo = { id: number; id_producto?: number; id_mov?: number | null; cantidad?: number; precio_unitario?: number; subtotal?: number; descuento?: number; notas?: string | null };
 type Movimiento = { id: number; estado?: boolean; propina?: number | string; domicilio?: number | string; total?: number | string; id_mesa?: number | null; metodo?: string | null; fecha_hora?: string | null };
 type Linea = Consumo & { descuento: number };
-
-// La propina se calcula automaticamente (10%) al abrir la cuenta. El
-// porcentaje se cachea en AsyncStorage para agilizar el calculo.
-const TIP_CACHE_KEY = '@la_cabana_tip_percent';
-const DEFAULT_TIP_PERCENT = 10;
+type Configuracion = { propina: boolean; valor_propina: number; alerta_bajo_stock: boolean };
 
 const money = (value: number) => `$${Math.round(value).toLocaleString('es-CO')}`;
 const round2 = (value: number) => Math.round((Number(value) || 0) * 100) / 100;
@@ -45,8 +40,8 @@ export default function MesaScreen() {
   const [selectedMovimiento, setSelectedMovimiento] = useState<Movimiento | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Categoria | null>(null);
   const [propina, setPropina] = useState(0);
-  const [autoTip, setAutoTip] = useState(true);
-  const [tipPercent, setTipPercent] = useState(DEFAULT_TIP_PERCENT);
+  const [autoTip, setAutoTip] = useState(false);
+  const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
   const [discountInput, setDiscountInput] = useState('');
   const [domicilio, setDomicilio] = useState('0');
   const [productQuantities, setProductQuantities] = useState<Record<number, number>>({});
@@ -65,7 +60,7 @@ export default function MesaScreen() {
     if (!getAccessToken()) { setError('Inicia sesión para consultar las mesas.'); setLoading(false); return; }
     try {
       setError('');
-      const [mesaResult, categoryResult, productResult, ingredientResult, productIngredientResult, consumptionResult, movimientoResult] = await Promise.allSettled([
+      const [mesaResult, categoryResult, productResult, ingredientResult, productIngredientResult, consumptionResult, movimientoResult, configuracionResult] = await Promise.allSettled([
         apiRequest<Mesa[]>('/mesas/'),
         apiRequest<Categoria[]>('/categorias/'),
         apiRequest<Producto[]>('/productos/'),
@@ -73,6 +68,7 @@ export default function MesaScreen() {
         apiRequest<ProductIngredient[]>('/producto-ingredientes/'),
         apiRequest<Consumo[]>('/mesasC/'),
         apiRequest<Movimiento[]>('/movimientos/'),
+        apiRequest<Configuracion>('/configuracion/'),
       ]);
 
       const mesaData = mesaResult.status === 'fulfilled' ? mesaResult.value : [];
@@ -82,6 +78,7 @@ export default function MesaScreen() {
       const productIngredientData = productIngredientResult.status === 'fulfilled' ? productIngredientResult.value : [];
       const consumptionData = consumptionResult.status === 'fulfilled' ? consumptionResult.value : [];
       const movimientoData = movimientoResult.status === 'fulfilled' ? movimientoResult.value : [];
+      const configuracionData = configuracionResult.status === 'fulfilled' ? configuracionResult.value : null;
 
       setMesas(mesaData);
       setCategorias(categoryData.filter((category) => category.estado !== false));
@@ -90,10 +87,11 @@ export default function MesaScreen() {
       setProductoIngredientes(productIngredientData);
       setConsumos(consumptionData);
       setMovimientos(movimientoData);
+      setConfiguracion(configuracionData);
       setSelectedMesa((current) => current ? mesaData.find((mesa) => mesa.id === current.id) || current : current);
       setSelectedMovimiento((current) => current ? movimientoData.find((movement) => movement.id === current.id) || current : current);
 
-      const failed = [mesaResult, categoryResult, productResult, ingredientResult, productIngredientResult, consumptionResult, movimientoResult].filter((result) => result.status === 'rejected');
+      const failed = [mesaResult, categoryResult, productResult, ingredientResult, productIngredientResult, consumptionResult, movimientoResult, configuracionResult].filter((result) => result.status === 'rejected');
       if (failed.length > 0) {
         const firstMessage = failed[0].reason instanceof Error ? failed[0].reason.message : 'El backend respondió con un error.';
         setError(firstMessage);
@@ -151,21 +149,6 @@ export default function MesaScreen() {
     const timer = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(timer);
   }, []);
-  useEffect(() => {
-    let active = true;
-    AsyncStorage.getItem(TIP_CACHE_KEY)
-      .then((stored) => {
-        if (!active) return;
-        const parsed = Number(stored);
-        if (stored !== null && Number.isFinite(parsed) && parsed > 0 && parsed <= 100) {
-          setTipPercent(parsed);
-        } else {
-          AsyncStorage.setItem(TIP_CACHE_KEY, String(DEFAULT_TIP_PERCENT)).catch(() => {});
-        }
-      })
-      .catch(() => {});
-    return () => { active = false; };
-  }, []);
   const activeMovementId = selectedMesa?.tipo === 'barra' ? selectedMovimiento?.id : selectedMesa?.id_mov;
   const mesaConsumos = useMemo(() => consumos.filter((consumo) => consumo.id_mov === activeMovementId), [consumos, activeMovementId]);
   const barMovements = useMemo(
@@ -184,11 +167,12 @@ export default function MesaScreen() {
   }), [mesaConsumos]);
   const subtotal = lineas.reduce((sum, line) => sum + (Number(line.subtotal) || 0), 0);
   const total = subtotal + propina + Math.max(0, Number(domicilio) || 0);
-  // Mientras el usuario no edite la propina, se mantiene el 10% del subtotal.
+  const tipPercent = Number(configuracion?.valor_propina) || 0;
+  // Mientras el usuario no edite la propina, aplica el porcentaje configurado.
   useEffect(() => {
-    if (!selectedMesa || !autoTip) return;
+    if (!selectedMesa || !autoTip || !configuracion?.propina) return;
     setPropina(round2(subtotal * tipPercent / 100));
-  }, [selectedMesa, autoTip, tipPercent, subtotal]);
+  }, [selectedMesa, autoTip, tipPercent, subtotal, configuracion?.propina]);
 
   const getMovementTotal = (movement: Movimiento) => {
     const movementLines = consumos.filter((consumo) => consumo.id_mov === movement.id);
@@ -230,13 +214,13 @@ export default function MesaScreen() {
       ? [...movimientos].filter((movimiento) => movimiento.id_mesa === mesa.id).slice(-1)[0] || null
       : null;
     setSelectedMesa(mesa); setSelectedMovimiento(currentMovement); setSelectedCategory(null);
-    setAutoTip(true); setDiscountInput('');
+    setAutoTip(configuracion?.propina === true); setDiscountInput('');
     setPropina(Number(currentMovement?.propina) || 0); setDomicilio(String(Number(currentMovement?.domicilio) || 0));
   };
 
   const selectBarMovement = (movement: Movimiento) => {
     setSelectedMovimiento(movement);
-    setAutoTip(true);
+    setAutoTip(configuracion?.propina === true);
     setPropina(Number(movement.propina) || 0);
     setDomicilio(String(Number(movement.domicilio) || 0));
   };
@@ -257,7 +241,7 @@ export default function MesaScreen() {
           fecha_hora: new Date().toISOString(),
         }),
       });
-      setMovimientos((current) => [...current, movement]); setSelectedMovimiento(movement); setAutoTip(true); setPropina(0); setDomicilio('0');
+      setMovimientos((current) => [...current, movement]); setSelectedMovimiento(movement); setAutoTip(configuracion?.propina === true); setPropina(0); setDomicilio('0');
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : 'Intenta nuevamente.';
       if (message.toLowerCase().includes('caja abierta')) {
@@ -679,7 +663,7 @@ export default function MesaScreen() {
               </View>;
             })}
         </View>
-        <View style={styles.totals}><Text style={styles.totalLine}>Subtotal <Text style={styles.amount}>{money(subtotal)}</Text></Text><View style={styles.editLine}><Text style={styles.totalLine}>Propina ({tipPercent}%)</Text><TextInput style={styles.moneyInput} keyboardType="numeric" value={String(propina)} onChangeText={(value) => { setAutoTip(false); setPropina(Number(value) || 0); }} /><TouchableOpacity onPress={() => { setAutoTip(false); setPropina(0); }}><Trash2 size={17} color="#D98672" /></TouchableOpacity></View><View style={styles.editLine}><Text style={styles.totalLine}>Domicilio</Text><TextInput style={styles.moneyInput} keyboardType="numeric" value={domicilio} onChangeText={setDomicilio} /></View><View style={styles.grandTotal}><Text style={styles.grandLabel}>TOTAL A PAGAR</Text><Text style={styles.grandAmount}>{money(total)}</Text></View></View>
+        <View style={styles.totals}><Text style={styles.totalLine}>Subtotal <Text style={styles.amount}>{money(subtotal)}</Text></Text><View style={styles.editLine}><Text style={styles.totalLine}>{configuracion?.propina ? `Propina (${tipPercent}%)` : 'Propina manual'}</Text><TextInput style={styles.moneyInput} keyboardType="numeric" value={String(propina)} onChangeText={(value) => { setAutoTip(false); setPropina(Number(value) || 0); }} /><TouchableOpacity onPress={() => { setAutoTip(false); setPropina(0); }}><Trash2 size={17} color="#D98672" /></TouchableOpacity></View><View style={styles.editLine}><Text style={styles.totalLine}>Domicilio</Text><TextInput style={styles.moneyInput} keyboardType="numeric" value={domicilio} onChangeText={setDomicilio} /></View><View style={styles.grandTotal}><Text style={styles.grandLabel}>TOTAL A PAGAR</Text><Text style={styles.grandAmount}>{money(total)}</Text></View></View>
       </ScrollView>
       <View style={styles.actions}><TouchableOpacity style={styles.secondaryButton} onPress={cancelOrder} disabled={saving}><Text style={styles.cancelText}>Cancelar</Text></TouchableOpacity><TouchableOpacity style={styles.printButton} onPress={printBill} disabled={saving}><Printer size={18} color="#251D17" /><Text style={styles.printText}>Imprimir</Text></TouchableOpacity><TouchableOpacity style={styles.closeButton} onPress={() => saveBill(true)} disabled={saving}><Text style={styles.closeText}>{saving ? 'Guardando...' : 'Finalizar cuenta'}</Text></TouchableOpacity></View>
     </SafeAreaView></Modal>

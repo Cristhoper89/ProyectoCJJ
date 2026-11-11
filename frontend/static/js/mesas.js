@@ -7,11 +7,6 @@
 const API_URL = "https://serviciocontigo.io/api";
 const API_URL_STORAGE_KEY = "api_base_url";
 
-// La propina se calcula automaticamente al abrir el pedido. El porcentaje se
-// cachea en localStorage para no recalcularlo en cada apertura.
-const PROPINA_CACHE_KEY = "mesas_propina_porcentaje";
-const PROPINA_PORCENTAJE_PREDETERMINADO = 10;
-
 if (localStorage.getItem(API_URL_STORAGE_KEY) !== API_URL) {
     localStorage.removeItem("access_token");
     localStorage.setItem(API_URL_STORAGE_KEY, API_URL);
@@ -98,12 +93,13 @@ let consumos = [];
 let movimientos = [];
 let empresa = null;
 let operador = null;
+let configuracion = null;
 let datosComprobanteCargados = false;
 
 let mesaActual = null;
 let movimientoActual = null;
 let categoriaSeleccionada = null;
-let propinaAutomatica = true;
+let propinaAutomatica = false;
 let accionConfirmar = null;
 
 let configProducto = null;
@@ -365,18 +361,15 @@ function calcularTotal() {
     return redondear(calcularSubtotal() + valorInput(campoPropina) + valorInput(campoDomicilio));
 }
 
-// Porcentaje de propina guardado en cache (10% por defecto).
-function porcentajePropina() {
-    const valorGuardado = localStorage.getItem(PROPINA_CACHE_KEY);
-    const cacheado = Number(valorGuardado);
-    if (valorGuardado !== null && Number.isFinite(cacheado) && cacheado > 0 && cacheado <= 100) {
-        return cacheado;
-    }
-    localStorage.setItem(PROPINA_CACHE_KEY, String(PROPINA_PORCENTAJE_PREDETERMINADO));
-    return PROPINA_PORCENTAJE_PREDETERMINADO;
+function propinaAutomaticaHabilitada() {
+    return !!configuracion && configuracion.propina === true;
 }
 
-// Propina sugerida: 10% del subtotal (ya con descuentos aplicados).
+function porcentajePropina() {
+    return Number(configuracion && configuracion.valor_propina) || 0;
+}
+
+// Propina sugerida: porcentaje configurado sobre el subtotal con descuentos.
 function propinaAutomaticaValor() {
     return redondear(calcularSubtotal() * porcentajePropina() / 100);
 }
@@ -452,7 +445,8 @@ async function ejecutarCarga(soloEstado) {
         ? {
             mesas: api("/mesas/"),
             consumos: api("/mesasC/"),
-            movimientos: api("/movimientos/")
+            movimientos: api("/movimientos/"),
+            configuracion: api("/configuracion/")
         }
         : {
             mesas: api("/mesas/"),
@@ -461,7 +455,8 @@ async function ejecutarCarga(soloEstado) {
             ingredientes: api("/ingredientes/"),
             productoIngredientes: api("/producto-ingredientes/"),
             consumos: api("/mesasC/"),
-            movimientos: api("/movimientos/")
+            movimientos: api("/movimientos/"),
+            configuracion: api("/configuracion/")
         };
 
     const claves = Object.keys(endpoint);
@@ -476,6 +471,17 @@ async function ejecutarCarga(soloEstado) {
     mesas = resultado(mesasPedido, mesas);
     consumos = resultado(consumosPedido, consumos);
     movimientos = resultado(movimientosPedido, movimientos);
+    if (pedidos.configuracion.status === "fulfilled") {
+        configuracion = pedidos.configuracion.value;
+    } else {
+        configuracion = null;
+        console.error("No se pudo cargar la configuración general.", pedidos.configuracion.reason);
+    }
+    if (propinaEtiqueta) {
+        propinaEtiqueta.textContent = propinaAutomaticaHabilitada()
+            ? `Propina (${porcentajePropina()}%)`
+            : "Propina manual";
+    }
 
     if (pedidos.categorias) {
         categorias = resultado(pedidos.categorias, categorias).filter(categoria => categoria.estado !== false);
@@ -789,8 +795,8 @@ function abrirPedido(mesaId) {
 
     const referencia = movimientoActual || movimientoDeMesa(mesa);
     campoDomicilio.value = Number(referencia && referencia.domicilio) || 0;
-    // Al abrir el pedido la propina se calcula automaticamente (10% del subtotal).
-    propinaAutomatica = true;
+    campoPropina.value = Number(referencia && referencia.propina) || 0;
+    propinaAutomatica = propinaAutomaticaHabilitada();
     descuentoProducto.value = "";
     domicilioNombre.value = "";
     domicilioTelefono.value = "";
@@ -811,7 +817,7 @@ function cerrarPedidoFn() {
     pedidoModal.classList.remove("active");
     mesaActual = null;
     movimientoActual = null;
-    propinaAutomatica = true;
+    propinaAutomatica = false;
     descuentoProducto.value = "";
     domicilioNombre.value = "";
     domicilioTelefono.value = "";
@@ -857,8 +863,8 @@ function renderMovimientosBarra() {
 
 function seleccionarMovimiento(movimiento) {
     movimientoActual = movimiento;
-    // Cada movimiento de la barra es una cuenta aparte: recalcula el 10%.
-    propinaAutomatica = true;
+    propinaAutomatica = propinaAutomaticaHabilitada();
+    campoPropina.value = Number(movimiento.propina) || 0;
     campoDomicilio.value = Number(movimiento.domicilio) || 0;
     refrescarResumen();
     mostrarMesas(filtroMesas());
@@ -890,7 +896,8 @@ async function crearMovimientoBarra() {
 
         movimientos = [...movimientos, movimiento];
         movimientoActual = movimiento;
-        propinaAutomatica = true;
+        propinaAutomatica = propinaAutomaticaHabilitada();
+        campoPropina.value = 0;
         campoDomicilio.value = 0;
 
         renderMovimientosBarra();
@@ -1783,7 +1790,9 @@ mesasTable.addEventListener("click", async event => {
         mesaActual = mesa;
         movimientoActual = esBarra(mesa) ? movimientoDeMesa(mesa) : null;
         const referencia = movimientoActual || movimientoDeMesa(mesa);
-        campoPropina.value = Number(referencia && referencia.propina) || 0;
+        campoPropina.value = propinaAutomaticaHabilitada()
+            ? propinaAutomaticaValor()
+            : Number(referencia && referencia.propina) || 0;
         campoDomicilio.value = Number(referencia && referencia.domicilio) || 0;
         await imprimirCuenta();
     } else if (accion === "cancelar") {
@@ -1834,11 +1843,6 @@ cancelarMesaModal.addEventListener("click", cerrarMesaModalFn);
 cerrarPedido.addEventListener("click", () => { cerrarPedidoFn(); mostrarMesas(filtroMesas()); });
 btnNuevoMovimiento.addEventListener("click", crearMovimientoBarra);
 cerrarAviso.addEventListener("click", () => { avisoModal.classList.remove("active"); });
-
-// Refleja el porcentaje de propina cacheado en la etiqueta del resumen.
-if (propinaEtiqueta) {
-    propinaEtiqueta.textContent = `Propina (${porcentajePropina()}%)`;
-}
 
 setInterval(actualizarTiempos, 1000);
 cargarTodo();

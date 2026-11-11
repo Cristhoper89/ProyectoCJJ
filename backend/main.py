@@ -28,6 +28,7 @@ from modules.mesa_consumo_ingrediente.mesa_consumo_ingrediente_router import rou
 from modules.opciones.opciones_router import router as opciones_router
 from modules.pedido.pedido_router import router as pedido_router
 from modules.carta.carta_router import router as carta_router
+from modules.configuracion.configuracion_router import router as configuracion_router
 from core.mesa_realtime import listen_for_mesa_events, router as mesa_realtime_router
 from core.logger import logger
 
@@ -120,4 +121,5 @@ app.include_router(mesa_consumo_ingrediente_router)
 app.include_router(opciones_router)
 app.include_router(pedido_router)
 app.include_router(carta_router)
+app.include_router(configuracion_router)
 app.include_router(mesa_realtime_router)

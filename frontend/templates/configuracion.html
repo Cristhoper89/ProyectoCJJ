@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="../static/css/base/variables.css">
     <link rel="stylesheet" href="../static/css/base/global.css">
     <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
-    <link rel="stylesheet" href="../static/css/modules/configuracion.css?v=1">
+    <link rel="stylesheet" href="../static/css/modules/configuracion.css?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -19,7 +19,7 @@
                 <header class="configuration-heading">
                     <span class="eyebrow">Datos del negocio</span>
                     <h1>Configuración</h1>
-                    <p>Administra la información de tu empresa y las preferencias de impresión.</p>
+                    <p>Administra los datos del negocio, la propina y las alertas.</p>
                 </header>
 
                 <div id="configurationMessage" class="configuration-message" role="status" aria-live="polite"></div>
@@ -27,7 +27,7 @@
                 <section id="configurationRestricted" class="configuration-state" hidden>
                     <i data-lucide="shield-alert"></i>
                     <h2>Acceso restringido</h2>
-                    <p>Solo un administrador puede consultar y editar la configuración del negocio.</p>
+                    <p>Solo un administrador puede consultar y editar las preferencias del sistema.</p>
                 </section>
                 <section id="configurationEmpty" class="configuration-state" hidden>
                     <i data-lucide="building-2"></i>
@@ -91,11 +91,65 @@
                         </button>
                     </footer>
                 </form>
+
+                <form id="systemConfigurationForm" class="configuration-card system-configuration-card" hidden>
+                    <div class="configuration-section-heading">
+                        <div class="configuration-icon"><i data-lucide="sliders-horizontal"></i></div>
+                        <div>
+                            <h2>Preferencias del sistema</h2>
+                            <p>Configura cómo se calcula la propina y las alertas de inventario.</p>
+                        </div>
+                    </div>
+
+                    <div class="configuration-setting">
+                        <div class="configuration-setting-icon"><i data-lucide="hand-coins"></i></div>
+                        <div class="configuration-setting-copy">
+                            <strong>Propina automática</strong>
+                            <span>Al activarla, la propina se calcula como un porcentaje del subtotal. Al desactivarla, se ingresa manualmente.</span>
+                        </div>
+                        <label class="configuration-switch">
+                            <input id="automaticTip" type="checkbox" role="switch">
+                            <span class="configuration-switch-track" aria-hidden="true"></span>
+                            <span class="visually-hidden">Calcular propina automáticamente</span>
+                        </label>
+                    </div>
+
+                    <label class="configuration-field configuration-tip-field">
+                        <span>Porcentaje de propina</span>
+                        <div class="configuration-percent-input">
+                            <input id="tipPercent" type="number" min="0" max="100" step="0.01" inputmode="decimal" required>
+                            <span>%</span>
+                        </div>
+                    </label>
+
+                    <div class="configuration-setting">
+                        <div class="configuration-setting-icon"><i data-lucide="triangle-alert"></i></div>
+                        <div class="configuration-setting-copy">
+                            <strong>Alerta de bajo stock</strong>
+                            <span>Preferencia guardada para habilitar posteriormente las alertas de inventario.</span>
+                        </div>
+                        <label class="configuration-switch">
+                            <input id="lowStockAlert" type="checkbox" role="switch">
+                            <span class="configuration-switch-track" aria-hidden="true"></span>
+                            <span class="visually-hidden">Alerta de bajo stock</span>
+                        </label>
+                    </div>
+
+                    <footer class="configuration-actions">
+                        <button id="cancelSystemConfiguration" class="configuration-button secondary" type="button" hidden>Cancelar</button>
+                        <button id="editSystemConfiguration" class="configuration-button secondary" type="button">
+                            <i data-lucide="pencil"></i>Editar preferencias
+                        </button>
+                        <button id="saveSystemConfiguration" class="configuration-button primary" type="submit" hidden>
+                            <i data-lucide="check"></i>Guardar preferencias
+                        </button>
+                    </footer>
+                </form>
             </section>
         </main>
     </div>
     <script>lucide.createIcons();</script>
     <script src="../static/js/menu.js?v=14"></script>
-    <script src="../static/js/configuracion.js?v=1"></script>
+    <script src="../static/js/configuracion.js?v=2"></script>
 </body>
 </html>

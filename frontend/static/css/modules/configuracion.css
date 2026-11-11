@@ -32,6 +32,38 @@
     box-shadow: var(--shadow-card);
 }
 
+.system-configuration-card {
+    margin-top: 20px;
+}
+
+.configuration-tip-field {
+    max-width: 260px;
+    margin-top: 18px;
+}
+
+.configuration-percent-input {
+    position: relative;
+}
+
+.configuration-percent-input input {
+    padding-right: 36px;
+}
+
+.configuration-percent-input span {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    color: var(--color-text-secondary);
+    transform: translateY(-50%);
+}
+
+.configuration-percent-input input:disabled {
+    border-color: var(--color-border);
+    background: rgba(29, 26, 23, .42);
+    color: var(--color-text);
+    opacity: .8;
+}
+
 .configuration-section-heading {
     display: flex;
     align-items: center;

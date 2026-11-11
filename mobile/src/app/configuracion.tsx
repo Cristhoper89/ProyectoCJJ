@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Building2, Check, Mail, MapPin, Phone, Printer, RotateCcw, Save, X } from 'lucide-react-native';
+import { AlertTriangle, Building2, Check, HandCoins, Mail, MapPin, Phone, Printer, RotateCcw, Save, SlidersHorizontal, X } from 'lucide-react-native';
 import HeaderNavbar from '../components/HeaderNavbar';
 import { apiRequest, getAccessToken } from '../constants/api';
 
@@ -28,6 +28,13 @@ type Empresa = {
 
 type PerfilUsuario = {
   role_name: string;
+};
+
+type ConfiguracionSistema = {
+  id: number;
+  propina: boolean;
+  valor_propina: number;
+  alerta_bajo_stock: boolean;
 };
 
 type CampoEmpresa = 'nombre' | 'direccion' | 'telefono' | 'NIT' | 'correo';
@@ -49,7 +56,11 @@ const campos: {
 
 export default function ConfiguracionScreen() {
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
+  const [configuracion, setConfiguracion] = useState<ConfiguracionSistema | null>(null);
   const [impresionAutomatica, setImpresionAutomatica] = useState(true);
+  const [propinaAutomatica, setPropinaAutomatica] = useState(false);
+  const [valorPropina, setValorPropina] = useState('10');
+  const [alertaBajoStock, setAlertaBajoStock] = useState(false);
   const [form, setForm] = useState<Record<CampoEmpresa, string>>({
     nombre: '',
     direccion: '',
@@ -59,8 +70,10 @@ export default function ConfiguracionScreen() {
   });
   const [isAdmin, setIsAdmin] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [editingSettings, setEditingSettings] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
   const [error, setError] = useState('');
 
   const load = async () => {
@@ -80,9 +93,16 @@ export default function ConfiguracionScreen() {
       }
       setIsAdmin(true);
 
-      const companies = await apiRequest<Empresa[]>('/empresas/');
+      const [companies, systemSettings] = await Promise.all([
+        apiRequest<Empresa[]>('/empresas/'),
+        apiRequest<ConfiguracionSistema>('/configuracion/'),
+      ]);
       const currentCompany = companies[0] || null;
       setEmpresa(currentCompany);
+      setConfiguracion(systemSettings);
+      setPropinaAutomatica(systemSettings.propina);
+      setValorPropina(String(systemSettings.valor_propina));
+      setAlertaBajoStock(systemSettings.alerta_bajo_stock);
       if (currentCompany) {
         setImpresionAutomatica(currentCompany.impresion_automatica ?? true);
         setForm({
@@ -140,6 +160,7 @@ export default function ConfiguracionScreen() {
       NIT: form.NIT.trim(),
       correo: form.correo.trim(),
     };
+
     const missingField = campos.find((field) => !updatedForm[field.key]);
     if (missingField) {
       Alert.alert('Campo requerido', `Completa el campo "${missingField.label}".`);
@@ -177,6 +198,45 @@ export default function ConfiguracionScreen() {
     }
   };
 
+  const cancelSettingsEditing = () => {
+    if (!configuracion) return;
+    setPropinaAutomatica(configuracion.propina);
+    setValorPropina(String(configuracion.valor_propina));
+    setAlertaBajoStock(configuracion.alerta_bajo_stock);
+    setEditingSettings(false);
+  };
+
+  const saveSettings = async () => {
+    if (!configuracion) return;
+    const percent = Number(valorPropina);
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      Alert.alert('Porcentaje inválido', 'El porcentaje de propina debe estar entre 0 y 100.');
+      return;
+    }
+
+    try {
+      setSavingSettings(true);
+      const updated = await apiRequest<ConfiguracionSistema>('/configuracion/', {
+        method: 'PUT',
+        body: JSON.stringify({
+          propina: propinaAutomatica,
+          valor_propina: percent,
+          alerta_bajo_stock: alertaBajoStock,
+        }),
+      });
+      setConfiguracion(updated);
+      setPropinaAutomatica(updated.propina);
+      setValorPropina(String(updated.valor_propina));
+      setAlertaBajoStock(updated.alerta_bajo_stock);
+      setEditingSettings(false);
+      Alert.alert('Preferencias guardadas', 'La configuración del sistema se actualizó correctamente.');
+    } catch (requestError) {
+      Alert.alert('No se pudo guardar', requestError instanceof Error ? requestError.message : 'Intenta nuevamente.');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <HeaderNavbar />
@@ -193,13 +253,7 @@ export default function ConfiguracionScreen() {
         <View style={styles.empty}>
           <Building2 size={34} color="#F0B35A" />
           <Text style={styles.emptyTitle}>Acceso restringido</Text>
-          <Text style={styles.emptyText}>Solo un administrador puede consultar y editar los datos de la empresa.</Text>
-        </View>
-      ) : !empresa ? (
-        <View style={styles.empty}>
-          <Building2 size={34} color="#F0B35A" />
-          <Text style={styles.emptyTitle}>No hay datos de empresa</Text>
-          <Text style={styles.emptyText}>No se encontró una empresa para configurar.</Text>
+          <Text style={styles.emptyText}>Solo un administrador puede consultar y editar las preferencias del sistema.</Text>
         </View>
       ) : (
         <KeyboardAvoidingView style={styles.content} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -207,9 +261,10 @@ export default function ConfiguracionScreen() {
             <View style={styles.heading}>
               <Text style={styles.kicker}>DATOS DEL NEGOCIO</Text>
               <Text style={styles.title}>Configuración</Text>
-              <Text style={styles.subtitle}>Administra la información de tu empresa.</Text>
+              <Text style={styles.subtitle}>Administra los datos del negocio y las preferencias del sistema.</Text>
             </View>
 
+            {empresa && <>
             <View style={styles.card}>
               {campos.map((field, index) => {
                 const Icon = field.icon;
@@ -284,6 +339,87 @@ export default function ConfiguracionScreen() {
                 <Text style={styles.noteText}>Los cambios se guardan en la información oficial de la empresa.</Text>
               </View>
             )}
+            </>}
+
+            <View style={[styles.card, styles.settingsCard]}>
+              <View style={styles.settingsHeading}>
+                <SlidersHorizontal size={19} color="#F0B35A" />
+                <View style={styles.settingsHeadingText}>
+                  <Text style={styles.sectionTitle}>Preferencias del sistema</Text>
+                  <Text style={styles.settingDescription}>Configura la propina y las alertas de inventario.</Text>
+                </View>
+              </View>
+              <View style={styles.printSetting}>
+                <View style={styles.printSettingText}>
+                  <View style={styles.fieldHeader}>
+                    <HandCoins size={17} color="#F0B35A" />
+                    <Text style={styles.label}>Propina automática</Text>
+                  </View>
+                  <Text style={styles.settingDescription}>Al activarla, la propina se calcula usando el porcentaje configurado. Si se desactiva, se ingresa manualmente.</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: propinaAutomatica, disabled: !editingSettings || savingSettings }}
+                  accessibilityLabel="Calcular propina automáticamente"
+                  onPress={() => setPropinaAutomatica((current) => !current)}
+                  disabled={!editingSettings || savingSettings}
+                  style={[styles.toggle, propinaAutomatica && styles.toggleOn, (!editingSettings || savingSettings) && styles.toggleDisabled]}
+                >
+                  <View style={[styles.toggleThumb, propinaAutomatica && styles.toggleThumbOn]} />
+                </Pressable>
+              </View>
+              <View style={styles.field}>
+                <View style={styles.fieldHeader}>
+                  <HandCoins size={17} color="#F0B35A" />
+                  <Text style={styles.label}>Porcentaje de propina</Text>
+                </View>
+                <View style={styles.percentInputRow}>
+                  <TextInput
+                    value={valorPropina}
+                    onChangeText={setValorPropina}
+                    editable={editingSettings && propinaAutomatica && !savingSettings}
+                    keyboardType="decimal-pad"
+                    style={[styles.input, styles.percentInput, (!editingSettings || !propinaAutomatica) && styles.readOnlyInput]}
+                  />
+                  <Text style={styles.percentSuffix}>%</Text>
+                </View>
+              </View>
+              <View style={[styles.printSetting, styles.lastSetting]}>
+                <View style={styles.printSettingText}>
+                  <View style={styles.fieldHeader}>
+                    <AlertTriangle size={17} color="#F0B35A" />
+                    <Text style={styles.label}>Alerta de bajo stock</Text>
+                  </View>
+                  <Text style={styles.settingDescription}>Preferencia lista para activar las alertas de inventario posteriormente.</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: alertaBajoStock, disabled: !editingSettings || savingSettings }}
+                  accessibilityLabel="Alerta de bajo stock"
+                  onPress={() => setAlertaBajoStock((current) => !current)}
+                  disabled={!editingSettings || savingSettings}
+                  style={[styles.toggle, alertaBajoStock && styles.toggleOn, (!editingSettings || savingSettings) && styles.toggleDisabled]}
+                >
+                  <View style={[styles.toggleThumb, alertaBajoStock && styles.toggleThumbOn]} />
+                </Pressable>
+              </View>
+              {editingSettings ? (
+                <View style={styles.actions}>
+                  <Pressable style={styles.cancelButton} onPress={cancelSettingsEditing} disabled={savingSettings}>
+                    <X size={18} color="#F5EBDD" />
+                    <Text style={styles.cancelText}>Cancelar</Text>
+                  </Pressable>
+                  <Pressable style={styles.saveButton} onPress={saveSettings} disabled={savingSettings}>
+                    {savingSettings ? <ActivityIndicator color="#251D17" /> : <><Check size={18} color="#251D17" /><Text style={styles.saveText}>Guardar preferencias</Text></>}
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable style={styles.saveButton} onPress={() => setEditingSettings(true)}>
+                  <Save size={18} color="#251D17" />
+                  <Text style={styles.saveText}>Editar preferencias</Text>
+                </Pressable>
+              )}
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       )}
@@ -301,11 +437,19 @@ const styles = StyleSheet.create({
   title: { color: '#F5EBDD', fontSize: 28, fontWeight: '800', marginTop: 5 },
   subtitle: { color: '#B8A99A', fontSize: 14, marginTop: 5 },
   card: { backgroundColor: '#32281F', borderColor: '#45382E', borderWidth: 1, borderRadius: 16, padding: 17 },
+  settingsCard: { marginTop: 18 },
+  settingsHeading: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 8 },
+  settingsHeadingText: { flex: 1 },
+  sectionTitle: { color: '#F5EBDD', fontSize: 17, fontWeight: '800' },
   field: { marginBottom: 18 },
   lastField: { marginBottom: 0 },
   printSetting: { marginTop: 22, marginBottom: 0, paddingTop: 18, borderTopWidth: 1, borderTopColor: '#45382E', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   printSettingText: { flex: 1 },
   settingDescription: { color: '#A99A8B', fontSize: 12, lineHeight: 18 },
+  lastSetting: { marginBottom: 0 },
+  percentInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  percentInput: { flex: 1 },
+  percentSuffix: { color: '#F0B35A', fontSize: 16, fontWeight: '700' },
   toggle: { width: 50, height: 30, padding: 3, borderRadius: 16, backgroundColor: '#51463D', justifyContent: 'center' },
   toggleOn: { backgroundColor: '#D8A85B' },
   toggleDisabled: { opacity: 0.75 },

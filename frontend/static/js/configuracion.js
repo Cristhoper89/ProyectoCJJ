@@ -1,8 +1,11 @@
 const CONFIGURATION_API_URL = "https://serviciocontigo.io/api";
 
 let company = null;
+let systemConfiguration = null;
 let editing = false;
 let saving = false;
+let editingSystemConfiguration = false;
+let savingSystemConfiguration = false;
 
 const configurationForm = document.getElementById("configurationForm");
 const configurationMessage = document.getElementById("configurationMessage");
@@ -15,6 +18,13 @@ const cancelConfiguration = document.getElementById("cancelConfiguration");
 const saveConfiguration = document.getElementById("saveConfiguration");
 const automaticPrint = document.getElementById("automaticPrint");
 const companyInputs = [...configurationForm.querySelectorAll(".configuration-field input")];
+const systemConfigurationForm = document.getElementById("systemConfigurationForm");
+const automaticTip = document.getElementById("automaticTip");
+const tipPercent = document.getElementById("tipPercent");
+const lowStockAlert = document.getElementById("lowStockAlert");
+const editSystemConfiguration = document.getElementById("editSystemConfiguration");
+const cancelSystemConfiguration = document.getElementById("cancelSystemConfiguration");
+const saveSystemConfiguration = document.getElementById("saveSystemConfiguration");
 
 function configurationHeaders() {
     return {
@@ -55,6 +65,7 @@ function showConfigurationState(state) {
     configurationEmpty.hidden = state !== "empty";
     configurationRetry.hidden = state !== "error";
     configurationForm.hidden = state !== "ready";
+    systemConfigurationForm.hidden = !["ready", "empty"].includes(state);
 }
 
 function renderCompany(data) {
@@ -78,6 +89,25 @@ function setConfigurationEditing(value) {
     saveConfiguration.hidden = !value;
 }
 
+function renderSystemConfiguration(data) {
+    systemConfiguration = data;
+    automaticTip.checked = data.propina;
+    tipPercent.value = String(data.valor_propina);
+    lowStockAlert.checked = data.alerta_bajo_stock;
+    setSystemConfigurationEditing(false);
+    systemConfigurationForm.hidden = false;
+}
+
+function setSystemConfigurationEditing(value) {
+    editingSystemConfiguration = value;
+    automaticTip.disabled = !value || savingSystemConfiguration;
+    tipPercent.disabled = !value || savingSystemConfiguration || !automaticTip.checked;
+    lowStockAlert.disabled = !value || savingSystemConfiguration;
+    editSystemConfiguration.hidden = value;
+    cancelSystemConfiguration.hidden = !value;
+    saveSystemConfiguration.hidden = !value;
+}
+
 async function loadConfiguration() {
     if (!localStorage.getItem("access_token")) {
         window.location.href = "/";
@@ -93,12 +123,19 @@ async function loadConfiguration() {
             return;
         }
 
-        const companies = await configurationRequest("/empresas/", { cache: "no-store" });
-        if (!Array.isArray(companies) || companies.length === 0) {
-            showConfigurationState("empty");
-            return;
+        const [companies, settings] = await Promise.all([
+            configurationRequest("/empresas/", { cache: "no-store" }),
+            configurationRequest("/configuracion/", { cache: "no-store" })
+        ]);
+        if (Array.isArray(companies) && companies.length > 0) {
+            renderCompany(companies[0]);
+        } else {
+            company = null;
+            configurationForm.hidden = true;
+            configurationEmpty.hidden = false;
         }
-        renderCompany(companies[0]);
+        renderSystemConfiguration(settings);
+        showConfigurationState(Array.isArray(companies) && companies.length > 0 ? "ready" : "empty");
     } catch (error) {
         showConfigurationState("error");
         setConfigurationMessage(error.message || "No fue posible cargar la configuración.", "error");
@@ -109,9 +146,18 @@ function cancelConfigurationEdit() {
     if (company) renderCompany(company);
 }
 
+function cancelSystemConfigurationEdit() {
+    if (systemConfiguration) renderSystemConfiguration(systemConfiguration);
+}
+
 editConfiguration.addEventListener("click", () => setConfigurationEditing(true));
 cancelConfiguration.addEventListener("click", cancelConfigurationEdit);
 configurationRetry.addEventListener("click", loadConfiguration);
+editSystemConfiguration.addEventListener("click", () => setSystemConfigurationEditing(true));
+cancelSystemConfiguration.addEventListener("click", cancelSystemConfigurationEdit);
+automaticTip.addEventListener("change", () => {
+    if (editingSystemConfiguration) setSystemConfigurationEditing(true);
+});
 
 configurationForm.addEventListener("submit", async event => {
     event.preventDefault();
@@ -150,6 +196,41 @@ configurationForm.addEventListener("submit", async event => {
         saving = false;
         saveConfiguration.disabled = false;
         if (editing) setConfigurationEditing(true);
+    }
+});
+
+systemConfigurationForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!systemConfiguration || savingSystemConfiguration) return;
+
+    const percent = Number(tipPercent.value);
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+        setConfigurationMessage("El porcentaje de propina debe estar entre 0 y 100.", "error");
+        tipPercent.focus();
+        return;
+    }
+
+    savingSystemConfiguration = true;
+    saveSystemConfiguration.disabled = true;
+    setSystemConfigurationEditing(true);
+    setConfigurationMessage("Guardando preferencias...");
+    try {
+        const updated = await configurationRequest("/configuracion/", {
+            method: "PUT",
+            body: JSON.stringify({
+                propina: automaticTip.checked,
+                valor_propina: percent,
+                alerta_bajo_stock: lowStockAlert.checked
+            })
+        });
+        renderSystemConfiguration(updated);
+        setConfigurationMessage("Preferencias guardadas correctamente.", "success");
+    } catch (error) {
+        setConfigurationMessage(error.message || "No se pudieron guardar las preferencias.", "error");
+    } finally {
+        savingSystemConfiguration = false;
+        saveSystemConfiguration.disabled = false;
+        if (editingSystemConfiguration) setSystemConfigurationEditing(true);
     }
 });
 
