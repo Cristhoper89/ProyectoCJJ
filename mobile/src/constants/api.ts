@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const API_URL = 'http://xwho2nzoxgmaxbhkyqnfbiwu.2.24.87.5.sslip.io';
+export const API_URL = 'https://serviciocontigo.io/api';
 const SESSION_KEY = '@la_cabana_session';
 const SESSION_DURATION = 60 * 60 * 1000;
 

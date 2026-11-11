@@ -103,7 +103,6 @@ let datosComprobanteCargados = false;
 let mesaActual = null;
 let movimientoActual = null;
 let categoriaSeleccionada = null;
-let descuentos = {};
 let propinaAutomatica = true;
 let accionConfirmar = null;
 
@@ -293,7 +292,7 @@ function movimientoEsActivo(movimiento) {
 function lineasDeMovimiento(idMov) {
     if (!idMov) { return []; }
     return consumos
-        .filter(consumo => consumo.id_mov === idMov && Number(consumo.subtotal) > 0)
+        .filter(consumo => consumo.id_mov === idMov)
         .sort((a, b) => a.id - b.id);
 }
 
@@ -306,7 +305,7 @@ function totalMovimiento(movimiento) {
 
     const lineas = lineasDeMovimiento(movimiento.id);
     const subtotal = lineas.length > 0
-        ? lineas.reduce((suma, linea) => suma + (Number(linea.subtotal) || 0) * (1 - porcentajeLinea(linea) / 100), 0)
+        ? lineas.reduce((suma, linea) => suma + totalLinea(linea), 0)
         : Math.max(0,
             (Number(movimiento.total) || 0) -
             (Number(movimiento.propina) || 0) -
@@ -348,11 +347,14 @@ function cantidadProductoEnMesa(idProducto) {
 // ======================================================
 
 function porcentajeLinea(linea) {
-    return Math.min(100, Math.max(0, Number(descuentos[linea.id]) || 0));
+    const precio = Number(linea.precio_unitario) || 0;
+    const descuento = Number(linea.descuento) || 0;
+    if (precio <= 0) { return 0; }
+    return Math.min(100, Math.max(0, descuento / precio * 100));
 }
 
 function totalLinea(linea) {
-    return (Number(linea.subtotal) || 0) * (1 - porcentajeLinea(linea) / 100);
+    return Number(linea.subtotal) || 0;
 }
 
 function calcularSubtotal() {
@@ -808,7 +810,6 @@ function cerrarPedidoFn() {
     pedidoModal.classList.remove("active");
     mesaActual = null;
     movimientoActual = null;
-    descuentos = {};
     propinaAutomatica = true;
     descuentoProducto.value = "";
     domicilioNombre.value = "";
@@ -1013,7 +1014,7 @@ function accionesDeIngredientes(producto, configuracion) {
     }));
 }
 
-async function registrarProducto(producto, cantidad, configuracion = null, lineaObjetivoId = null) {
+async function registrarProducto(producto, cantidad, configuracion = null, lineaObjetivoId = null, descuentoPorUnidad = 0) {
     if (!mesaActual) { return; }
 
     const nuevaCantidad = Math.max(0, Math.floor(cantidad));
@@ -1047,7 +1048,14 @@ async function registrarProducto(producto, cantidad, configuracion = null, linea
             throw new Error("La mesa no tiene un movimiento activo.");
         }
 
-        const existentes = lineasDeMovimiento(idMov).filter(linea => linea.id_producto === producto.id);
+        const todasExistentes = lineasDeMovimiento(idMov).filter(linea => linea.id_producto === producto.id);
+        const existentes = producto.preparacion
+            ? todasExistentes
+            : lineaObjetivoId
+                ? todasExistentes.filter(linea => linea.id === lineaObjetivoId)
+                : todasExistentes.filter(linea => (
+                    Math.round((Number(linea.descuento) || 0) * 100) === Math.round(descuentoPorUnidad * 100)
+                ));
         const notas = notasDeConfiguracion(configuracion);
 
         if (producto.preparacion) {
@@ -1074,6 +1082,7 @@ async function registrarProducto(producto, cantidad, configuracion = null, linea
                     id_producto: producto.id,
                     id_mov: idMov,
                     cantidad: nuevaCantidad - cantidadActual,
+                    descuento: descuentoPorUnidad,
                     notas: notas || null,
                     ingredientes: acciones
                 });
@@ -1123,7 +1132,7 @@ async function registrarProducto(producto, cantidad, configuracion = null, linea
             if (configuracion) {
                 cuerpo.ingredientes = accionesDeIngredientes(producto, configuracion);
             }
-            await api(`/mesasC/${objetivo.id}`, "PUT", cuerpo);
+            const actualizado = await api(`/mesasC/${objetivo.id}`, "PUT", cuerpo);
 
             const sobrantes = existentes.slice(1);
             for (const extra of sobrantes) {
@@ -1133,13 +1142,14 @@ async function registrarProducto(producto, cantidad, configuracion = null, linea
             consumos = consumos
                 .filter(linea => !sobrantes.some(item => item.id === linea.id))
                 .map(linea => linea.id === objetivo.id
-                    ? { ...linea, cantidad: nuevaCantidad, subtotal: totalPrecio, notas: notas || linea.notas || null }
+                    ? actualizado
                     : linea);
         } else {
             const nuevo = await api("/mesasC/", "POST", {
                 id_producto: producto.id,
                 id_mov: idMov,
                 cantidad: nuevaCantidad,
+                descuento: descuentoPorUnidad,
                 notas: notas || null,
                 ingredientes: accionesDeIngredientes(producto, configuracion)
             });
@@ -1162,14 +1172,15 @@ async function agregarProducto(producto) {
     if (!mesaActual) { return; }
 
     const porcentaje = porcentajeDescuentoProducto();
-    await registrarProducto(producto, cantidadProductoEnMesa(producto.id) + 1);
-
-    // El descuento digitado se aplica al producto recien agregado y luego se limpia.
-    if (porcentaje > 0) {
-        lineasMesaActual()
-            .filter(linea => linea.id_producto === producto.id)
-            .forEach(linea => { descuentos[linea.id] = porcentaje; });
-    }
+    const descuentoPorUnidad = redondear(Number(producto.precio || 0) * porcentaje / 100);
+    const lineasProducto = lineasMesaActual().filter(linea => linea.id_producto === producto.id);
+    const lineasMismoDescuento = lineasProducto.filter(linea => (
+        Math.round((Number(linea.descuento) || 0) * 100) === Math.round(descuentoPorUnidad * 100)
+    ));
+    const cantidadActual = producto.preparacion
+        ? lineasProducto.reduce((suma, linea) => suma + (Number(linea.cantidad) || 0), 0)
+        : lineasMismoDescuento.reduce((suma, linea) => suma + (Number(linea.cantidad) || 0), 0);
+    await registrarProducto(producto, cantidadActual + 1, null, null, descuentoPorUnidad);
     descuentoProducto.value = "";
     refrescarResumen();
     mostrarMesas(filtroMesas());
@@ -1362,7 +1373,16 @@ pedidoLineas.addEventListener("click", async event => {
                 ? cantidadActual - 1
                 : 0;
 
-    await registrarProducto(producto, cantidad);
+    const descuentoPorUnidad = producto.preparacion && accion === "mas"
+        ? Number(linea.descuento) || 0
+        : 0;
+    await registrarProducto(
+        producto,
+        cantidad,
+        null,
+        producto.preparacion ? null : linea.id,
+        descuentoPorUnidad
+    );
 });
 
 // ======================================================
@@ -1471,18 +1491,6 @@ btnFinalizarCuenta.addEventListener("click", async () => {
     const comprobante = capturarDatosComprobante();
 
     try {
-        // Los descuentos se aplican sobre el subtotal de cada línea.
-        for (const linea of comprobante.lineas) {
-            const porcentaje = linea.descuentoPorcentaje;
-            const cantidad = Number(linea.cantidad) || 0;
-            const unidad = Number(linea.precio_unitario) || 0;
-            if (porcentaje <= 0 || cantidad <= 0 || unidad <= 0) { continue; }
-            const descuento = redondear(unidad * porcentaje / 100);
-            if (descuento > 0) {
-                await api(`/mesasC/${linea.id}`, "PUT", { descuento });
-            }
-        }
-
         const total = calcularTotal();
         const propina = valorInput(campoPropina);
         const domicilio = valorInput(campoDomicilio);
@@ -1551,9 +1559,11 @@ function capturarDatosComprobante() {
         operador: operador ? { ...operador } : null,
         mesa: nombreMesa(mesa),
         lineas,
-        subtotal: lineas.reduce((suma, linea) => suma + (Number(linea.subtotal) || 0), 0),
+        subtotal: lineas.reduce((suma, linea) => (
+            suma + (Number(linea.precio_unitario) || 0) * (Number(linea.cantidad) || 0)
+        ), 0),
         descuento: lineas.reduce((suma, linea) => (
-            suma + (Number(linea.subtotal) || 0) - linea.totalConDescuento
+            suma + (Number(linea.descuento) || 0) * (Number(linea.cantidad) || 0)
         ), 0),
         propina,
         domicilio,
