@@ -3,6 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const API_URL = 'https://serviciocontigo.io/api';
 const SESSION_KEY = '@la_cabana_session';
 const SESSION_DURATION = 60 * 60 * 1000;
+export const CONNECTION_ERROR_MESSAGE = 'No fue posible conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
+export const SESSION_EXPIRED_MESSAGE = 'Tu sesión venció. Inicia sesión nuevamente.';
+export const SERVER_ERROR_MESSAGE = 'No fue posible completar la solicitud. Inténtalo de nuevo más tarde.';
 
 export type AuthenticatedHomeRoute = '/mesa' | '/caja-actual' | '/pedidos' | '/carta';
 
@@ -46,8 +49,16 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     headers.set('Authorization', `Bearer ${accessToken}`);
   }
 
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
-  const rawText = await response.text();
+  let response: Response;
+  let rawText: string;
+  try {
+    response = await fetch(`${API_URL}${path}`, { ...options, headers });
+    rawText = await response.text();
+  } catch (error) {
+    console.error('Error de conexión con la API móvil:', error);
+    throw new Error(CONNECTION_ERROR_MESSAGE);
+  }
+
   let body: any = null;
 
   if (rawText) {
@@ -56,6 +67,15 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     } catch {
       body = rawText;
     }
+  }
+
+  if (response.status === 401) {
+    await clearAccessToken();
+    throw new Error(SESSION_EXPIRED_MESSAGE);
+  }
+
+  if (response.status >= 500) {
+    throw new Error(SERVER_ERROR_MESSAGE);
   }
 
   if (!response.ok) {

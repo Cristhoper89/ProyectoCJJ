@@ -13,7 +13,16 @@ import {
 } from 'react-native';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { API_URL, clearAccessToken, getAuthenticatedHomeRoute, restoreAccessToken, setAccessToken } from '../constants/api';
+import {
+  API_URL,
+  clearAccessToken,
+  CONNECTION_ERROR_MESSAGE,
+  getAuthenticatedHomeRoute,
+  restoreAccessToken,
+  SERVER_ERROR_MESSAGE,
+  SESSION_EXPIRED_MESSAGE,
+  setAccessToken,
+} from '../constants/api';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -99,14 +108,22 @@ export default function LoginScreen() {
         return;
       }
 
+      if (response.status >= 500) {
+        setMessage({ text: 'No fue posible completar la solicitud. Inténtalo de nuevo más tarde.', type: 'error' });
+        return;
+      }
+
       setMessage({ text: data.detail || 'Error en las credenciales', type: 'error' });
 
     } catch (error) {
       await clearAccessToken();
       setLoading(false);
       console.error(error);
+      const errorMessage = error instanceof Error ? error.message : '';
       setMessage({
-        text: error instanceof Error ? error.message : 'No fue posible conectar con el servidor.',
+        text: errorMessage === SESSION_EXPIRED_MESSAGE || errorMessage === SERVER_ERROR_MESSAGE
+          ? errorMessage
+          : CONNECTION_ERROR_MESSAGE,
         type: 'error',
       });
     }

@@ -53,8 +53,10 @@ export default function MesaScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const canPrintBill = userRole === 'Administrador' || userRole === 'Cajero';
 
   const loadData = async () => {
     if (!getAccessToken()) { setError('Inicia sesión para consultar las mesas.'); setLoading(false); return; }
@@ -104,6 +106,20 @@ export default function MesaScreen() {
   };
 
   useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    let active = true;
+    apiRequest<{ role_name: string }>('/auth/me')
+      .then((user) => {
+        if (active) setUserRole(user.role_name);
+      })
+      .catch((requestError) => {
+        console.error('No fue posible verificar el permiso de impresión:', requestError);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
   useEffect(() => {
     let stopped = false;
     let socket: WebSocket | null = null;
@@ -665,7 +681,7 @@ export default function MesaScreen() {
         </View>
         <View style={styles.totals}><Text style={styles.totalLine}>Subtotal <Text style={styles.amount}>{money(subtotal)}</Text></Text><View style={styles.editLine}><Text style={styles.totalLine}>{configuracion?.propina ? `Propina (${tipPercent}%)` : 'Propina manual'}</Text><TextInput style={styles.moneyInput} keyboardType="numeric" value={String(propina)} onChangeText={(value) => { setAutoTip(false); setPropina(Number(value) || 0); }} /><TouchableOpacity onPress={() => { setAutoTip(false); setPropina(0); }}><Trash2 size={17} color="#D98672" /></TouchableOpacity></View><View style={styles.editLine}><Text style={styles.totalLine}>Domicilio</Text><TextInput style={styles.moneyInput} keyboardType="numeric" value={domicilio} onChangeText={setDomicilio} /></View><View style={styles.grandTotal}><Text style={styles.grandLabel}>TOTAL A PAGAR</Text><Text style={styles.grandAmount}>{money(total)}</Text></View></View>
       </ScrollView>
-      <View style={styles.actions}><TouchableOpacity style={styles.secondaryButton} onPress={cancelOrder} disabled={saving}><Text style={styles.cancelText}>Cancelar</Text></TouchableOpacity><TouchableOpacity style={styles.printButton} onPress={printBill} disabled={saving}><Printer size={18} color="#251D17" /><Text style={styles.printText}>Imprimir</Text></TouchableOpacity><TouchableOpacity style={styles.closeButton} onPress={() => saveBill(true)} disabled={saving}><Text style={styles.closeText}>{saving ? 'Guardando...' : 'Finalizar cuenta'}</Text></TouchableOpacity></View>
+      <View style={styles.actions}><TouchableOpacity style={styles.secondaryButton} onPress={cancelOrder} disabled={saving}><Text style={styles.cancelText}>Cancelar</Text></TouchableOpacity>{canPrintBill && <TouchableOpacity style={styles.printButton} onPress={printBill} disabled={saving}><Printer size={18} color="#251D17" /><Text style={styles.printText}>Imprimir</Text></TouchableOpacity>}<TouchableOpacity style={styles.closeButton} onPress={() => saveBill(true)} disabled={saving}><Text style={styles.closeText}>{saving ? 'Guardando...' : 'Finalizar cuenta'}</Text></TouchableOpacity></View>
     </SafeAreaView></Modal>
     <Modal visible={!!configProduct} animationType="fade" transparent onRequestClose={() => setConfigProduct(null)}>
       <View style={styles.configOverlay}>
