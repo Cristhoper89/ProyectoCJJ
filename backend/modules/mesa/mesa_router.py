@@ -105,7 +105,7 @@ async def finalize_mesa(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    if current_user["role_name"] not in ["Administrador", "Cajero", "Mesero"]:
+    if current_user["role_name"] not in ["Administrador", "Cajero"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Rol insuficiente.")
     result = await MesaService(db).finalizar_mesa(mesa_id, data)
     await notify_mesa_change(db)
