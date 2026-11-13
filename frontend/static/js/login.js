@@ -155,9 +155,42 @@ loginForm.addEventListener("submit", async (e)=>{
                 "success"
             );
 
-            setTimeout(()=>{
+            setTimeout(async ()=>{
 
-                window.location.href="/mesas";
+                let destination = "/mesas";
+
+                try{
+
+                    const userResponse = await fetch(`${API_URL}/auth/me`,{
+
+                        headers:{
+                            "Authorization":`Bearer ${data.access_token}`
+                        }
+
+                    });
+
+                    if(userResponse.ok){
+
+                        const user = await userResponse.json();
+                        const role = window.CabanaPermissions?.getRole(user);
+
+                        if(role){
+
+                            destination = window.CabanaPermissions.getHomeRoute(role);
+
+                        }
+
+                    }
+
+                }
+
+                catch(error){
+
+                    console.error("No fue posible determinar el módulo inicial.",error);
+
+                }
+
+                window.location.href=destination;
 
             },1000);
 

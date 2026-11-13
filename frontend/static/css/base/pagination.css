@@ -1,0 +1,131 @@
+/* ======================================================
+   PAGINACIÓN GENERAL DE TABLAS
+====================================================== */
+
+.table-pagination {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    padding: 14px 20px;
+
+    border-top: 1px solid var(--color-border);
+
+    background: rgba(42, 34, 28, .35);
+}
+
+.table-pagination[hidden] {
+    display: none !important;
+}
+
+.table-pagination-info {
+
+    color: var(--color-text-secondary);
+
+    font-size: 12px;
+}
+
+.table-pagination-pages {
+
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.table-pagination button {
+
+    display: inline-grid;
+    place-items: center;
+
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-button);
+
+    background: var(--color-input);
+    color: var(--color-text-secondary);
+
+    font-family: 'Manrope', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+
+    cursor: pointer;
+
+    transition: var(--transition);
+}
+
+.table-pagination button:hover:not(:disabled):not(.is-active) {
+
+    border-color: var(--color-primary);
+
+    background: rgba(216, 168, 91, .12);
+    color: var(--color-primary);
+}
+
+.table-pagination button:focus-visible {
+
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.table-pagination button.is-active {
+
+    border-color: var(--color-primary);
+
+    background: var(--color-primary);
+    color: var(--color-background);
+
+    cursor: default;
+}
+
+.table-pagination button:disabled {
+
+    opacity: .4;
+
+    cursor: not-allowed;
+}
+
+.table-pagination .pagination-arrow {
+
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.table-pagination .pagination-ellipsis {
+
+    min-width: 18px;
+
+    color: var(--color-text-secondary);
+
+    font-size: 12px;
+    text-align: center;
+}
+
+tr[data-pagination-hidden="true"] {
+    display: none !important;
+}
+
+@media (max-width: 640px) {
+
+    .table-pagination {
+
+        justify-content: center;
+
+        padding: 14px;
+    }
+
+    .table-pagination-info {
+
+        width: 100%;
+
+        text-align: center;
+    }
+
+}

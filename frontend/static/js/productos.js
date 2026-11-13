@@ -173,9 +173,11 @@ async function cargarCategorias(){
 
         categorias = data;
 
+        const categoriasActivas = categorias.filter(item => item.estado === true);
+
         categoria.innerHTML = `
             <option value="">Seleccione una categoría</option>
-            ${categorias.map(item => `
+            ${categoriasActivas.map(item => `
                 <option value="${item.id}">${item.nombre}</option>
             `).join("")}
         `;
@@ -988,6 +990,23 @@ function validarFormulario(){
 
         showMessage(
             "Seleccione una categoría.",
+            "error"
+        );
+
+        categoria.focus();
+
+        return false;
+    }
+
+
+    const categoriaActiva = categorias.some(
+        item => item.id === Number(categoriaValue) && item.estado === true
+    );
+
+    if(!categoriaActiva){
+
+        showMessage(
+            "La categoría seleccionada está desactivada. Seleccione una categoría activa.",
             "error"
         );
 

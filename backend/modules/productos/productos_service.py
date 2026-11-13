@@ -22,6 +22,34 @@ class ProductoService:
         self.db = db
 
 
+    async def validar_categoria_activa(self, categoria_id: int) -> None:
+
+        result = await self.db.execute(
+            text("""
+                SELECT COALESCE(estado, FALSE) AS estado
+                FROM categorias
+                WHERE id = :id;
+            """),
+            {"id": categoria_id}
+        )
+
+        categoria = result.mappings().first()
+
+        if not categoria:
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="La categoría seleccionada no existe."
+            )
+
+        if categoria["estado"] is not True:
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="La categoría seleccionada está desactivada."
+            )
+
+
     # ======================================================
     # LISTAR PRODUCTOS
     # ======================================================
@@ -305,6 +333,15 @@ class ProductoService:
 
 
         # --------------------------------------------------
+        # VALIDAR CATEGORÍA ACTIVA
+        # --------------------------------------------------
+
+        if producto_data.id_categoria is not None:
+
+            await self.validar_categoria_activa(producto_data.id_categoria)
+
+
+        # --------------------------------------------------
         # INSERTAR
         # --------------------------------------------------
 
@@ -417,6 +454,15 @@ class ProductoService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="El producto a modificar no existe."
             )
+
+
+        # --------------------------------------------------
+        # VALIDAR CATEGORÍA ACTIVA
+        # --------------------------------------------------
+
+        if producto_update.id_categoria is not None:
+
+            await self.validar_categoria_activa(producto_update.id_categoria)
 
 
         # --------------------------------------------------

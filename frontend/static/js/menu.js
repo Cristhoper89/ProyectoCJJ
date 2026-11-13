@@ -1,51 +1,7 @@
 const MENU_API_URL = "https://serviciocontigo.io/api";
 const MENU_HTML_CACHE_KEY = "cabana_menu_html";
 const MENU_USER_CACHE_KEY = "cabana_menu_user";
-const menuModules = {
-	admin: [
-		["Persona", "users-round", null, [
-			["Perfil", "user-round", "/perfil"],
-			["Empleados", "users-round", "/usuarios"],
-			["Clientes", "contact-round", "/clientes"]
-		]],
-		["Caja", "wallet-cards", null, [
-			["Historial de cajas", "history", "/cajas"],
-			["Caja actual", "wallet-cards", "/caja"],
-			["Cerrar y abrir caja", "lock-keyhole", "/cierre-caja"]
-		]],
-		["Mesa", "layout-grid", null, [
-			["Mesas", "layout-grid", "/mesas"],
-			["Configuración de mesas", "qr-code", "/configuracion-mesas"]
-		]], ["Categorías", "tags", "/categorias"],
-		["Movimientos", "arrow-left-right", "/movimientos"],
-		["Productos", "package", null, [
-			["Productos", "package", "/productos"],
-			["Opciones de productos", "tags", "/opciones-productos"],
-			["Ingredientes", "carrot", "/ingredientes"]
-		]],
-		["Estadística", "chart-no-axes-combined", "/reportes"],
-		["Pedidos", "clipboard-list", "/pedidos"], ["Carta", "book-open", "/carta"],
-		["Configuración", "settings", "/configuracion"]
-	],
-	cajero: [
-		["Perfil", "user-round", "/perfil"],
-		["Caja", "wallet-cards", null, [
-			["Historial de cajas", "history", "/cajas"],
-			["Caja actual", "wallet-cards", "/caja"],
-			["Cerrar y abrir caja", "lock-keyhole", "/cierre-caja"]
-		]],
-		["Mesa", "layout-grid", null, [
-			["Mesas", "layout-grid", "/mesas"],
-			["Configuración de mesas", "qr-code", "/configuracion-mesas"]
-		]], ["Movimientos", "arrow-left-right", "/movimientos"],
-		["Categorías", "tags", "/categorias"],
-		["Productos", "package", null, [
-			["Productos", "package", "/productos"],
-			["Opciones de productos", "tags", "/opciones-productos"],
-			["Ingredientes", "carrot", "/ingredientes"]
-		]]
-	]
-};
+const permissions = window.CabanaPermissions;
 
 function renderMenuItem([name, icon, href, children], currentPath) {
 	if (children) {
@@ -84,12 +40,22 @@ function positionOpenDropdown(group) {
 }
 
 function renderMenu(user) {
-	const role = user?.role_name?.toLowerCase() === "cajero" ? "cajero" : "admin";
 	const sideNav = document.getElementById("sideNav");
 	if (!sideNav) return;
-	const currentPath = `${window.location.pathname}${window.location.hash}`;
+	const role = permissions?.getRole(user);
 
-	sideNav.innerHTML = menuModules[role].map(item => renderMenuItem(item, currentPath)).join("");
+	if (!role) {
+		sideNav.innerHTML = "";
+		return;
+	}
+
+	if (!permissions.isPathAllowed(role, window.location.pathname)) {
+		window.location.replace(permissions.getHomeRoute(role));
+		return;
+	}
+
+	const currentPath = `${window.location.pathname}${window.location.hash}`;
+	sideNav.innerHTML = permissions.getMenuModules(role).map(item => renderMenuItem(item, currentPath)).join("");
 	sideNav.querySelectorAll(".nav-group").forEach(group => {
 		group.addEventListener("toggle", () => {
 			if (group.open) positionOpenDropdown(group);
