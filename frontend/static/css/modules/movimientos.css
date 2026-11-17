@@ -9,6 +9,9 @@ body{overflow:auto}
 .mov-range-btn:hover{color:var(--color-primary)}
 .mov-range-btn.is-active{background:var(--color-primary);color:var(--color-background);font-weight:700}
 .btn-secondary,.btn-danger{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:8px;padding:11px 16px;font:500 12px Manrope,sans-serif;cursor:pointer}
+.btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:8px;padding:11px 16px;background:var(--color-primary);color:var(--color-background);font:700 12px Manrope,sans-serif;cursor:pointer;transition:var(--transition)}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed}
 .btn-secondary{background:#2d2620;border:1px solid var(--color-border);color:var(--color-text)}
 .btn-secondary:hover{border-color:var(--color-primary);color:var(--color-primary)}
 .btn-secondary:disabled{opacity:.5;cursor:not-allowed}
@@ -85,5 +88,23 @@ body{overflow:auto}
 .confirm-modal p{margin-top:10px;color:var(--color-text-secondary);font-size:12px}
 .confirm-actions{display:flex;gap:10px;margin-top:22px}
 .confirm-actions button{flex:1}
+.gasto-modal{width:min(100%,560px);max-height:90vh;overflow-y:auto;padding:28px;border:1px solid var(--color-border);border-radius:var(--radius-card);background:var(--color-card);box-shadow:var(--shadow-card)}
+.gasto-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px}
+.gasto-modal-header h2{margin-top:7px;font-size:21px}
+.gasto-modal-header p{margin-top:7px;color:var(--color-text-secondary);font-size:12px;line-height:1.5}
+.gasto-close{width:34px;height:34px;border:1px solid var(--color-border);border-radius:7px;background:transparent;color:var(--color-text-secondary);font-size:23px;line-height:1;cursor:pointer}
+.gasto-field{display:flex;min-width:0;flex-direction:column;gap:7px;margin-bottom:16px;color:var(--color-text-secondary);font-size:12px;font-weight:600}
+.gasto-input{width:100%;min-height:44px;padding:11px 12px;border:1px solid var(--color-border);border-radius:7px;outline:0;background:var(--color-background);color:var(--color-text);font:400 13px Manrope,sans-serif}
+.gasto-input:focus{border-color:var(--color-primary)}
+.gasto-input::placeholder{color:var(--color-placeholder)}
+.gasto-value-input{display:flex;align-items:center;gap:10px;padding-left:12px;border:1px solid var(--color-border);border-radius:7px;background:var(--color-background);color:var(--color-primary);font-size:16px;font-weight:700}
+.gasto-value-input .gasto-input{border:0;background:transparent}
+.gasto-description{min-height:88px;resize:vertical}
+.gasto-form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.gasto-form-message{display:none;margin:0 0 12px;color:#ef8b7e;font-size:12px;line-height:1.5}
+.gasto-form-message.visible{display:block}
+.gasto-form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px}
+.gasto-form-actions button{min-width:130px}
 @media(max-width:900px){.mov-header{flex-direction:column;align-items:flex-start}.mov-actions{width:100%;flex-wrap:wrap}.mov-summary{grid-template-columns:1fr}.mov-range{width:100%}.mov-range-btn{flex:1}}
 @media(max-width:760px){.mov-page{padding:28px 18px}.mov-header h1{font-size:26px}}
+@media(max-width:600px){.gasto-modal{padding:22px 18px}.gasto-form-row{grid-template-columns:1fr;gap:0}.gasto-form-actions{flex-direction:column-reverse}.gasto-form-actions button{width:100%}}

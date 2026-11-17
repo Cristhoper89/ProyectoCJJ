@@ -2,16 +2,19 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { ChevronDown, ChevronUp, CircleDollarSign, ReceiptText, TriangleAlert, TrendingDown, TrendingUp } from 'lucide-react-native';
+import { Check, ChevronDown, ChevronUp, CircleDollarSign, Plus, ReceiptText, TriangleAlert, TrendingDown, TrendingUp, X } from 'lucide-react-native';
 import HeaderNavbar from '../components/HeaderNavbar';
 import { apiRequest } from '../constants/api';
 
@@ -42,6 +45,9 @@ type Gasto = {
   categoria_nombre?: string | null;
   id_caja?: number | null;
 };
+
+type CategoriaGasto = { id: number; nombre: string; estado?: boolean | null };
+type CajaGasto = { id: number; estado?: string | null };
 
 type Producto = {
   id: number;
@@ -117,6 +123,16 @@ export default function MovimientosScreen() {
   const [consumos, setConsumos] = useState<Consumo[]>([]);
   const [pendingMovement, setPendingMovement] = useState<Movimiento | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [expenseName, setExpenseName] = useState('');
+  const [expenseDescription, setExpenseDescription] = useState('');
+  const [expenseValue, setExpenseValue] = useState('');
+  const [expenseCategories, setExpenseCategories] = useState<CategoriaGasto[]>([]);
+  const [openCashBoxes, setOpenCashBoxes] = useState<CajaGasto[]>([]);
+  const [expenseCategoryId, setExpenseCategoryId] = useState<number | null>(null);
+  const [expenseCashId, setExpenseCashId] = useState<number | null>(null);
+  const [loadingExpenseOptions, setLoadingExpenseOptions] = useState(false);
+  const [expenseError, setExpenseError] = useState('');
 
   const loadData = async () => {
     setLoading(true);
@@ -186,6 +202,80 @@ export default function MovimientosScreen() {
       setPendingMovement(null);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'No se pudo desactivar el movimiento.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openExpenseForm = async () => {
+    setExpenseName('');
+    setExpenseDescription('');
+    setExpenseValue('');
+    setExpenseCategoryId(null);
+    setExpenseCashId(null);
+    setExpenseError('');
+    setShowExpenseModal(true);
+    setLoadingExpenseOptions(true);
+
+    const [categoriesResult, cashResult] = await Promise.allSettled([
+      apiRequest<CategoriaGasto[]>('/categorias/'),
+      apiRequest<CajaGasto[]>('/cajas/'),
+    ]);
+    const errors: string[] = [];
+
+    if (categoriesResult.status === 'fulfilled') {
+      setExpenseCategories(categoriesResult.value.filter((category) => category.estado !== false));
+    } else {
+      setExpenseCategories([]);
+      errors.push('No se pudieron cargar las categorías.');
+    }
+
+    if (cashResult.status === 'fulfilled') {
+      const available = cashResult.value
+        .filter((cash) => cash.estado?.trim().toLowerCase() === 'abierta')
+        .sort((first, second) => second.id - first.id);
+      setOpenCashBoxes(available);
+      setExpenseCashId(available[0]?.id ?? null);
+    } else {
+      setOpenCashBoxes([]);
+      errors.push('No se pudieron cargar las cajas abiertas.');
+    }
+
+    setExpenseError(errors.join(' '));
+    setLoadingExpenseOptions(false);
+  };
+
+  const saveExpense = async () => {
+    const name = expenseName.trim();
+    const normalizedValue = expenseValue.trim().replace(',', '.');
+    const value = Number(normalizedValue);
+    if (!name) {
+      setExpenseError('Escribe el nombre del gasto.');
+      return;
+    }
+    if (!/^\d+(?:\.\d{1,2})?$/.test(normalizedValue) || !Number.isFinite(value) || value <= 0) {
+      setExpenseError('Ingresa un valor mayor que cero con hasta dos decimales.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setExpenseError('');
+      const saved = await apiRequest<Gasto>('/gastos/', {
+        method: 'POST',
+        body: JSON.stringify({
+          nombre: name,
+          descripcion: expenseDescription.trim() || null,
+          valor: value,
+          categoria: expenseCategoryId,
+          id_caja: expenseCashId,
+        }),
+      });
+      setGastos((current) => [...current, saved]);
+      setActiveTab('gastos');
+      setShowExpenseModal(false);
+    } catch (requestError) {
+      setExpenseError(requestError instanceof Error ? requestError.message : 'No fue posible registrar el gasto.');
     } finally {
       setSaving(false);
     }
@@ -351,6 +441,16 @@ export default function MovimientosScreen() {
           </TouchableOpacity>
         </View>
 
+        {activeTab === 'gastos' && (
+          <View style={styles.expenseActionRow}>
+            <Text style={styles.expenseActionHint}>Registra un egreso de caja.</Text>
+            <Pressable style={styles.addExpenseButton} onPress={openExpenseForm}>
+              <Plus size={17} color="#251D17" />
+              <Text style={styles.addExpenseText}>Registrar gasto</Text>
+            </Pressable>
+          </View>
+        )}
+
         {loading ? (
           <View style={styles.loaderArea}><ActivityIndicator color="#F5D3A7" /></View>
         ) : error ? (
@@ -377,6 +477,107 @@ export default function MovimientosScreen() {
           />
         )}
       </View>
+      <Modal visible={showExpenseModal} transparent animationType="slide" onRequestClose={() => setShowExpenseModal(false)}>
+        <KeyboardAvoidingView style={styles.expenseBackdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.expenseModal} keyboardShouldPersistTaps="handled">
+            <View style={styles.expenseModalHeader}>
+              <View style={styles.expenseModalTitleWrap}>
+                <Text style={styles.expenseKicker}>NUEVO REGISTRO</Text>
+                <Text style={styles.expenseModalTitle}>Registrar gasto</Text>
+                <Text style={styles.expenseModalSubtitle}>Incluye este egreso en el balance de caja.</Text>
+              </View>
+              <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" onPress={() => setShowExpenseModal(false)}>
+                <X size={22} color="#F5EBDD" />
+              </Pressable>
+            </View>
+
+            <Text style={styles.expenseLabel}>Nombre del gasto</Text>
+            <TextInput
+              value={expenseName}
+              onChangeText={setExpenseName}
+              placeholder="Ej. Compra de insumos"
+              placeholderTextColor="#998C80"
+              style={styles.expenseInput}
+              maxLength={100}
+              autoCapitalize="sentences"
+            />
+            <Text style={styles.expenseLabel}>Valor</Text>
+            <View style={styles.expenseValueInput}>
+              <Text style={styles.expenseCurrency}>$</Text>
+              <TextInput
+                value={expenseValue}
+                onChangeText={setExpenseValue}
+                placeholder="0"
+                placeholderTextColor="#998C80"
+                style={styles.expenseValueText}
+                keyboardType="decimal-pad"
+                maxLength={13}
+              />
+            </View>
+            <Text style={styles.expenseLabel}>Descripción</Text>
+            <TextInput
+              value={expenseDescription}
+              onChangeText={setExpenseDescription}
+              placeholder="Detalle opcional del gasto"
+              placeholderTextColor="#998C80"
+              style={[styles.expenseInput, styles.expenseDescription]}
+              multiline
+              maxLength={255}
+            />
+
+            <View style={styles.expenseSelectorHeading}>
+              <Text style={styles.expenseLabel}>Categoría</Text>
+              {loadingExpenseOptions && <ActivityIndicator size="small" color="#F0B35A" />}
+            </View>
+            <View style={styles.expenseChips}>
+              <Pressable
+                style={[styles.expenseChip, expenseCategoryId === null && styles.expenseChipSelected]}
+                onPress={() => setExpenseCategoryId(null)}
+              >
+                <Text style={[styles.expenseChipText, expenseCategoryId === null && styles.expenseChipTextSelected]}>Sin categoría</Text>
+              </Pressable>
+              {expenseCategories.map((category) => (
+                <Pressable
+                  key={category.id}
+                  style={[styles.expenseChip, expenseCategoryId === category.id && styles.expenseChipSelected]}
+                  onPress={() => setExpenseCategoryId(category.id)}
+                >
+                  <Text style={[styles.expenseChipText, expenseCategoryId === category.id && styles.expenseChipTextSelected]}>{category.nombre}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.expenseLabel}>Caja</Text>
+            <View style={styles.expenseChips}>
+              <Pressable
+                style={[styles.expenseChip, expenseCashId === null && styles.expenseChipSelected]}
+                onPress={() => setExpenseCashId(null)}
+              >
+                <Text style={[styles.expenseChipText, expenseCashId === null && styles.expenseChipTextSelected]}>General (sin caja)</Text>
+              </Pressable>
+              {openCashBoxes.map((cash) => (
+                <Pressable
+                  key={cash.id}
+                  style={[styles.expenseChip, expenseCashId === cash.id && styles.expenseChipSelected]}
+                  onPress={() => setExpenseCashId(cash.id)}
+                >
+                  <Text style={[styles.expenseChipText, expenseCashId === cash.id && styles.expenseChipTextSelected]}>Caja #{cash.id}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {!!expenseError && <Text style={styles.expenseError}>{expenseError}</Text>}
+            <View style={styles.expenseModalActions}>
+              <Pressable style={styles.expenseCancelButton} onPress={() => setShowExpenseModal(false)} disabled={saving}>
+                <Text style={styles.expenseCancelText}>Cancelar</Text>
+              </Pressable>
+              <Pressable style={styles.expenseSaveButton} onPress={saveExpense} disabled={saving}>
+                {saving ? <ActivityIndicator color="#251D17" /> : <><Check size={17} color="#251D17" /><Text style={styles.expenseSaveText}>Guardar gasto</Text></>}
+              </Pressable>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
       <Modal visible={pendingMovement !== null} transparent animationType="fade" onRequestClose={() => setPendingMovement(null)}>
         <View style={styles.confirmBackdrop}>
           <View style={styles.confirmCard}>
@@ -539,6 +740,33 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: '#251D17',
   },
+  expenseActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 12,
+  },
+  expenseActionHint: {
+    flex: 1,
+    color: '#B8B1A8',
+    fontSize: 11,
+  },
+  addExpenseButton: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    borderRadius: 7,
+    backgroundColor: '#F0B35A',
+  },
+  addExpenseText: {
+    color: '#251D17',
+    fontSize: 12,
+    fontWeight: '800',
+  },
   listContainer: {
     paddingBottom: 30,
   },
@@ -636,6 +864,159 @@ const styles = StyleSheet.create({
     color: '#F28C8C',
     fontSize: 12,
     fontWeight: '700',
+  },
+  expenseBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.68)',
+  },
+  expenseModal: {
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 34,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    backgroundColor: '#32281F',
+  },
+  expenseModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 14,
+    marginBottom: 16,
+  },
+  expenseModalTitleWrap: {
+    flex: 1,
+  },
+  expenseKicker: {
+    color: '#F0B35A',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.3,
+  },
+  expenseModalTitle: {
+    marginTop: 5,
+    color: '#F5EBDD',
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  expenseModalSubtitle: {
+    marginTop: 5,
+    color: '#B8B1A8',
+    fontSize: 12,
+  },
+  expenseLabel: {
+    marginBottom: 7,
+    marginTop: 10,
+    color: '#D9D0C8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  expenseInput: {
+    minHeight: 46,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#604D3A',
+    borderRadius: 7,
+    backgroundColor: '#2D2620',
+    color: '#F5EBDD',
+    fontSize: 14,
+  },
+  expenseDescription: {
+    minHeight: 74,
+    paddingTop: 11,
+    textAlignVertical: 'top',
+  },
+  expenseValueInput: {
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#604D3A',
+    borderRadius: 7,
+    backgroundColor: '#2D2620',
+  },
+  expenseCurrency: {
+    marginRight: 8,
+    color: '#F0B35A',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  expenseValueText: {
+    flex: 1,
+    color: '#F5EBDD',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  expenseSelectorHeading: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  expenseChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  expenseChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#604D3A',
+    borderRadius: 7,
+  },
+  expenseChipSelected: {
+    borderColor: '#F0B35A',
+    backgroundColor: '#F0B35A',
+  },
+  expenseChipText: {
+    color: '#B8B1A8',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  expenseChipTextSelected: {
+    color: '#251D17',
+  },
+  expenseError: {
+    marginTop: 14,
+    color: '#F28C8C',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  expenseModalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 22,
+  },
+  expenseCancelButton: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#604D3A',
+    borderRadius: 7,
+  },
+  expenseCancelText: {
+    color: '#F5EBDD',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  expenseSaveButton: {
+    flex: 1,
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    borderRadius: 7,
+    backgroundColor: '#F0B35A',
+  },
+  expenseSaveText: {
+    color: '#251D17',
+    fontSize: 12,
+    fontWeight: '800',
   },
   confirmBackdrop: {
     flex: 1,

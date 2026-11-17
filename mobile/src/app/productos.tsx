@@ -190,7 +190,13 @@ export default function ProductosScreen() {
   const save = async () => {
     const value = name.trim();
     if (value.length < 3) return Alert.alert('Nombre inválido', 'El producto debe tener al menos 3 caracteres.');
-    const payload = { nombre: value, descripcion: description.trim() || null, cantidad: Number(quantity) || null, precio: Number(price) || null, id_categoria: categoryId, preparacion: preparation };
+    if (!/^\d+$/.test(quantity.trim()) || !Number.isSafeInteger(Number(quantity)) || Number(quantity) <= 0) {
+      return Alert.alert('Cantidad inválida', 'Ingresa una cantidad entera mayor que cero.');
+    }
+    if (!/^\d+(?:\.\d{1,2})?$/.test(price.trim()) || Number(price) <= 0) {
+      return Alert.alert('Precio inválido', 'Ingresa un precio mayor que cero, usando hasta dos decimales.');
+    }
+    const payload = { nombre: value, descripcion: description.trim() || null, cantidad: Number(quantity), precio: Number(price), id_categoria: categoryId, preparacion: preparation };
     let productSaved = false;
     try {
       setSaving(true);

@@ -64,11 +64,36 @@ class OpcionesService:
         )
 
     async def delete_group(self, item_id: int) -> None:
-        await self._delete(
-            "DELETE FROM grupo_opcion WHERE id = :id RETURNING id;",
-            item_id,
-            "El grupo de opciones no existe.",
-        )
+        try:
+            result = await self.db.execute(text("""
+                DELETE FROM grupo_opcion
+                WHERE id = :id
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM producto_grupo_opcion
+                      WHERE id_grupo_opcion = :id
+                  )
+                RETURNING id;
+            """), {"id": item_id})
+            if result.first() is None:
+                exists = await self.db.execute(
+                    text("SELECT id FROM grupo_opcion WHERE id = :id;"),
+                    {"id": item_id},
+                )
+                if exists.first() is None:
+                    await self.db.rollback()
+                    raise HTTPException(status_code=404, detail="El grupo de opciones no existe.")
+                await self.db.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="No se puede eliminar el grupo porque está relacionado con uno o más productos.",
+                )
+            await self.db.commit()
+        except HTTPException:
+            raise
+        except Exception as error:
+            await self.db.rollback()
+            raise HTTPException(status_code=400, detail="No fue posible eliminar el grupo de opciones.") from error
 
     async def list_options(self, group_id: int | None = None, active_only: bool = False) -> list[dict]:
         query = """

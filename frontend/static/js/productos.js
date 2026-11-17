@@ -958,7 +958,7 @@ function validarFormulario(){
     }
 
 
-    if(cantidadValue === "" || Number(cantidadValue) <= 0){
+    if(!/^\d+$/.test(cantidadValue) || !Number.isSafeInteger(Number(cantidadValue)) || Number(cantidadValue) <= 0){
 
         showMessage(
             "Ingrese una cantidad válida.",
@@ -971,7 +971,7 @@ function validarFormulario(){
     }
 
 
-    if(precioValue === "" || Number(precioValue) <= 0){
+    if(!/^\d+(?:\.\d{1,2})?$/.test(precioValue) || Number(precioValue) <= 0){
 
         showMessage(
             "Ingrese un precio válido.",

@@ -27,6 +27,10 @@
                         <button class="mov-range-btn" type="button" data-range="week">Esta semana</button>
                         <button class="mov-range-btn" type="button" data-range="month">Este mes</button>
                     </div>
+                    <button class="btn-primary" id="btnNuevoGasto" type="button" hidden>
+                        <i data-lucide="plus"></i>
+                        Registrar gasto
+                    </button>
                     <button class="btn-secondary" id="btnRefrescar" type="button">
                         <i data-lucide="refresh-cw"></i>
                         Actualizar
@@ -78,7 +82,57 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="gastoModal" hidden>
+        <form class="gasto-modal" id="gastoForm">
+            <div class="gasto-modal-header">
+                <div>
+                    <span class="eyebrow">Nuevo registro</span>
+                    <h2>Registrar gasto</h2>
+                    <p>Ingresa los datos del gasto para incluirlo en el balance.</p>
+                </div>
+                <button class="gasto-close" id="cerrarGasto" type="button" aria-label="Cerrar">×</button>
+            </div>
+            <label class="gasto-field">
+                Nombre del gasto
+                <input class="gasto-input" id="gastoNombre" name="nombre" type="text" maxlength="100" required placeholder="Ej. Compra de insumos">
+            </label>
+            <label class="gasto-field">
+                Valor
+                <span class="gasto-value-input">
+                    <span>$</span>
+                    <input class="gasto-input" id="gastoValor" name="valor" type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="0">
+                </span>
+            </label>
+            <label class="gasto-field">
+                Descripción
+                <textarea class="gasto-input gasto-description" id="gastoDescripcion" name="descripcion" maxlength="255" placeholder="Detalle opcional del gasto"></textarea>
+            </label>
+            <div class="gasto-form-row">
+                <label class="gasto-field">
+                    Categoría
+                    <select class="gasto-input" id="gastoCategoria" name="categoria">
+                        <option value="">Sin categoría</option>
+                    </select>
+                </label>
+                <label class="gasto-field">
+                    Caja
+                    <select class="gasto-input" id="gastoCaja" name="id_caja">
+                        <option value="">General (sin caja)</option>
+                    </select>
+                </label>
+            </div>
+            <p class="gasto-form-message" id="gastoFormMessage" role="alert"></p>
+            <div class="gasto-form-actions">
+                <button class="btn-secondary" id="cancelarGasto" type="button">Cancelar</button>
+                <button class="btn-primary" id="guardarGasto" type="submit">
+                    <i data-lucide="check"></i>
+                    Guardar gasto
+                </button>
+            </div>
+        </form>
+    </div>
+
     <script src="../static/js/menu.js?v=14"></script>
-    <script src="../static/js/movimientos.js?v=1"></script>
+    <script src="../static/js/movimientos.js?v=2"></script>
 </body>
 </html>

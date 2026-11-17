@@ -6,6 +6,8 @@ body {
     font-family: "Manrope", sans-serif;
     background: #1D1A17;
     color: #F5F5F5;
+    min-height: 100%;
+    overflow-y: auto;
 }
 
 
