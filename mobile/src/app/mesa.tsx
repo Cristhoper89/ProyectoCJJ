@@ -52,6 +52,7 @@ export default function MesaScreen() {
   const [configOptions, setConfigOptions] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const [error, setError] = useState('');
   const [userRole, setUserRole] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ title: string; message: string } | null>(null);
@@ -504,20 +505,27 @@ export default function MesaScreen() {
     finally { setSaving(false); }
   };
 
-  const cancelOrder = () => Alert.alert('Cancelar cuenta', 'Se anularán los productos registrados de esta mesa.', [
-    { text: 'Volver', style: 'cancel' },
-    { text: 'Cancelar cuenta', style: 'destructive', onPress: async () => {
-      if (!selectedMesa) return;
-      try {
-        setSaving(true);
-        await apiRequest(`/mesas/${selectedMesa.id}/cerrar`, { method: 'PATCH' });
-        setSelectedMesa(null);
-        setSelectedMovimiento(null);
-        await loadData();
-      } catch (requestError) { Alert.alert('No se pudo cancelar', requestError instanceof Error ? requestError.message : 'Intenta nuevamente.'); }
-      finally { setSaving(false); }
-    } },
-  ]);
+  const cancelOrder = () => setShowCancelConfirmation(true);
+
+  const confirmCancelOrder = async () => {
+    if (!selectedMesa) return;
+    try {
+      setSaving(true);
+      await apiRequest(`/mesas/${selectedMesa.id}/cerrar`, { method: 'PATCH' });
+      setShowCancelConfirmation(false);
+      setSelectedMesa(null);
+      setSelectedMovimiento(null);
+      await loadData();
+    } catch (requestError) {
+      setShowCancelConfirmation(false);
+      setNotice({
+        title: 'No se pudo cancelar',
+        message: requestError instanceof Error ? requestError.message : 'Intenta nuevamente.',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const printBill = async () => {
     if (!selectedMesa) return;
@@ -683,6 +691,23 @@ export default function MesaScreen() {
       </ScrollView>
       <View style={styles.actions}><TouchableOpacity style={styles.secondaryButton} onPress={cancelOrder} disabled={saving}><Text style={styles.cancelText}>Cancelar</Text></TouchableOpacity>{canManageBill && <TouchableOpacity style={styles.printButton} onPress={printBill} disabled={saving}><Printer size={18} color="#251D17" /><Text style={styles.printText}>Imprimir</Text></TouchableOpacity>}{canManageBill && <TouchableOpacity style={styles.closeButton} onPress={() => saveBill(true)} disabled={saving}><Text style={styles.closeText}>{saving ? 'Guardando...' : 'Finalizar cuenta'}</Text></TouchableOpacity>}</View>
     </SafeAreaView></Modal>
+    <Modal visible={showCancelConfirmation} transparent animationType="fade" onRequestClose={() => setShowCancelConfirmation(false)}>
+      <View style={styles.cancelConfirmBackdrop}>
+        <View style={styles.cancelConfirmCard}>
+          <View style={styles.cancelConfirmIcon}><TriangleAlert size={27} color="#F05245" /></View>
+          <Text style={styles.cancelConfirmTitle}>Cancelar pedido</Text>
+          <Text style={styles.cancelConfirmText}>Se eliminarán los productos registrados de esta mesa. ¿Deseas continuar?</Text>
+          <View style={styles.cancelConfirmActions}>
+            <TouchableOpacity style={styles.cancelConfirmBackButton} onPress={() => setShowCancelConfirmation(false)} disabled={saving}>
+              <Text style={styles.cancelConfirmBackText}>Volver</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelConfirmDeleteButton} onPress={confirmCancelOrder} disabled={saving}>
+              {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.cancelConfirmDeleteText}>Cancelar pedido</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
     <Modal visible={!!configProduct} animationType="fade" transparent onRequestClose={() => setConfigProduct(null)}>
       <View style={styles.configOverlay}>
         <View style={styles.configModal}>
@@ -750,6 +775,16 @@ const styles = StyleSheet.create({
   noticeText: { color: '#C9B9A9', fontSize: 16, lineHeight: 23, textAlign: 'center', marginTop: 12 },
   noticeButton: { width: '100%', height: 50, borderRadius: 8, backgroundColor: '#F0B35A', alignItems: 'center', justifyContent: 'center', marginTop: 25 },
   noticeButtonText: { color: '#251D17', fontWeight: '800' },
+  cancelConfirmBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: 'rgba(0,0,0,0.72)' },
+  cancelConfirmCard: { width: '100%', maxWidth: 430, alignItems: 'center', padding: 26, borderWidth: 1, borderColor: '#604D3A', borderRadius: 16, backgroundColor: '#32281F' },
+  cancelConfirmIcon: { width: 54, height: 54, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderRadius: 27, backgroundColor: '#57352F' },
+  cancelConfirmTitle: { color: '#F5EBDD', fontSize: 21, fontWeight: '800', textAlign: 'center' },
+  cancelConfirmText: { marginTop: 10, color: '#C9B9A9', fontSize: 14, lineHeight: 21, textAlign: 'center' },
+  cancelConfirmActions: { flexDirection: 'row', gap: 10, width: '100%', marginTop: 22 },
+  cancelConfirmBackButton: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#604D3A', borderRadius: 7 },
+  cancelConfirmBackText: { color: '#F5EBDD', fontWeight: '700' },
+  cancelConfirmDeleteButton: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: '#B9443C' },
+  cancelConfirmDeleteText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800', textAlign: 'center' },
   movementSection: { paddingTop: 12, paddingBottom: 4 },
   movementHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 20, marginBottom: 8 },
   movementTitle: { color: '#F5EBDD', fontSize: 16, fontWeight: '700' },

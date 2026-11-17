@@ -1,11 +1,13 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useColorScheme } from 'react-native';
+import { NavigationBar } from 'expo-navigation-bar';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <NavigationBar hidden />
       <Stack screenOptions={{ headerShown: false }}>
         {/* Pantallas de autenticación y principales fuera de las pestañas */}
         <Stack.Screen name="index" />

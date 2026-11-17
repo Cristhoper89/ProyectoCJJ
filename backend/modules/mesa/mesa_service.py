@@ -303,6 +303,22 @@ class MesaService:
                 )
 
                 await self.db.execute(
+                    text("""
+                        DELETE FROM mesa_consumo_ingredientes
+                        WHERE id_mesa_consumo IN (
+                            SELECT id
+                            FROM mesa_consumo
+                            WHERE id_mov = ANY(:movement_ids)
+                        );
+                    """),
+                    {"movement_ids": movement_ids},
+                )
+                await self.db.execute(
+                    text("DELETE FROM mesa_consumo WHERE id_mov = ANY(:movement_ids);"),
+                    {"movement_ids": movement_ids},
+                )
+
+                await self.db.execute(
                     text("UPDATE mesa SET id_mov = NULL WHERE id = :id;"),
                     {"id": target_mesa_id},
                 )
