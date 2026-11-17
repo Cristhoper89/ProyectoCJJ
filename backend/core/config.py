@@ -13,6 +13,8 @@ class Settings:
     CLOUDINARY_CLOUD_NAME: str = os.getenv("CLOUDINARY_CLOUD_NAME", "")
     CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY", "")
     CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
+    GMAIL_USER: str = os.getenv("GMAIL_USER", "")
+    GMAIL_PASS: str = os.getenv("GMAIL_PASS", "")
 
     # Verificar que la URL de la base de datos esté configurada
     def __init__(self) -> None:

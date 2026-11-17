@@ -67,6 +67,7 @@ class ProductoService:
                 p.nombre,
                 p.descripcion,
                 p.cantidad,
+                p.stock_minimo,
                 p.precio,
                 p.id_categoria,
                 p.preparacion,
@@ -350,6 +351,7 @@ class ProductoService:
                 nombre,
                 descripcion,
                 cantidad,
+                stock_minimo,
                 precio,
                 id_categoria,
                 preparacion,
@@ -359,6 +361,7 @@ class ProductoService:
                 :nombre,
                 :descripcion,
                 :cantidad,
+                :stock_minimo,
                 :precio,
                 :id_categoria,
                 :preparacion,
@@ -369,6 +372,7 @@ class ProductoService:
                 nombre,
                 descripcion,
                 cantidad,
+                stock_minimo,
                 precio,
                 id_categoria,
                 preparacion,
@@ -384,6 +388,7 @@ class ProductoService:
                     "nombre": producto_data.nombre,
                     "descripcion": producto_data.descripcion,
                     "cantidad": producto_data.cantidad,
+                    "stock_minimo": producto_data.stock_minimo,
                     "precio": producto_data.precio,
                     "id_categoria": producto_data.id_categoria,
                     "preparacion": producto_data.preparacion,
@@ -503,6 +508,15 @@ class ProductoService:
             params["cantidad"] = producto_update.cantidad
 
 
+        if producto_update.stock_minimo is not None:
+
+            update_fields.append(
+                "stock_minimo = :stock_minimo"
+            )
+
+            params["stock_minimo"] = producto_update.stock_minimo
+
+
         if producto_update.precio is not None:
 
             update_fields.append(
@@ -564,6 +578,7 @@ class ProductoService:
                 nombre,
                 descripcion,
                 cantidad,
+                stock_minimo,
                 precio,
                 id_categoria,
                 preparacion,
@@ -654,6 +669,7 @@ class ProductoService:
                 nombre,
                 descripcion,
                 cantidad,
+                stock_minimo,
                 precio,
                 id_categoria,
                 preparacion,

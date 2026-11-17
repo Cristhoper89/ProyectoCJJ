@@ -1,9 +1,12 @@
+import asyncio
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.mailer import enviar_alerta_bajo_stock
 from core.logger import logger
 from modules.mesa.mesa_schema import MesaCreate, MesaUpdate, MesaFinalize
 
@@ -342,9 +345,9 @@ class MesaService:
             logger.error(f"Error crítico al cerrar la mesa: {str(e)}")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar los datos.")
         
-    async def _decrementar_stock_productos(self, movement_ids: list[int]) -> None:
+    async def _decrementar_stock_productos(self, movement_ids: list[int]) -> list[dict]:
         if not movement_ids:
-            return
+            return []
 
         locked_movement_ids = (await self.db.execute(text("""
             SELECT id
@@ -354,7 +357,7 @@ class MesaService:
             FOR UPDATE;
         """), {"movement_ids": movement_ids})).scalars().all()
         if not locked_movement_ids:
-            return
+            return []
 
         consumed_products = (await self.db.execute(text("""
             SELECT id_producto, SUM(cantidad)::INTEGER AS cantidad
@@ -364,16 +367,33 @@ class MesaService:
             ORDER BY id_producto;
         """), {"movement_ids": locked_movement_ids})).mappings().all()
         if not consumed_products:
-            return
+            return []
 
         product_ids = [row["id_producto"] for row in consumed_products]
-        await self.db.execute(text("""
-            SELECT id
+        product_rows = (await self.db.execute(text("""
+            SELECT id, nombre, cantidad, stock_minimo
             FROM productos
             WHERE id = ANY(:product_ids)
             ORDER BY id
             FOR UPDATE;
-        """), {"product_ids": product_ids})
+        """), {"product_ids": product_ids})).mappings().all()
+
+        products_by_id = {row["id"]: row for row in product_rows}
+        low_stock_products = []
+        for consumed in consumed_products:
+            product = products_by_id.get(consumed["id_producto"])
+            if product is None or product["cantidad"] is None:
+                continue
+
+            previous_quantity = int(product["cantidad"])
+            minimum_quantity = int(product["stock_minimo"] or 0)
+            remaining_quantity = previous_quantity - int(consumed["cantidad"] or 0)
+            if previous_quantity > minimum_quantity and remaining_quantity <= minimum_quantity:
+                low_stock_products.append({
+                    "nombre": product["nombre"] or f"Producto #{product['id']}",
+                    "cantidad": remaining_quantity,
+                    "stock_minimo": minimum_quantity,
+                })
 
         await self.db.execute(text("""
             UPDATE productos AS p
@@ -387,6 +407,61 @@ class MesaService:
             WHERE p.id = consumed.id_producto
               AND p.cantidad IS NOT NULL;
         """), {"movement_ids": locked_movement_ids})
+        return low_stock_products
+
+    async def _enviar_alertas_stock_bajo(self, products: list[dict]) -> None:
+        if not products:
+            return
+
+        try:
+            configuration_result = await self.db.execute(text("""
+                SELECT alerta_bajo_stock
+                FROM configuracion
+                WHERE id = 1;
+            """))
+            alerts_enabled = configuration_result.scalar_one_or_none()
+        except Exception as error:
+            logger.error(f"No se pudo consultar la configuración de alertas de stock: {error}")
+            return
+
+        if alerts_enabled is not True:
+            if alerts_enabled is None:
+                logger.warning("No se encontró la configuración de alertas de stock; no se enviaron correos.")
+            return
+
+        try:
+            administrators_result = await self.db.execute(text("""
+                SELECT DISTINCT u.email
+                FROM users u
+                JOIN roles r ON r.id = u.role_id
+                WHERE r.name = 'Administrador'
+                  AND u.is_active = TRUE
+                  AND NULLIF(BTRIM(u.email), '') IS NOT NULL;
+            """))
+            administrator_emails = [
+                row["email"]
+                for row in administrators_result.mappings().all()
+            ]
+        except Exception as error:
+            logger.error(f"No se pudieron consultar los correos de administradores para alertas de stock: {error}")
+            return
+
+        if not administrator_emails:
+            logger.warning("No hay administradores activos con correo para recibir alertas de stock.")
+            return
+
+        results = await asyncio.gather(
+            *(
+                asyncio.to_thread(enviar_alerta_bajo_stock, email, products)
+                for email in administrator_emails
+            ),
+            return_exceptions=True,
+        )
+        for email, result in zip(administrator_emails, results):
+            if isinstance(result, Exception):
+                logger.error(f"No se pudo enviar la alerta de bajo stock al administrador {email}: {result}")
+            else:
+                logger.info(f"Alerta de bajo stock enviada al administrador {email}.")
 
     async def finalizar_mesa(self, mesa_id: int, data: MesaFinalize) -> dict:
         try:
@@ -395,6 +470,7 @@ class MesaService:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="La mesa no existe.")
 
             movimiento = None
+            low_stock_products = []
             if mesa["tipo"] == "mesa":
                 if mesa["id_mov"] is None:
                     raise HTTPException(
@@ -402,7 +478,7 @@ class MesaService:
                         detail="La mesa no tiene un movimiento activo asociado.",
                     )
 
-                await self._decrementar_stock_productos([mesa["id_mov"]])
+                low_stock_products = await self._decrementar_stock_productos([mesa["id_mov"]])
 
                 update_fields = [
                     "estado = TRUE",
@@ -443,7 +519,7 @@ class MesaService:
                             detail="El movimiento no pertenece a esta barra.",
                         )
 
-                await self._decrementar_stock_productos(movement_ids)
+                low_stock_products = await self._decrementar_stock_productos(movement_ids)
 
                 if data.id_movimiento is not None:
                     update_fields = [
@@ -518,6 +594,7 @@ class MesaService:
                 WHERE id = :mesa_id;
             """), {"mesa_id": mesa_id})
             await self.db.commit()
+            await self._enviar_alertas_stock_bajo(low_stock_products)
             return dict(movimiento) if movimiento is not None else {
                 "id": mesa_id,
                 "estado": False,

@@ -451,6 +451,13 @@ tbody tr:hover {
     color: #9C9287;
 }
 
+.stock-minimo-help {
+    display: block;
+    margin-top: 6px;
+    color: #B8B1A8;
+    font-size: 11px;
+}
+
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;

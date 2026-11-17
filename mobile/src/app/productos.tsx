@@ -7,7 +7,7 @@ import HeaderNavbar from '../components/HeaderNavbar';
 import { apiRequest, getAccessToken } from '../constants/api';
 
 type Categoria = { id: number; nombre: string; estado?: boolean | null };
-type Producto = { id: number; nombre?: string | null; descripcion?: string | null; cantidad?: number | null; precio?: number | null; id_categoria?: number | null; preparacion?: boolean | null; estado?: boolean | null; imagen_url?: string | null };
+type Producto = { id: number; nombre?: string | null; descripcion?: string | null; cantidad?: number | null; stock_minimo?: number | null; precio?: number | null; id_categoria?: number | null; preparacion?: boolean | null; estado?: boolean | null; imagen_url?: string | null };
 type ProductoImagen = { id: number; producto_id: number; url: string; public_id: string; es_principal: boolean; orden: number };
 type Grupo = { id: number; nombre: string; opciones?: unknown[] };
 type Ingrediente = { id: number; nombre: string; estado?: boolean | null };
@@ -31,6 +31,7 @@ export default function ProductosScreen() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [stockMinimum, setStockMinimum] = useState('0');
   const [price, setPrice] = useState('');
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [preparation, setPreparation] = useState(false);
@@ -87,7 +88,7 @@ export default function ProductosScreen() {
 
   const visible = useMemo(() => items.filter((item) => (item.nombre || '').toLowerCase().includes(search.trim().toLowerCase()) && (showAll || item.estado === true)), [items, search, showAll]);
   const openCreate = () => {
-    setSelected(null); setName(''); setDescription(''); setQuantity(''); setPrice(''); setCategoryId(null);
+    setSelected(null); setName(''); setDescription(''); setQuantity(''); setStockMinimum('0'); setPrice(''); setCategoryId(null);
     setPreparation(false); setSelectedGroupIds([]); setSelectedIngredientIds([]);
     setProductImages([]); setPickedImages([]); setPrincipalImageId(null); setPrincipalPickedImageIndex(null); setModal(true);
   };
@@ -97,7 +98,7 @@ export default function ProductosScreen() {
         apiRequest<Grupo[]>(`/productos/${item.id}/grupos-opciones/`),
         apiRequest<ProductoImagen[]>(`/productos/${item.id}/imagenes`),
       ]);
-      setSelected(item); setName(item.nombre || ''); setDescription(item.descripcion || ''); setQuantity(String(item.cantidad || '')); setPrice(String(item.precio || '')); setCategoryId(item.id_categoria || null);
+      setSelected(item); setName(item.nombre || ''); setDescription(item.descripcion || ''); setQuantity(String(item.cantidad || '')); setStockMinimum(String(item.stock_minimo ?? 0)); setPrice(String(item.precio || '')); setCategoryId(item.id_categoria || null);
       setPreparation(item.preparacion === true);
       setSelectedGroupIds(currentGroups.map((group) => group.id));
       setSelectedIngredientIds(productIngredients.filter((relation) => relation.id_producto === item.id).map((relation) => relation.id_ingrediente));
@@ -193,10 +194,13 @@ export default function ProductosScreen() {
     if (!/^\d+$/.test(quantity.trim()) || !Number.isSafeInteger(Number(quantity)) || Number(quantity) <= 0) {
       return Alert.alert('Cantidad inválida', 'Ingresa una cantidad entera mayor que cero.');
     }
+    if (!/^\d+$/.test(stockMinimum.trim()) || !Number.isSafeInteger(Number(stockMinimum)) || Number(stockMinimum) < 0) {
+      return Alert.alert('Alerta de bajo stock inválida', 'Ingresa una cantidad entera igual o mayor que cero.');
+    }
     if (!/^\d+(?:\.\d{1,2})?$/.test(price.trim()) || Number(price) <= 0) {
       return Alert.alert('Precio inválido', 'Ingresa un precio mayor que cero, usando hasta dos decimales.');
     }
-    const payload = { nombre: value, descripcion: description.trim() || null, cantidad: Number(quantity), precio: Number(price), id_categoria: categoryId, preparacion: preparation };
+    const payload = { nombre: value, descripcion: description.trim() || null, cantidad: Number(quantity), stock_minimo: Number(stockMinimum), precio: Number(price), id_categoria: categoryId, preparacion: preparation };
     let productSaved = false;
     try {
       setSaving(true);
@@ -301,6 +305,7 @@ export default function ProductosScreen() {
                 <View style={styles.content}>
                   <Text style={styles.name}>{item.nombre || 'Sin nombre'}</Text>
                   <Text style={styles.detail}>{money(item.precio)}{item.descripcion ? `  ·  ${item.descripcion}` : ''}</Text>
+                  <Text style={styles.detail}>Cantidad: {item.cantidad ?? 0} · Alerta ≤ {item.stock_minimo ?? 0}</Text>
                   <View style={[styles.badge, item.estado === true ? styles.activeBadge : styles.inactiveBadge]}>
                     <Text style={styles.badgeText}>{item.estado === true ? 'ACTIVO' : 'INACTIVO'}</Text>
                   </View>
@@ -367,6 +372,9 @@ export default function ProductosScreen() {
                 <TextInput value={price} onChangeText={setPrice} placeholder="0" placeholderTextColor="#998C80" keyboardType="decimal-pad" style={styles.input} />
               </View>
             </View>
+            <Text style={styles.label}>Alerta de bajo stock (unidades)</Text>
+            <TextInput value={stockMinimum} onChangeText={setStockMinimum} placeholder="0" placeholderTextColor="#998C80" keyboardType="numeric" style={styles.input} />
+            <Text style={styles.helperText}>Avisar cuando queden esta cantidad o menos.</Text>
             <Text style={styles.label}>Categoría</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryList}>
               {categories.map((category) => (

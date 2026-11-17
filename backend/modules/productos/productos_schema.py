@@ -25,6 +25,11 @@ class ProductoBase(BaseModel):
         gt=0
     )
 
+    stock_minimo: int = Field(
+        0,
+        ge=0
+    )
+
     precio: Optional[float] = Field(
         None,
         gt=0
@@ -86,6 +91,11 @@ class ProductoUpdate(BaseModel):
     cantidad: Optional[int] = Field(
         None,
         gt=0
+    )
+
+    stock_minimo: Optional[int] = Field(
+        None,
+        ge=0
     )
 
     precio: Optional[float] = Field(

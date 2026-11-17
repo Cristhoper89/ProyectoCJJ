@@ -21,6 +21,7 @@ const productoId = document.getElementById("productoId");
 const nombre = document.getElementById("nombre");
 const descripcion = document.getElementById("descripcion");
 const cantidad = document.getElementById("cantidad");
+const stockMinimo = document.getElementById("stockMinimo");
 const precio = document.getElementById("precio");
 const categoria = document.getElementById("categoria");
 const preparacion = document.getElementById("preparacion");
@@ -443,7 +444,7 @@ async function cargarProductos(){
 
     productosTable.innerHTML = `
         <tr>
-            <td colspan="10" class="loading">
+            <td colspan="11" class="loading">
                 Cargando productos...
             </td>
         </tr>
@@ -466,7 +467,7 @@ async function cargarProductos(){
 
                 productosTable.innerHTML = `
                     <tr>
-                        <td colspan="10" class="loading">
+                        <td colspan="11" class="loading">
                             Sesión expirada.
                         </td>
                     </tr>
@@ -491,7 +492,7 @@ async function cargarProductos(){
 
         productosTable.innerHTML = `
             <tr>
-                <td colspan="10" class="loading">
+                <td colspan="11" class="loading">
                     No fue posible conectar con el servidor.
                 </td>
             </tr>
@@ -512,7 +513,7 @@ function mostrarProductos(lista){
 
         productosTable.innerHTML = `
             <tr>
-                <td colspan="10" class="loading">
+                <td colspan="11" class="loading">
                     No hay productos registrados.
                 </td>
             </tr>
@@ -558,6 +559,10 @@ function mostrarProductos(lista){
 
             <td>
                 ${producto.cantidad ?? 0}
+            </td>
+
+            <td>
+                ${producto.stock_minimo ?? 0}
             </td>
 
             <td>
@@ -797,6 +802,8 @@ async function editarProducto(id){
 
         cantidad.value = producto.cantidad ?? "";
 
+        stockMinimo.value = producto.stock_minimo ?? 0;
+
         precio.value = producto.precio ?? "";
 
         categoria.value = producto.id_categoria ?? "";
@@ -929,6 +936,8 @@ function validarFormulario(){
 
     const cantidadValue = cantidad.value;
 
+    const stockMinimoValue = stockMinimo.value;
+
     const precioValue = precio.value;
 
     const categoriaValue = categoria.value;
@@ -968,6 +977,18 @@ function validarFormulario(){
         );
 
         cantidad.focus();
+
+        return false;
+    }
+
+    if(!/^\d+$/.test(stockMinimoValue) || !Number.isSafeInteger(Number(stockMinimoValue)) || Number(stockMinimoValue) < 0){
+
+        showMessage(
+            "Ingrese un umbral de bajo stock válido (entero igual o mayor que cero).",
+            "error"
+        );
+
+        stockMinimo.focus();
 
         return false;
     }
@@ -1050,6 +1071,9 @@ productoForm.addEventListener("submit", async (e)=>{
 
         cantidad:
             Number(cantidad.value),
+
+        stock_minimo:
+            Number(stockMinimo.value),
 
         precio:
             Number(precio.value),

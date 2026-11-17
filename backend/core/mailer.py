@@ -2,9 +2,13 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+from core.config import settings
+
 # Configuración de la cuenta de Gmail
-GMAIL_USER = "obitocamargo89@gmail.com"
-GMAIL_PASS = "gdks zzsn wsko jlyc"
+GMAIL_USER = settings.GMAIL_USER
+GMAIL_PASS = settings.GMAIL_PASS
+GMAIL_USER = settings.GMAIL_USER
+GMAIL_PASS = settings.GMAIL_PASS
 
 
 # Enviar correo de recuperación de contraseña
@@ -74,3 +78,27 @@ def enviar_correo_desbloqueo(correo_destino: str, codigo: str):
     except Exception as e:
         print(f"Error al enviar correo: {e}")
         return False
+
+
+def enviar_alerta_bajo_stock(correo_destino: str, productos: list[dict]) -> None:
+    if not GMAIL_USER or not GMAIL_PASS:
+        raise RuntimeError("Configura GMAIL_USER y GMAIL_PASS para enviar alertas de inventario.")
+
+    details = "\n".join(
+        f"- {producto['nombre']}: quedan {producto['cantidad']} unidades "
+        f"(mínimo: {producto['stock_minimo']})."
+        for producto in productos
+    )
+    message = MIMEText(
+        "Los siguientes productos cruzaron su mínimo de inventario:\n\n"
+        f"{details}\n\nLa Cabaña",
+        "plain",
+        "utf-8",
+    )
+    message["Subject"] = "Alerta de bajo stock - La Cabaña"
+    message["From"] = f"La Cabaña <{GMAIL_USER}>"
+    message["To"] = correo_destino
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(GMAIL_USER, GMAIL_PASS)
+        server.sendmail(GMAIL_USER, correo_destino, message.as_string())
