@@ -1,6 +1,6 @@
 // components/HeaderNavbar.tsx
 import React, { Fragment, useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView } from 'react-native';
 import { 
   Menu, X, User, WalletCards, Tags, LayoutGrid, ArrowLeftRight, QrCode,
   Package, Users, ContactRound, ChartNoAxesCombined, ClipboardList, BookOpen, Settings, Carrot, ChevronDown
@@ -152,7 +152,12 @@ export default function HeaderNavbar() {
 
       {/* Logo y Título */}
       <View style={styles.logoContainer}>
-        <Text style={styles.brandTitle}>LA CABAÑA</Text>
+        <Image
+          source={require('../../assets/images/restaurant-logo.png')}
+          style={styles.brandLogo}
+          resizeMode="contain"
+          accessibilityLabel="Logo de La Cabaña"
+        />
       </View>
 
       {/* Fecha y Hora */}
@@ -217,11 +222,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  brandTitle: {
-    color: '#F5F5F5',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 1,
+  brandLogo: {
+    width: 118,
+    height: 50,
   },
   dateContainer: {
     alignItems: 'flex-end',

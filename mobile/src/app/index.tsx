@@ -142,9 +142,10 @@ export default function LoginScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Image
-              source={require('../../assets/images/icon.png')}
+              source={require('../../assets/images/restaurant-logo.png')}
               style={styles.logo}
               resizeMode="contain"
+              accessibilityLabel="Logo de La Cabaña"
             />
             <Text style={styles.title}>Bienvenido</Text>
             <Text style={styles.subtitle}>Ingrese sus credenciales para acceder al sistema.</Text>
@@ -273,8 +274,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: '100%',
+    maxWidth: 210,
+    height: 89,
     marginBottom: 16,
   },
   title: {
