@@ -4,7 +4,9 @@ const gastoForm = document.getElementById("gastoForm");
 const gastoMessage = document.getElementById("gastosMessage");
 const saveExpenseButton = document.getElementById("guardarGasto");
 const categorySelect = document.getElementById("gastoCategoria");
-const cashSelect = document.getElementById("gastoCaja");
+const currentCashLabel = document.getElementById("gastoCajaActual");
+const NO_OPEN_CASH_MESSAGE = "No hay una caja abierta. Abre una caja antes de registrar un gasto.";
+let activeCashId = null;
 let savingExpense = false;
 
 function showExpenseMessage(message, success = false) {
@@ -15,6 +17,19 @@ function showExpenseMessage(message, success = false) {
 function clearExpenseMessage() {
 	gastoMessage.textContent = "";
 	gastoMessage.className = "gastos-message";
+}
+
+function findActiveCashBox(cashBoxes) {
+	if (!Array.isArray(cashBoxes)) return null;
+	return cashBoxes
+		.filter(cash => String(cash.estado ?? "").trim().toLowerCase() === "abierta")
+		.sort((first, second) => Number(second.id) - Number(first.id))[0] || null;
+}
+
+function updateCurrentCashLabel(cash) {
+	activeCashId = cash ? Number(cash.id) : null;
+	currentCashLabel.textContent = cash ? `Caja #${activeCashId} (abierta)` : "No hay caja abierta";
+	saveExpenseButton.disabled = !activeCashId;
 }
 
 async function expenseRequest(path, options = {}) {
@@ -52,9 +67,12 @@ async function loadExpenseOptions() {
 		expenseRequest("/cajas/")
 	]);
 	const errors = [];
+	let noOpenCash = false;
 
 	if (categoriesResult.status === "fulfilled") {
-		const categories = categoriesResult.value.filter(category => category.estado !== false);
+		const categories = Array.isArray(categoriesResult.value)
+			? categoriesResult.value.filter(category => category.estado !== false)
+			: [];
 		categorySelect.insertAdjacentHTML("beforeend", categories.map(category => (
 			`<option value="${Number(category.id)}">${String(category.nombre).replace(/[&<>"']/g, char => ({
 				"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
@@ -65,18 +83,17 @@ async function loadExpenseOptions() {
 	}
 
 	if (cashResult.status === "fulfilled") {
-		const openCashBoxes = cashResult.value
-			.filter(cash => String(cash.estado ?? "").trim().toLowerCase() === "abierta")
-			.sort((first, second) => second.id - first.id);
-		cashSelect.insertAdjacentHTML("beforeend", openCashBoxes.map(cash => (
-			`<option value="${Number(cash.id)}">Caja #${Number(cash.id)}</option>`
-		)).join(""));
-		if (openCashBoxes.length) cashSelect.value = String(openCashBoxes[0].id);
+		const activeCash = findActiveCashBox(cashResult.value);
+		updateCurrentCashLabel(activeCash);
+		noOpenCash = !activeCash;
 	} else {
+		updateCurrentCashLabel(null);
 		errors.push("No se pudieron cargar las cajas abiertas.");
 	}
 
-	if (errors.length) showExpenseMessage(errors.join(" "));
+	if (noOpenCash || errors.length) {
+		showExpenseMessage([noOpenCash ? NO_OPEN_CASH_MESSAGE : "", ...errors].filter(Boolean).join(" "));
+	}
 }
 
 gastoForm.addEventListener("submit", async event => {
@@ -102,6 +119,13 @@ gastoForm.addEventListener("submit", async event => {
 	saveExpenseButton.textContent = "Guardando...";
 	clearExpenseMessage();
 	try {
+		const activeCash = findActiveCashBox(await expenseRequest("/cajas/"));
+		updateCurrentCashLabel(activeCash);
+		if (!activeCashId) {
+			showExpenseMessage(NO_OPEN_CASH_MESSAGE);
+			return;
+		}
+
 		await expenseRequest("/gastos/", {
 			method: "POST",
 			body: JSON.stringify({
@@ -109,17 +133,16 @@ gastoForm.addEventListener("submit", async event => {
 				descripcion: document.getElementById("gastoDescripcion").value.trim() || null,
 				valor,
 				categoria: categorySelect.value ? Number(categorySelect.value) : null,
-				id_caja: cashSelect.value ? Number(cashSelect.value) : null
+				id_caja: activeCashId
 			})
 		});
 		gastoForm.reset();
-		if (cashSelect.options.length > 1) cashSelect.selectedIndex = 1;
 		showExpenseMessage("Gasto registrado correctamente.", true);
 	} catch (error) {
 		showExpenseMessage(error instanceof Error ? error.message : "No fue posible registrar el gasto.");
 	} finally {
 		savingExpense = false;
-		saveExpenseButton.disabled = false;
+		saveExpenseButton.disabled = !activeCashId;
 		saveExpenseButton.innerHTML = '<i data-lucide="check"></i> Guardar gasto';
 		lucide.createIcons();
 	}

@@ -11,6 +11,9 @@ body{min-height:100%;overflow-y:auto;background:#1D1A17;color:#F5EBDD}
 .gastos-field input,.gastos-field textarea,.gastos-field select{width:100%;min-height:46px;padding:11px 12px;border:1px solid #604D3A;border-radius:7px;outline:0;background:#2D2620;color:#F5EBDD;font:400 14px Manrope,sans-serif}
 .gastos-field input:focus,.gastos-field textarea:focus,.gastos-field select:focus{border-color:#F0B35A}
 .gastos-field input::placeholder,.gastos-field textarea::placeholder{color:#998C80}
+.gastos-field input:-webkit-autofill,.gastos-field input:-webkit-autofill:hover,.gastos-field input:-webkit-autofill:focus,.gastos-field input:-webkit-autofill:active{ -webkit-text-fill-color:#F5EBDD!important;-webkit-box-shadow:0 0 0 1000px #2D2620 inset!important;box-shadow:0 0 0 1000px #2D2620 inset!important;caret-color:#F5EBDD;transition:background-color 5000s ease-in-out 0s}
+.gastos-field input:autofill{background-color:#2D2620;color:#F5EBDD;caret-color:#F5EBDD}
+.gastos-cash-current{min-height:46px;display:flex;align-items:center;margin:0;padding:11px 12px;border:1px solid #604D3A;border-radius:7px;background:#2D2620;color:#F5D3A7;font-size:14px;font-weight:600}
 .gastos-field textarea{min-height:90px;resize:vertical}
 .gastos-value-input{display:flex;align-items:center;gap:10px;padding-left:13px;border:1px solid #604D3A;border-radius:7px;background:#2D2620;color:#F0B35A;font-size:17px;font-weight:800}
 .gastos-value-input input{border:0;background:transparent}

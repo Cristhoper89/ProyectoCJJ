@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,10 +16,11 @@ import { Check, ReceiptText } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import HeaderNavbar from '../components/HeaderNavbar';
 import { apiRequest } from '../constants/api';
+import { Caja, isCajaAbierta } from '../constants/caja';
 
 type Categoria = { id: number; nombre: string; estado?: boolean | null };
-type Caja = { id: number; estado?: string | null };
 type Gasto = { id: number };
+const NO_OPEN_CASH_MESSAGE = 'No hay una caja abierta. Abre una caja antes de registrar un gasto.';
 
 export default function GastosScreen() {
   const router = useRouter();
@@ -26,7 +28,6 @@ export default function GastosScreen() {
   const [description, setDescription] = useState('');
   const [value, setValue] = useState('');
   const [categories, setCategories] = useState<Categoria[]>([]);
-  const [openCashBoxes, setOpenCashBoxes] = useState<Caja[]>([]);
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [cashId, setCashId] = useState<number | null>(null);
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -44,6 +45,7 @@ export default function GastosScreen() {
       if (!active) return;
 
       const errors: string[] = [];
+      let hasOpenCash = false;
       if (categoriesResult.status === 'fulfilled') {
         setCategories(categoriesResult.value.filter((category) => category.estado !== false));
       } else {
@@ -51,16 +53,21 @@ export default function GastosScreen() {
       }
 
       if (cashResult.status === 'fulfilled') {
-        const available = cashResult.value
-          .filter((cash) => cash.estado?.trim().toLowerCase() === 'abierta')
+        const available = (Array.isArray(cashResult.value) ? cashResult.value : [])
+          .filter(isCajaAbierta)
           .sort((first, second) => second.id - first.id);
-        setOpenCashBoxes(available);
         setCashId(available[0]?.id ?? null);
+        hasOpenCash = available.length > 0;
+        if (!available.length) {
+          Alert.alert('No hay una caja abierta', NO_OPEN_CASH_MESSAGE);
+        }
       } else {
         errors.push('No se pudieron cargar las cajas abiertas.');
       }
 
-      setError(errors.join(' '));
+      if (errors.length || (cashResult.status === 'fulfilled' && !hasOpenCash)) {
+        setError([!hasOpenCash && cashResult.status === 'fulfilled' ? NO_OPEN_CASH_MESSAGE : '', ...errors].filter(Boolean).join(' '));
+      }
       setLoadingOptions(false);
     };
 
@@ -86,6 +93,17 @@ export default function GastosScreen() {
     try {
       setSaving(true);
       setError('');
+      const cashBoxes = await apiRequest<Caja[]>('/cajas/');
+      const activeCash = (Array.isArray(cashBoxes) ? cashBoxes : [])
+        .filter(isCajaAbierta)
+        .sort((first, second) => second.id - first.id)[0] ?? null;
+      setCashId(activeCash?.id ?? null);
+      if (!activeCash) {
+        setError(NO_OPEN_CASH_MESSAGE);
+        Alert.alert('No hay una caja abierta', NO_OPEN_CASH_MESSAGE);
+        return;
+      }
+
       await apiRequest<Gasto>('/gastos/', {
         method: 'POST',
         body: JSON.stringify({
@@ -93,7 +111,7 @@ export default function GastosScreen() {
           descripcion: description.trim() || null,
           valor: amount,
           categoria: categoryId,
-          id_caja: cashId,
+          id_caja: activeCash.id,
         }),
       });
       setName('');
@@ -116,7 +134,7 @@ export default function GastosScreen() {
             <View>
               <Text style={styles.kicker}>CAJA Y MOVIMIENTOS</Text>
               <Text style={styles.title}>Registrar gasto</Text>
-              <Text style={styles.subtitle}>Registra un egreso y asígnalo a una categoría o caja abierta.</Text>
+              <Text style={styles.subtitle}>El gasto se registrará automáticamente en la caja abierta actual.</Text>
             </View>
             <Pressable style={styles.historyLink} onPress={() => router.push('/movimientos' as any)}>
               <ReceiptText size={16} color="#F5D3A7" />
@@ -176,17 +194,8 @@ export default function GastosScreen() {
               ))}
             </View>
 
-            <Text style={styles.label}>Caja</Text>
-            <View style={styles.chips}>
-              <Pressable style={[styles.chip, cashId === null && styles.chipSelected]} onPress={() => setCashId(null)}>
-                <Text style={[styles.chipText, cashId === null && styles.chipTextSelected]}>General (sin caja)</Text>
-              </Pressable>
-              {openCashBoxes.map((cash) => (
-                <Pressable key={cash.id} style={[styles.chip, cashId === cash.id && styles.chipSelected]} onPress={() => setCashId(cash.id)}>
-                  <Text style={[styles.chipText, cashId === cash.id && styles.chipTextSelected]}>Caja #{cash.id}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <Text style={styles.label}>Caja actual</Text>
+            <Text style={styles.currentCash}>{cashId ? `Caja #${cashId} (abierta)` : 'No hay caja abierta'}</Text>
 
             {!!error && <Text style={styles.error}>{error}</Text>}
             {!!success && <Text style={styles.success}>{success}</Text>}
@@ -223,6 +232,7 @@ const styles = StyleSheet.create({
   chipSelected: { borderColor: '#F0B35A', backgroundColor: '#F0B35A' },
   chipText: { color: '#B8B1A8', fontSize: 11, fontWeight: '700' },
   chipTextSelected: { color: '#251D17' },
+  currentCash: { minHeight: 42, paddingHorizontal: 12, paddingVertical: 11, borderWidth: 1, borderColor: '#604D3A', borderRadius: 7, backgroundColor: '#2D2620', color: '#F5D3A7', fontSize: 13, fontWeight: '700' },
   error: { marginTop: 14, color: '#F28C8C', fontSize: 12, lineHeight: 18 },
   success: { marginTop: 14, color: '#6DD3A0', fontSize: 12, lineHeight: 18 },
   saveButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 22, borderRadius: 7, backgroundColor: '#F0B35A' },

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="../static/css/base/variables.css">
     <link rel="stylesheet" href="../static/css/base/global.css">
     <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
-    <link rel="stylesheet" href="../static/css/modules/gastos.css?v=1">
+    <link rel="stylesheet" href="../static/css/modules/gastos.css?v=2">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
                 <div>
                     <span class="eyebrow">Caja y movimientos</span>
                     <h1>Registrar gasto</h1>
-                    <p>Registra un egreso y asígnalo a una categoría o caja abierta.</p>
+                    <p>El gasto se registrará automáticamente en la caja abierta actual.</p>
                 </div>
                 <a class="gastos-history-link" href="/movimientos">
                     <i data-lucide="receipt-text"></i>
@@ -53,12 +53,10 @@
                                 <option value="">Sin categoría</option>
                             </select>
                         </label>
-                        <label class="gastos-field" for="gastoCaja">
-                            Caja
-                            <select id="gastoCaja" name="id_caja">
-                                <option value="">General (sin caja)</option>
-                            </select>
-                        </label>
+                        <div class="gastos-field">
+                            <span>Caja actual</span>
+                            <p class="gastos-cash-current" id="gastoCajaActual">Verificando caja abierta...</p>
+                        </div>
                     </div>
 
                     <p class="gastos-message" id="gastosMessage" role="status" aria-live="polite"></p>
@@ -73,9 +71,9 @@
         </main>
     </div>
 
-    <script src="../static/js/permissions.js?v=1"></script>
+    <script src="../static/js/permissions.js?v=2"></script>
     <script src="../static/js/menu.js?v=15"></script>
-    <script src="../static/js/gastos.js?v=1"></script>
+    <script src="../static/js/gastos.js?v=2"></script>
     <script>lucide.createIcons();</script>
 </body>
 </html>
