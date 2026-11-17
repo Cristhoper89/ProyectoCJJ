@@ -2,6 +2,7 @@ const API_URL = "https://serviciocontigo.io/api";
 const token = localStorage.getItem("access_token");
 const MENU_HTML_CACHE_KEY = "cabana_menu_html";
 const MENU_USER_CACHE_KEY = "cabana_menu_user";
+const permissions = window.CabanaPermissions;
 let sideNav;
 let moduleGrid;
 let sidebar;
@@ -10,52 +11,6 @@ let dashboardToast;
 let menuButton;
 let logoutButton;
 let toastTimeout;
-
-const modules = {
-	admin: [
-		["Persona", "users-round", null, [
-			["Perfil", "user-round", "/perfil"],
-			["Empleados", "users-round", "/usuarios"],
-			["Clientes", "contact-round", "/clientes"]
-		]],
-		["Caja", "wallet-cards", null, [
-			["Historial de cajas", "history", "/cajas"],
-			["Caja actual", "wallet-cards", "/caja"],
-			["Cerrar y abrir caja", "lock-keyhole", "/cierre-caja"]
-		]],
-		["Mesa", "layout-grid", null, [
-			["Mesas", "layout-grid", "/mesas"],
-			["Configuración de mesas", "qr-code", "/configuracion-mesas"]
-		]], ["Categorías", "tags", "/categorias"],
-		["Movimientos", "arrow-left-right", "/movimientos"],
-		["Productos", "package", null, [
-			["Productos", "package", "/productos"],
-			["Opciones de productos", "tags", "/opciones-productos"],
-			["Ingredientes", "carrot", "/ingredientes"]
-		]],
-		["Estadística", "chart-no-axes-combined", "/reportes"],
-		["Pedidos", "clipboard-list", "/pedidos"], ["Carta", "book-open", "/carta"],
-		["Configuración", "settings", "/configuracion"]
-	],
-	cajero: [
-		["Perfil", "user-round", "/perfil"],
-		["Caja", "wallet-cards", null, [
-			["Historial de cajas", "history", "/cajas"],
-			["Caja actual", "wallet-cards", "/caja"],
-			["Cerrar y abrir caja", "lock-keyhole", "/cierre-caja"]
-		]],
-		["Mesa", "layout-grid", null, [
-			["Mesas", "layout-grid", "/mesas"],
-			["Configuración de mesas", "qr-code", "/configuracion-mesas"]
-		]], ["Movimientos", "arrow-left-right", "/movimientos"],
-		["Categorías", "tags", "/categorias"],
-		["Productos", "package", null, [
-			["Productos", "package", "/productos"],
-			["Opciones de productos", "tags", "/opciones-productos"],
-			["Ingredientes", "carrot", "/ingredientes"]
-		]]
-	]
-};
 
 function renderMenuItem([name, icon, href, children], currentPath) {
 	if (children) {
@@ -125,8 +80,12 @@ function initSidebarEvents(){
 
 function setUser(user){
 	if(!sideNav || !user) return;
-	const role = user.role_name.toLowerCase() === "cajero" ? "cajero" : "admin";
-	const availableModules = modules[role];
+	const role = permissions?.getRole(user);
+	if(!role){
+		window.location.href = "/";
+		return;
+	}
+	const availableModules = permissions.getMenuModules(role);
 	const firstName = user.username || "Usuario";
 	const currentPath = `${window.location.pathname}${window.location.hash}`;
 	document.getElementById("userName").textContent = firstName;
