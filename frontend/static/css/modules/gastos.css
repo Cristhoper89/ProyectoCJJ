@@ -1,0 +1,28 @@
+body{min-height:100%;overflow-y:auto;background:#1D1A17;color:#F5EBDD}
+.gastos-page{width:min(100%,1000px);min-height:calc(100vh - 72px);margin:0 auto;padding:40px 42px 56px}
+.gastos-header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:26px}
+.gastos-header h1{margin-top:7px;font-size:30px;font-weight:800}
+.gastos-header p{margin-top:7px;color:#B8A99A;font-size:14px}
+.gastos-history-link{min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;border:1px solid #514236;border-radius:7px;color:#F5D3A7;font-size:12px;font-weight:700;text-decoration:none}
+.gastos-history-link:hover{border-color:#F0B35A}
+.gastos-history-link svg{width:16px;height:16px}
+.gastos-card{width:min(100%,720px);padding:28px;border:1px solid #45382E;border-radius:12px;background:#32281F;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.gastos-field{display:flex;min-width:0;flex-direction:column;gap:8px;margin-bottom:18px;color:#D9D0C8;font-size:12px;font-weight:700}
+.gastos-field input,.gastos-field textarea,.gastos-field select{width:100%;min-height:46px;padding:11px 12px;border:1px solid #604D3A;border-radius:7px;outline:0;background:#2D2620;color:#F5EBDD;font:400 14px Manrope,sans-serif}
+.gastos-field input:focus,.gastos-field textarea:focus,.gastos-field select:focus{border-color:#F0B35A}
+.gastos-field input::placeholder,.gastos-field textarea::placeholder{color:#998C80}
+.gastos-field textarea{min-height:90px;resize:vertical}
+.gastos-value-input{display:flex;align-items:center;gap:10px;padding-left:13px;border:1px solid #604D3A;border-radius:7px;background:#2D2620;color:#F0B35A;font-size:17px;font-weight:800}
+.gastos-value-input input{border:0;background:transparent}
+.gastos-value-input:focus-within{border-color:#F0B35A}
+.gastos-form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gastos-message{display:none;margin:0 0 16px;font-size:13px;line-height:1.5}
+.gastos-message.visible{display:block;color:#F28C8C}
+.gastos-message.success{color:#6DD3A0}
+.gastos-actions{display:flex;justify-content:flex-end;margin-top:8px}
+.gastos-submit{min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;border:0;border-radius:7px;background:#F0B35A;color:#251D17;font:800 13px Manrope,sans-serif;cursor:pointer}
+.gastos-submit:hover{background:#D8A04C}
+.gastos-submit:disabled{opacity:.6;cursor:wait}
+.gastos-submit svg{width:17px;height:17px}
+@media(max-width:760px){.gastos-page{padding:28px 18px 40px}.gastos-header{align-items:flex-start;flex-direction:column}.gastos-header h1{font-size:26px}.gastos-card{padding:22px 18px}}
+@media(max-width:540px){.gastos-form-row{grid-template-columns:1fr;gap:0}.gastos-actions,.gastos-submit{width:100%}}

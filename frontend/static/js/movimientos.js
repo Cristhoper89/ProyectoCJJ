@@ -11,21 +11,13 @@ let movimientoExpandido = null;
 let movimientoPendiente = null;
 let guardando = false;
 let mensajeTimer = null;
-let categoriasGasto = [];
-let cajasAbiertas = [];
-let guardandoGasto = false;
 
 const listaMovimientos = document.getElementById("movList");
 const mensajeMovimientos = document.getElementById("movMessage");
 const modalDesactivar = document.getElementById("desactivarModal");
-const modalGasto = document.getElementById("gastoModal");
-const formularioGasto = document.getElementById("gastoForm");
 const textoDesactivar = document.getElementById("desactivarTexto");
 const botonRefrescar = document.getElementById("btnRefrescar");
 const botonConfirmar = document.getElementById("confirmarDesactivar");
-const botonNuevoGasto = document.getElementById("btnNuevoGasto");
-const botonGuardarGasto = document.getElementById("guardarGasto");
-const mensajeFormularioGasto = document.getElementById("gastoFormMessage");
 
 const RANGOS = {
 	today: "Hoy",
@@ -203,7 +195,6 @@ function renderRango() {
 	document.getElementById("tabVentas").setAttribute("aria-selected", String(activeTab === "ventas"));
 	document.getElementById("tabGastos").classList.toggle("is-active", activeTab === "gastos");
 	document.getElementById("tabGastos").setAttribute("aria-selected", String(activeTab === "gastos"));
-	botonNuevoGasto.hidden = activeTab !== "gastos";
 }
 
 function detalleMovimiento(movimiento, lineas) {
@@ -328,106 +319,6 @@ function renderCargando() {
 	listaMovimientos.innerHTML = renderEstado("Cargando historial...", "");
 }
 
-function mostrarErrorFormularioGasto(texto) {
-	mensajeFormularioGasto.textContent = texto;
-	mensajeFormularioGasto.classList.toggle("visible", Boolean(texto));
-}
-
-async function abrirFormularioGasto() {
-	formularioGasto.reset();
-	mostrarErrorFormularioGasto("");
-	document.getElementById("gastoCategoria").innerHTML = '<option value="">Sin categoría</option>';
-	document.getElementById("gastoCaja").innerHTML = '<option value="">General (sin caja)</option>';
-	modalGasto.hidden = false;
-	document.getElementById("gastoNombre").focus();
-
-	const [categoriasResult, cajasResult] = await Promise.allSettled([
-		apiMovimientos("/categorias/"),
-		apiMovimientos("/cajas/")
-	]);
-	const errores = [];
-
-	if (categoriasResult.status === "fulfilled") {
-		categoriasGasto = categoriasResult.value.filter(categoria => categoria.estado !== false);
-		document.getElementById("gastoCategoria").innerHTML += categoriasGasto.map(categoria => (
-			`<option value="${categoria.id}">${esc(categoria.nombre)}</option>`
-		)).join("");
-	} else {
-		categoriasGasto = [];
-		errores.push("No se pudieron cargar las categorías.");
-	}
-
-	if (cajasResult.status === "fulfilled") {
-		cajasAbiertas = cajasResult.value
-			.filter(caja => String(caja.estado ?? "").trim().toLowerCase() === "abierta")
-			.sort((primera, segunda) => segunda.id - primera.id);
-		const selectorCaja = document.getElementById("gastoCaja");
-		selectorCaja.innerHTML += cajasAbiertas.map(caja => (
-			`<option value="${caja.id}">Caja #${caja.id}</option>`
-		)).join("");
-		if (cajasAbiertas.length) selectorCaja.value = String(cajasAbiertas[0].id);
-	} else {
-		cajasAbiertas = [];
-		errores.push("No se pudieron cargar las cajas abiertas.");
-	}
-
-	if (errores.length) mostrarErrorFormularioGasto(errores.join(" "));
-}
-
-function cerrarFormularioGasto() {
-	modalGasto.hidden = true;
-	formularioGasto.reset();
-	mostrarErrorFormularioGasto("");
-}
-
-async function registrarGasto(event) {
-	event.preventDefault();
-	if (guardandoGasto) return;
-
-	const nombre = document.getElementById("gastoNombre").value.trim();
-	const valorTexto = document.getElementById("gastoValor").value;
-	const valor = Number(valorTexto);
-	if (!nombre) {
-		mostrarErrorFormularioGasto("Escribe el nombre del gasto.");
-		document.getElementById("gastoNombre").focus();
-		return;
-	}
-	if (!/^\d+(?:\.\d{1,2})?$/.test(valorTexto) || !Number.isFinite(valor) || valor <= 0) {
-		mostrarErrorFormularioGasto("Ingresa un valor mayor que cero con hasta dos decimales.");
-		document.getElementById("gastoValor").focus();
-		return;
-	}
-
-	const categoria = document.getElementById("gastoCategoria").value;
-	const caja = document.getElementById("gastoCaja").value;
-	const payload = {
-		nombre,
-		descripcion: document.getElementById("gastoDescripcion").value.trim() || null,
-		valor,
-		categoria: categoria ? Number(categoria) : null,
-		id_caja: caja ? Number(caja) : null
-	};
-
-	guardandoGasto = true;
-	botonGuardarGasto.disabled = true;
-	botonGuardarGasto.innerHTML = "Guardando...";
-	mostrarErrorFormularioGasto("");
-	try {
-		const gasto = await apiMovimientos("/gastos/", "POST", payload);
-		gastos = [...gastos, gasto];
-		cerrarFormularioGasto();
-		render();
-		mostrarMensaje("Gasto registrado correctamente.", "success");
-	} catch (error) {
-		mostrarErrorFormularioGasto(error.message || "No fue posible registrar el gasto.");
-	} finally {
-		guardandoGasto = false;
-		botonGuardarGasto.disabled = false;
-		botonGuardarGasto.innerHTML = '<i data-lucide="check"></i> Guardar gasto';
-		lucide.createIcons();
-	}
-}
-
 // ======================================================
 // DATOS
 // ======================================================
@@ -538,14 +429,6 @@ document.getElementById("cancelarDesactivar").addEventListener("click", () => {
 	movimientoPendiente = null;
 });
 
-botonNuevoGasto.addEventListener("click", abrirFormularioGasto);
-document.getElementById("cerrarGasto").addEventListener("click", cerrarFormularioGasto);
-document.getElementById("cancelarGasto").addEventListener("click", cerrarFormularioGasto);
-formularioGasto.addEventListener("submit", registrarGasto);
-modalGasto.addEventListener("click", event => {
-	if (event.target === modalGasto && !guardandoGasto) cerrarFormularioGasto();
-});
-
 botonConfirmar.addEventListener("click", () => {
 	if (!guardando) desactivarMovimiento();
 });
@@ -555,7 +438,6 @@ document.addEventListener("keydown", event => {
 		modalDesactivar.hidden = true;
 		movimientoPendiente = null;
 	}
-	if (event.key === "Escape" && !modalGasto.hidden && !guardandoGasto) cerrarFormularioGasto();
 });
 
 if (!localStorage.getItem("access_token")) {

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar gasto</title>
+    <link rel="stylesheet" href="../static/css/base/variables.css">
+    <link rel="stylesheet" href="../static/css/base/global.css">
+    <link rel="stylesheet" href="../static/css/modules/dashboard.css?v=7">
+    <link rel="stylesheet" href="../static/css/modules/gastos.css?v=1">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="menu-container"></div>
+        <main class="gastos-page">
+            <header class="gastos-header">
+                <div>
+                    <span class="eyebrow">Caja y movimientos</span>
+                    <h1>Registrar gasto</h1>
+                    <p>Registra un egreso y asígnalo a una categoría o caja abierta.</p>
+                </div>
+                <a class="gastos-history-link" href="/movimientos">
+                    <i data-lucide="receipt-text"></i>
+                    Ver historial de caja
+                </a>
+            </header>
+
+            <section class="gastos-card">
+                <form id="gastoForm">
+                    <label class="gastos-field" for="gastoNombre">
+                        Nombre del gasto
+                        <input id="gastoNombre" name="nombre" type="text" maxlength="100" required placeholder="Ej. Compra de insumos">
+                    </label>
+
+                    <label class="gastos-field" for="gastoValor">
+                        Valor
+                        <span class="gastos-value-input">
+                            <span>$</span>
+                            <input id="gastoValor" name="valor" type="text" inputmode="decimal" maxlength="14" required placeholder="0">
+                        </span>
+                    </label>
+
+                    <label class="gastos-field" for="gastoDescripcion">
+                        Descripción
+                        <textarea id="gastoDescripcion" name="descripcion" maxlength="255" placeholder="Detalle opcional del gasto"></textarea>
+                    </label>
+
+                    <div class="gastos-form-row">
+                        <label class="gastos-field" for="gastoCategoria">
+                            Categoría
+                            <select id="gastoCategoria" name="categoria">
+                                <option value="">Sin categoría</option>
+                            </select>
+                        </label>
+                        <label class="gastos-field" for="gastoCaja">
+                            Caja
+                            <select id="gastoCaja" name="id_caja">
+                                <option value="">General (sin caja)</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <p class="gastos-message" id="gastosMessage" role="status" aria-live="polite"></p>
+                    <div class="gastos-actions">
+                        <button class="gastos-submit" id="guardarGasto" type="submit">
+                            <i data-lucide="check"></i>
+                            Guardar gasto
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script src="../static/js/permissions.js?v=1"></script>
+    <script src="../static/js/menu.js?v=15"></script>
+    <script src="../static/js/gastos.js?v=1"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

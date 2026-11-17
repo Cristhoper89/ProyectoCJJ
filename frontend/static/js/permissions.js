@@ -21,6 +21,7 @@
 			]],
 			["Categorías", "tags", "/categorias"],
 			["Movimientos", "arrow-left-right", "/movimientos"],
+			["Registrar gasto", "circle-dollar-sign", "/gastos"],
 			["Productos", "package", null, [
 				["Productos", "package", "/productos"],
 				["Opciones de productos", "tags", "/opciones-productos"],
@@ -43,6 +44,7 @@
 				["Configuración de mesas", "qr-code", "/configuracion-mesas"]
 			]],
 			["Movimientos", "arrow-left-right", "/movimientos"],
+			["Registrar gasto", "circle-dollar-sign", "/gastos"],
 			["Categorías", "tags", "/categorias"],
 			["Productos", "package", null, [
 				["Productos", "package", "/productos"],

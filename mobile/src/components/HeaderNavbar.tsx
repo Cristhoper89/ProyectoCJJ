@@ -2,7 +2,7 @@
 import React, { Fragment, useState, useEffect, useCallback } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView } from 'react-native';
 import { 
-  Menu, X, User, WalletCards, Tags, LayoutGrid, ArrowLeftRight, QrCode,
+  Menu, X, User, WalletCards, Tags, LayoutGrid, ArrowLeftRight, CircleDollarSign, QrCode,
   Package, Users, ContactRound, ChartNoAxesCombined, ClipboardList, BookOpen, Settings, Carrot, ChevronDown
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -31,6 +31,7 @@ const menuItems: MenuItem[] = [
   { label: 'Mesas', icon: LayoutGrid, roles: ['Administrador', 'Cajero', 'Mesero'], route: '/mesa' },
   { label: 'Configuración mesa', icon: QrCode, roles: ['Administrador', 'Cajero'], route: '/configuracion-mesas' },
   { label: 'Movimientos', icon: ArrowLeftRight, roles: ['Administrador', 'Cajero'], route: '/movimientos' },
+  { label: 'Registrar gasto', icon: CircleDollarSign, roles: ['Administrador', 'Cajero'], route: '/gastos' },
   { label: 'Productos', icon: Package, roles: ['Administrador', 'Cajero', 'Mesero', 'Cocina'], children: [
     { label: 'Productos', icon: Package, roles: ['Administrador', 'Cajero', 'Mesero', 'Cocina'], route: '/productos' },
     { label: 'Ingredientes', icon: Carrot, roles: ['Administrador', 'Cajero'], route: '/ingredientes' },
