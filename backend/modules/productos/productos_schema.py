@@ -64,6 +64,7 @@ class ProductoCreate(ProductoBase):
 class ProductoResponse(ProductoBase):
 
     id: int
+    cantidad: Optional[int] = None
     imagen_url: Optional[str] = None
 
     model_config = ConfigDict(
